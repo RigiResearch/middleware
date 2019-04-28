@@ -51,6 +51,7 @@ fabric.properties
 Thumbs.db
 .DS_Store
 .gradle
+**/*.jar
 **/bin/*
 **/out/*
 **/build/*

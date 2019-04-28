@@ -1,5 +1,5 @@
 dependencies {
-  compile project(":terraform:model")
+  compile project(":hcl:model")
   compile "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
   compile "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   testCompile "org.eclipse.xtext:org.eclipse.xtext.testing:${xtextVersion}"
