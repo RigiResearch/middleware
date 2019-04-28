@@ -1,3 +1,3 @@
-# Terraform notation interpreter
+# HCL interpreter
 
-This is an Xtext project based on the [../model](HCL model).
+An interpreter based on the [HCL syntactic model](../model).
