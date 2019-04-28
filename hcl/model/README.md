@@ -1,3 +1,3 @@
-# HCL notation model
+# HCL syntactic model
 
-This is a platform specific model for the infrastructure-as-code metamodel based on the Hashicorp Configuration Language (HCL).
+A platform specific model for the infrastructure-as-code metamodel based on the [Hashicorp Configuration Language](https://github.com/hashicorp/hcl) (HCL).
