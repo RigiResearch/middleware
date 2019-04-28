@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN" "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <suppress checks="JavadocMethod" files=".+(Test|ITCase|IT).java" />
+    <suppress checks="JavadocMethod" files=".+(Test|ITCase|IT).java"/>
     <!-- From https://stackoverflow.com/a/18013373 -->
     <suppress files="[\\/]xtend-gen[\\/]" checks="[a-zA-Z0-9]*"/>
     <suppress files="[\\/]xtext-gen[\\/]" checks="[a-zA-Z0-9]*"/>

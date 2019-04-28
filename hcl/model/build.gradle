@@ -7,7 +7,7 @@ dependencies {
   xtextLanguages "org.antlr:antlr-runtime:3.2"
   xtextLanguages "org.eclipse.emf:org.eclipse.emf.mwe2.runtime:${mwe2Version}"
   xtextLanguages "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
-  xtextLanguages("org.eclipse.emf:org.eclipse.emf.ecore.xcore:${ecoreXcoreVersion}"){
+  xtextLanguages("org.eclipse.emf:org.eclipse.emf.ecore.xcore:${ecoreXcoreVersion}") {
     exclude group: "org.antlr", module: "antlr-runtime"
     exclude group: "org.eclipse.xtext", module: "org.eclipse.xtext"
     exclude group: "org.eclipse.xtext", module: "org.eclipse.xtext.xbase"

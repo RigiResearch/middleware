@@ -30,9 +30,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  -->
-<ruleset name="Qulice Ruleset"
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    name="Qulice Ruleset"
     xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
 
     <description>
@@ -146,7 +146,8 @@
         language="java"
         class="net.sourceforge.pmd.lang.rule.XPathRule">
         <description>
-            Avoid putting anything other than field assignments into constructors.
+            Avoid putting anything other than field assignments into
+            constructors.
             The only exception should be calling other constructors
             or calling super class constructor.
         </description>
