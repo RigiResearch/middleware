@@ -28,9 +28,6 @@
 ## File-based project format:
 *.iws
 
-## Plugin-specific files:
-/out/
-
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
@@ -54,8 +51,11 @@ fabric.properties
 Thumbs.db
 .DS_Store
 .gradle
-bin/
-out/
-build/
-target/
-src-gen/
+**/bin/*
+**/out/*
+**/build/*
+**/target/*
+**/xtend-gen/*
+**/xtext-gen/*
+**/xcore-gen/*
+**/src-gen/*
