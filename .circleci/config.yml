@@ -13,11 +13,11 @@ jobs:
             - gradle-cache-{{ .Branch }}-{{ checksum "build.gradle" }}
       - run:
           name: Install gradle dependencies
-          command: gradle dependencies
+          command: ./gradlew dependencies
       - save_cache:
           key: gradle-cache-{{ .Branch }}-{{ checksum "build.gradle" }}
           paths:
             - ~/.gradle
       - run:
           name: Run tests
-          command: gradle check
+          command: ./gradlew check
