@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.hcl.interpreter
+package com.rigiresearch.middleware.hcl.interpreter;
 
 /**
  * Use this class to register components to be used at runtime / without the
@@ -7,5 +7,5 @@ package com.rigiresearch.middleware.hcl.interpreter
  * @version $Id$
  * @since 0.1.0
  */
-class HclRuntimeModule extends AbstractHclRuntimeModule {
+public class HclRuntimeModule extends AbstractHclRuntimeModule {
 }
