@@ -1,0 +1,4 @@
+rootProject.name = "middleware"
+
+include "terraform:model"
+include "terraform:interpreter"

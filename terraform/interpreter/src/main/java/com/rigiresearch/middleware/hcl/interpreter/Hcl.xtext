@@ -1,0 +1,10 @@
+grammar com.rigiresearch.middleware.hcl.interpreter.Hcl
+    with org.eclipse.xtext.common.Terminals
+
+import "http://www.rigiresearch.com/middleware/Hcl"
+
+Model:
+    greetings+=Greeting*;
+
+Greeting:
+    'Hello' name=ID '!';

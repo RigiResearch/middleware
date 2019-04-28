@@ -1,2 +1,3 @@
-# middleware
-A middleware for continuous software evolution
+# Continuous Software Evolution Middleware
+
+A middleware for continuous software evolution.

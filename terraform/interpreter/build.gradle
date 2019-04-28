@@ -1,0 +1,40 @@
+dependencies {
+  compile project(":terraform:model")
+  compile "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
+  compile "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+  testCompile "org.eclipse.xtext:org.eclipse.xtext.testing:${xtextVersion}"
+  testCompile "org.eclipse.xtext:org.eclipse.xtext.xbase.testing:${xtextVersion}"
+}
+
+configurations {
+  mwe2 {
+    extendsFrom compile
+  }
+}
+
+dependencies {
+  mwe2 "org.eclipse.emf:org.eclipse.emf.mwe2.launch:${mwe2Version}"
+  mwe2 "org.eclipse.xtext:org.eclipse.xtext.xtext.generator:${xtextVersion}"
+  mwe2 "org.eclipse.xtext:org.eclipse.xtext.common.types:${xtextVersion}"
+  mwe2 "org.eclipse.xtext:xtext-antlr-generator:[2.1.1, 3)"
+  // Xcore support
+  mwe2("org.eclipse.emf:org.eclipse.emf.ecore.xcore:${xcoreVersion}") {
+    exclude group: "org.antlr", module: "antlr-runtime"
+  }
+  mwe2 "org.eclipse.emf:org.eclipse.emf.codegen.ecore.xtext:${ecoreXtextVersion}"
+}
+
+task generateXtextLanguage(type: JavaExec) {
+  main = "org.eclipse.emf.mwe2.launch.runtime.Mwe2Launcher"
+  classpath = configurations.mwe2
+  inputs.file "src/main/java/com/rigiresearch/middleware/hcl/interpreter/GenerateHcl.mwe2"
+  inputs.file "src/main/java/com/rigiresearch/middleware/hcl/interpreter/Hcl.xtext"
+  outputs.dir "src/main/xtext-gen"
+  args += "src/main/java/com/rigiresearch/middleware/hcl/interpreter/GenerateHcl.mwe2"
+  args += "-p"
+  args += "rootPath=/${projectDir}/.."
+}
+
+generateXtext.dependsOn(generateXtextLanguage)
+clean.dependsOn(cleanGenerateXtextLanguage)
+eclipse.classpath.plusConfigurations += [configurations.mwe2]

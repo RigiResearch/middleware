@@ -1,0 +1,15 @@
+@Ecore(nsPrefix="hcl", nsURI="http://www.rigiresearch.com/middleware/Hcl")
+@GenModel(
+  bundleManifest = "false",
+  modelDirectory = "model/src/main/xcore-gen",
+  complianceLevel = "8.0"
+)
+package com.rigiresearch.middleware.hcl.model
+
+class Model {
+	contains Greeting[] greetings
+}
+
+class Greeting {
+	String name
+}

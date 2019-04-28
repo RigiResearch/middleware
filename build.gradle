@@ -1,0 +1,107 @@
+plugins {
+  id "eclipse"
+  id "idea"
+  id "checkstyle"
+  id "pmd"
+  id "com.github.johnrengelman.shadow" version "5.0.0"
+  id "com.github.ksoichiro.console.reporter" version "0.6.2"
+  id "org.xtext.builder" version "2.0.4"
+}
+
+allprojects {
+  repositories {
+    jcenter()
+  }
+
+  apply plugin: "jacoco"
+  apply plugin: "pmd"
+  apply plugin: "checkstyle"
+
+  jacoco {
+    toolVersion = "0.8.3+"
+  }
+
+  pmd {
+    ruleSetFiles = files("${rootDir}/config/pmd/ruleset.xml")
+    // It must be empty for exclusions to work
+    // From https://stackoverflow.com/a/34145485
+    ruleSets = []
+  }
+
+  checkstyle {
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+  }
+}
+
+subprojects { project ->
+  ext {
+    ecoreXcoreVersion = "1.3.1"
+    ecoreXcoreLibVersion = "1.1.100"
+    ecoreXtextVersion = "1.2.0"
+    emfVersion = "2.12.0"
+    emfCommonVersion = "2.12.0"
+    emfCodegenVersion = "2.11.0"
+    emfCodegenEcoreVersion = "2.12.0"
+    mwe2Version = "2.9.1.201705291010"
+    xtextVersion = "2.17.0"
+    xcoreVersion = "1.7.0"
+  }
+
+  apply plugin: "java"
+  apply plugin: "org.xtext.xtend"
+  apply plugin: "com.github.johnrengelman.shadow"
+  apply from: "${rootDir}/gradle/source-layout.gradle"
+  apply plugin: "eclipse"
+  apply plugin: "idea"
+
+  group = "com.rigiresearch.${rootProject.name}"
+  version = "0.1.0"
+
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  dependencies {
+    // Tests
+    testImplementation "org.junit.jupiter:junit-jupiter:5.4.2"
+
+    // Annotation processor to ease development
+    compileOnly "org.projectlombok:lombok:1.18.6"
+    annotationProcessor "org.projectlombok:lombok:1.18.6"
+  }
+
+  configurations.all {
+    exclude group: "asm"
+  }
+
+  test {
+    useJUnitPlatform()
+  }
+
+  jacocoTestReport {
+    reports {
+      xml.enabled = false
+      csv.enabled = false
+      html {
+        enabled = true
+        destination = file("${buildDir}/reports/jacoco")
+      }
+    }
+  }
+
+  jacocoTestCoverageVerification {
+    violationRules {
+      rule {
+        limit {
+          minimum = 0.5
+        }
+      }
+    }
+  }
+
+  check.dependsOn jacocoTestCoverageVerification
+  test.finalizedBy(project.tasks.jacocoTestReport)
+
+  consoleReporter {
+    cobertura.enabled = false
+  }
+}
