@@ -1,7 +1,7 @@
 @Ecore(nsPrefix="hcl", nsURI="http://www.rigiresearch.com/middleware/Hcl")
 @GenModel(
   bundleManifest = "false",
-  modelDirectory = "model/src/main/xcore-gen",
+  modelDirectory = "model/build/xcore/main",
   complianceLevel = "8.0"
 )
 package com.rigiresearch.middleware.hcl.model

@@ -31,7 +31,7 @@ Workflow {
         language = StandardLanguage {
             name = "com.rigiresearch.middleware.hcl.interpreter.Hcl"
             fileExtensions = "tf"
-            referencedResource = "platform:/resource/model/src/main/resources/Hcl.xcore"
+            referencedResource = "platform:/resource/model/src/main/xcore/Hcl.xcore"
             serializer = {
                 generateStub = false
             }
