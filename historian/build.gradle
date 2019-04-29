@@ -1,0 +1,9 @@
+plugins {
+  id "application"
+}
+
+mainClassName = "com.rigiresearch.middleware.historian.Application"
+
+dependencies {
+  implementation "com.reprezen.kaizen:openapi-parser:4.0.3"
+}

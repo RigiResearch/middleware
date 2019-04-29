@@ -1,4 +1,5 @@
 rootProject.name = "middleware"
 
+include "historian"
 include "hcl:model"
 include "hcl:interpreter"
