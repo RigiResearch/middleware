@@ -8,14 +8,14 @@ var rootPath = ".."
 Workflow {
     bean = org.eclipse.emf.mwe.utils.StandaloneSetup {
         projectMapping = {
-            path = "${rootPath}/model"
-            projectName = "model"
+            path = "${rootPath}/hcl.model"
+            projectName = "hcl.model"
         }
     }
     component = XtextGenerator {
         configuration = {
             project = StandardProjectConfig {
-                baseName = "interpreter"
+                baseName = "hcl.interpreter"
                 rootPath = rootPath
                 runtimeTest = {
                     enabled = true
@@ -32,7 +32,7 @@ Workflow {
         language = StandardLanguage {
             name = "com.rigiresearch.middleware.hcl.interpreter.Hcl"
             fileExtensions = "tf"
-            referencedResource = "platform:/resource/model/src/main/xcore/Hcl.xcore"
+            referencedResource = "platform:/resource/hcl.model/src/main/xcore/Hcl.xcore"
             serializer = {
                 generateStub = false
             }

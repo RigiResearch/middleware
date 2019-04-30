@@ -1,6 +1,6 @@
 rootProject.name = "middleware"
 
 include "historian"
-include "notations:hcl:model"
-include "notations:hcl:interpreter"
-include "notations:openapi:model"
+include "notations:hcl:hcl.model"
+include "notations:hcl:hcl.interpreter"
+include "notations:openapi:openapi.model"
