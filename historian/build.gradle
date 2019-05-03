@@ -1,17 +1,22 @@
 plugins {
   id "application"
+  id "com.diffplug.gradle.p2.asmaven" version "3.17.6"
 }
 
 mainClassName = "com.rigiresearch.middleware.historian.Application"
 
-dependencies {
-  implementation project(":notations:openapi")
+p2AsMaven {
+  group "som", {
+    repoEclipse "4.11"
+    repo "https://download.eclipse.org/modeling/emf/updates/"
+    repo "https://download.eclipse.org/modeling/mdt/ocl/updates/releases/latest/"
+    repo "https://som-research.github.io/openapi-metamodel/update/"
+    feature "edu.uoc.som.openapi.feature"
+    slicingOption "latestVersionOnly", "true"
+  }
 }
 
-repositories {
-  // This repository must be under the dependencies block, otherwise the
-  // directory will be empty.
-  maven {
-    url project(":notations:openapi").file("build/p2asmaven/maven").toURI()
-  }
+dependencies {
+  implementation "som:edu.uoc.som.openapi:1.0.2.201804111106"
+  implementation "som:edu.uoc.som.openapi.io:1.0.3.201804111106"
 }
