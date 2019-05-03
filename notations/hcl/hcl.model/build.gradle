@@ -3,10 +3,10 @@ plugins {
 }
 
 dependencies {
-  compile "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
-  compile "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
-  compile "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
-  compile "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
+  implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
 
   xtextLanguages "org.antlr:antlr-runtime:3.2"
   xtextLanguages "org.eclipse.emf:org.eclipse.emf.mwe2.runtime:${mwe2Version}"

@@ -13,11 +13,11 @@ sourceSets {
 }
 
 dependencies {
-  compile project(":notations:hcl:hcl.model")
-  compile "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
-  compile "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
-  testCompile "org.eclipse.xtext:org.eclipse.xtext.testing:${xtextVersion}"
-  testCompile "org.eclipse.xtext:org.eclipse.xtext.xbase.testing:${xtextVersion}"
+  implementation project(":notations:hcl:hcl.model")
+  implementation "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
+  implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+  testImplementation "org.eclipse.xtext:org.eclipse.xtext.testing:${xtextVersion}"
+  testImplementation "org.eclipse.xtext:org.eclipse.xtext.xbase.testing:${xtextVersion}"
 }
 
 configurations {
