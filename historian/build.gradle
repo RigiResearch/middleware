@@ -5,5 +5,13 @@ plugins {
 mainClassName = "com.rigiresearch.middleware.historian.Application"
 
 dependencies {
-  implementation "com.reprezen.kaizen:openapi-parser:4.0.3"
+  implementation project(":notations:openapi")
+}
+
+repositories {
+  // This repository must be under the dependencies block, otherwise the
+  // directory will be empty.
+  maven {
+    url project(":notations:openapi").file("build/p2asmaven/maven").toURI()
+  }
 }

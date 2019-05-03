@@ -1,6 +1,11 @@
 plugins {
   id "java-library"
+  id 'com.github.johnrengelman.shadow' version '5.0.0'
   id "com.diffplug.gradle.p2.asmaven" version "3.17.6"
+}
+
+shadowJar {
+  archiveClassifier = null
 }
 
 p2AsMaven {
@@ -18,3 +23,5 @@ dependencies {
   api "som:edu.uoc.som.openapi:1.0.2.201804111106"
   api "som:edu.uoc.som.openapi.io:1.0.3.201804111106"
 }
+
+shadowJar.mustRunAfter(build)
