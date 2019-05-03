@@ -1,3 +1,7 @@
+plugins {
+  id "org.xtext.builder"
+}
+
 dependencies {
   compile "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   compile "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"

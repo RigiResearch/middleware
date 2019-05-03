@@ -3,9 +3,7 @@ plugins {
   id "idea"
   id "checkstyle"
   id "pmd"
-  id "com.github.johnrengelman.shadow" version "5.0.0"
   id "com.github.ksoichiro.console.reporter" version "0.6.2"
-  id "org.xtext.builder" version "2.0.4"
 }
 
 allprojects {
@@ -48,8 +46,6 @@ subprojects { project ->
   }
 
   apply plugin: "java"
-  apply plugin: "org.xtext.xtend"
-  apply plugin: "com.github.johnrengelman.shadow"
   apply from: "${rootDir}/gradle/source-layout.gradle"
   apply plugin: "eclipse"
   apply plugin: "idea"
@@ -92,7 +88,7 @@ subprojects { project ->
     violationRules {
       rule {
         limit {
-          minimum = 0.5
+          minimum = 0.0
         }
       }
     }
