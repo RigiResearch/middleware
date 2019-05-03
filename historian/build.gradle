@@ -1,5 +1,6 @@
 plugins {
   id "application"
+  id "org.xtext.builder" version "2.0.4"
   id "com.diffplug.gradle.p2.asmaven" version "3.17.6"
 }
 
@@ -19,4 +20,48 @@ p2AsMaven {
 dependencies {
   implementation "som:edu.uoc.som.openapi:1.0.2.201804111106"
   implementation "som:edu.uoc.som.openapi.io:1.0.3.201804111106"
+
+  implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
+
+  xtextLanguages "org.antlr:antlr-runtime:3.2"
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.mwe2.runtime:${mwe2Version}"
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
+  xtextLanguages("org.eclipse.emf:org.eclipse.emf.ecore.xcore:${ecoreXcoreVersion}") {
+    exclude group: "org.antlr", module: "antlr-runtime"
+    exclude group: "org.eclipse.xtext", module: "org.eclipse.xtext"
+    exclude group: "org.eclipse.xtext", module: "org.eclipse.xtext.xbase"
+  }
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.codegen:${emfCodegenVersion}"
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.codegen.ecore:${emfCodegenEcoreVersion}"
+  xtextLanguages "org.eclipse.emf:org.eclipse.emf.codegen.ecore.xtext:${ecoreXtextVersion}"
+  xtextLanguages "org.eclipse.xtext:org.eclipse.xtext.ecore:${xtextVersion}"
+}
+
+sourceSets {
+  main {
+    resources {
+      exclude '**/*.xcore'
+    }
+  }
+}
+
+xtext {
+  languages {
+    ecore {
+      setup = "org.eclipse.xtext.ecore.EcoreSupport"
+    }
+    codegen {
+      setup = "org.eclipse.emf.codegen.ecore.xtext.GenModelSupport"
+    }
+    xcore {
+      setup = "org.eclipse.emf.ecore.xcore.XcoreStandaloneSetup"
+      generator.outlet.producesJava = true
+      generator.outlet.cleanAutomatically = true
+    }
+  }
 }
