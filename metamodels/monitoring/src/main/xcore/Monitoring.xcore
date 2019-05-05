@@ -1,0 +1,79 @@
+@Ecore(nsPrefix="monitoring", nsURI="http://www.rigiresearch.com/middleware/Monitoring")
+@GenModel(
+    bundleManifest = "false",
+    modelDirectory = "model/build/xcore/main",
+    complianceLevel = "8.0"
+)
+package com.rigiresearch.middleware.historian.metamodels.monitoring
+
+import edu.uoc.som.openapi.Path
+import edu.uoc.som.openapi.Schema
+
+type Function<P, R> wraps java.util.function.Function
+
+/*
+ * <p>A polling monitor associated with a specific data model (i.e., a {@link
+ * edu.uoc.som.openapi.Schema}) and an endpoint that returns the instances of
+ * the data model (i.e., a {@link edu.uoc.som.openapi.Path}).
+ */
+class Monitor {
+    refers CronExpression samplingRate
+    contains QueryMapping mapping opposite monitor
+}
+
+/*
+ * <p>A tuple containing an endpoint, a data model and a set of attribute
+ * equivalences.
+ */
+class QueryMapping {
+    refers Path path
+    refers Schema schema
+    contains AttributeEquivalence[] equivalences opposite mapping
+    container Monitor monitor opposite mapping
+}
+
+/*
+ * <p>A pair of source and target attributes that represents a relationship
+ * between an attribute from the API specification model and the environment
+ * model.
+ * <p>The {@code transform} function processes the attribute as needed. It
+ * should be the identity function if no transformation is needed.
+ */
+class AttributeEquivalence {
+    refers Attribute source
+    refers Attribute target
+    Function<Attribute, Attribute> transform
+    container QueryMapping mapping opposite equivalences
+}
+
+/*
+ * <p>A property type from either the source or target model.
+ * @see {@link AttributeContainer}
+ */
+class Attribute {
+    String name
+    Class<?> ^type
+    AttributeContainer ^container
+}
+
+/*
+ * <p>The type of model containing certain attribute.
+ * <p>This enumeration aims to facilitate two things:
+ * <ol>
+ * <li>On specification deployment, it populates unknown values in the
+ * environment model (left to right)</li>
+ * <li>On run-time event, It maps data from the event (possibly requesting extra
+ * information to the API) to update the environment model (right to left)</li>
+ * </ol>
+ */
+enum AttributeContainer {
+    ENVIRONMENT_MODEL,
+    API_SPECIFICATION
+}
+
+/*
+ * A Unix-like cron expression.
+ */
+class CronExpression {
+    String value
+}
