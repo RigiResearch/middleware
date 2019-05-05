@@ -1,3 +1,3 @@
-# HCL syntactic model
+# Monitoring metamodel
 
-A platform specific model for the infrastructure-as-code metamodel based on the [Hashicorp Configuration Language](https://github.com/hashicorp/hcl) (HCL).
+A platform independent model for generating cloud monitors based on the [OpenAPI metamodel](https://github.com/SOM-Research/openapi-metamodel) by the [SOM Research Lab](https://som-research.uoc.edu/).
