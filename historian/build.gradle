@@ -4,15 +4,12 @@ plugins {
 
 mainClassName = "com.rigiresearch.middleware.historian.Application"
 
-dependencies {
-  implementation project(":metamodels:monitoring")
-}
-
 repositories {
   flatDir dirs: project(":metamodels:monitoring").file("lib").toPath()
 }
 
 dependencies {
-  implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
-  implementation name: "edu.uoc.som.openapi.io-1.0.3.201804111106"
+  implementation(project(":metamodels:monitoring")) {
+    transitive = true
+  }
 }
