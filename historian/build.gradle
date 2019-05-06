@@ -11,5 +11,7 @@ repositories {
 dependencies {
   implementation(project(":metamodels:monitoring")) {
     transitive = true
+    exclude group: "org.eclipse.xtext", module: "org.eclipse.xtext.xbase"
+    exclude group: "org.eclipse.emf", module: "org.eclipse.emf.ecore.xcore.lib"
   }
 }
