@@ -8,8 +8,8 @@ sourceSets {
     resources.srcDirs = [
       "src/main/resources",
       "src/main/ecore-gen",
-      "src/main/xcore",
-      "src/main/xtext-gen"
+      "src/main/xtext-gen",
+      "model"
     ]
   }
   test {

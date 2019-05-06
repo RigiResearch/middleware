@@ -32,7 +32,7 @@ Workflow {
         language = StandardLanguage {
             name = "com.rigiresearch.middleware.notations.hcl.Hcl"
             fileExtensions = "tf"
-            referencedResource = "platform:/resource/hcl/src/main/xcore/Hcl.xcore"
+            referencedResource = "platform:/resource/hcl/model/Hcl.xcore"
             serializer = {
                 generateStub = false
             }
