@@ -4,7 +4,7 @@
     modelDirectory = "model/build/xcore/main",
     complianceLevel = "8.0"
 )
-package com.rigiresearch.middleware.historian.metamodels.monitoring
+package com.rigiresearch.middleware.metamodels.monitoring
 
 type URI wraps java.net.URI
 type Function<A, R> wraps java.util.function.Function
@@ -42,7 +42,7 @@ class Schema {
 class Property {
     id String name
     Type ^type
-    boolean required = "true"
+    boolean required
 }
 
 /*
