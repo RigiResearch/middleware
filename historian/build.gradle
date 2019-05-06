@@ -5,16 +5,11 @@ plugins {
 mainClassName = "com.rigiresearch.middleware.historian.Application"
 
 repositories {
-  flatDir dirs: "${project(":metamodels:monitoring").projectDir}/lib"
+  flatDir dirs: "lib"
 }
 
 dependencies {
-  implementation(project(":metamodels:monitoring")) {
-    transitive = true
-    exclude group: "org.eclipse.xtext", module: "org.eclipse.xtext.xbase"
-    exclude group: "org.eclipse.emf", module: "org.eclipse.emf.ecore.xcore.lib"
-  }
-
+  implementation project(":metamodels:monitoring")
   implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
   implementation name: "edu.uoc.som.openapi.io-1.0.3.201804111106"
   implementation "com.google.code.gson:gson:2.8.5"

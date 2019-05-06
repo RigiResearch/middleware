@@ -2,14 +2,7 @@ plugins {
   id "org.xtext.builder"
 }
 
-repositories {
-  flatDir dirs: "lib"
-}
-
 dependencies {
-  implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
-  implementation name: "edu.uoc.som.openapi.io-1.0.3.201804111106"
-
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
