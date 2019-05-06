@@ -60,3 +60,6 @@ Thumbs.db
 **/xtext-gen/*
 **/xcore-gen/*
 **/src-gen/*
+
+### Allow libraries ###
+!**/lib/*.jar
