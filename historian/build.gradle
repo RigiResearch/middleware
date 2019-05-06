@@ -5,7 +5,7 @@ plugins {
 mainClassName = "com.rigiresearch.middleware.historian.Application"
 
 repositories {
-  flatDir dirs: project(":metamodels:monitoring").file("lib").toPath()
+  flatDir dirs: "${project(":metamodels:monitoring").projectDir}/lib"
 }
 
 dependencies {
