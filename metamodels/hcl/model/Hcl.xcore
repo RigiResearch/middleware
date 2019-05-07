@@ -4,7 +4,7 @@
     modelDirectory = "model/build/xcore/main",
     complianceLevel = "8.0"
 )
-package com.rigiresearch.middleware.notations.metamodels.hcl
+package com.rigiresearch.middleware.metamodels.hcl
 
 class Model {
     contains Greeting[] greetings

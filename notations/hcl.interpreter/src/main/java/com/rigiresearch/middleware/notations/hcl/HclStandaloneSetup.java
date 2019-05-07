@@ -1,7 +1,7 @@
 package com.rigiresearch.middleware.notations.hcl;
 
 import com.google.inject.Injector;
-import com.rigiresearch.middleware.notations.metamodels.hcl.HclPackage;
+import com.rigiresearch.middleware.metamodels.hcl.HclPackage;
 import org.eclipse.emf.ecore.EPackage;
 
 /**

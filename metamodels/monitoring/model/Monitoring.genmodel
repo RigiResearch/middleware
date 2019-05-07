@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="model/build/xcore/main" editDirectory="" editorDirectory=""
+    modelName="Monitoring" rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
+    testsDirectory="" bundleManifest="false" containmentProxies="true" complianceLevel="8.0"
+    copyrightFields="false" operationReflection="true" importOrganizing="true">
+  <modelPluginVariables>org.eclipse.xtext.xbase.lib</modelPluginVariables>
+  <modelPluginVariables>org.eclipse.emf.ecore.xcore.lib</modelPluginVariables>
+  <genPackages prefix="Monitoring" basePackage="com.rigiresearch.middleware.metamodels"
+      disposableProviderFactory="true" ecorePackage="Monitoring.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="Monitoring.ecore#//Type">
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Type/ARRAY"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Type/BOOLEAN"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Type/INTEGER"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Type/NUMBER"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Type/OBJECT"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Type/STRING"/>
+    </genEnums>
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="Monitoring.ecore#//PropertyContainer">
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//PropertyContainer/MODEL"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//PropertyContainer/API"/>
+    </genEnums>
+    <genDataTypes ecoreDataType="Monitoring.ecore#//URI"/>
+    <genDataTypes ecoreDataType="Monitoring.ecore#//Function">
+      <genTypeParameters ecoreTypeParameter="Monitoring.ecore#//Function/A"/>
+      <genTypeParameters ecoreTypeParameter="Monitoring.ecore#//Function/R"/>
+    </genDataTypes>
+    <genClasses ecoreClass="Monitoring.ecore#//Monitor">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Monitor/path"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Monitor/schema"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Monitor/rate"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Monitor/equivalences"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//Path">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Path/url"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Path/parameters"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//Schema">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Schema/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Schema/properties"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//Property">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Property/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Property/type"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Property/required"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//Equivalence">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Equivalence/source"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Equivalence/target"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Equivalence/transform"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//ContainedProperty">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Monitoring.ecore#//ContainedProperty/property"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//ContainedProperty/container"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//CronExpression">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//CronExpression/value"/>
+    </genClasses>
+  </genPackages>
+</genmodel:GenModel>

@@ -1,7 +1,7 @@
 package com.rigiresearch.middleware.notations.hcl.tests;
 
 import com.google.inject.Inject;
-import com.rigiresearch.middleware.notations.metamodels.hcl.Model;
+import com.rigiresearch.middleware.metamodels.hcl.Model;
 import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;

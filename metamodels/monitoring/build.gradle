@@ -1,3 +1,5 @@
+import com.rigiresearch.middleware.tasks.ExportXcoreTask
+
 plugins {
   id "org.xtext.builder"
 }
@@ -47,3 +49,10 @@ xtext {
     }
   }
 }
+
+task exportXcore(type: ExportXcoreTask) {
+  xcoreInputFile = file("model/Monitoring.xcore")
+  ecoreOutputFile = file("model/Monitoring.ecore")
+  genmodelOutputFile = file("model/Monitoring.genmodel")
+}
+build.dependsOn exportXcore
