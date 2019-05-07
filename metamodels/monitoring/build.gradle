@@ -29,7 +29,9 @@ dependencies {
 sourceSets {
   main {
     resources {
-      exclude '**/*.xcore'
+      exclude "**/*.xcore"
+      exclude "**/*.ecore"
+      exclude "**/*.genmodel"
     }
   }
 }

@@ -30,12 +30,11 @@ jar {
   }
   from(sourceSets.main.allSource) {
     include "**/*.xtext"
+    include "**/*.xcore"
+    include "**/*.ecore"
+    include "**/*.genmodel"
   }
   manifest {
     attributes "Bundle-SymbolicName": project.name
   }
-}
-
-plugins.withId("war") {
-  webAppDirName = "src/main/webapp"
 }
