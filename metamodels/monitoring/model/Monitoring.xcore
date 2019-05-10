@@ -1,4 +1,4 @@
-@Ecore(nsPrefix="monitoring", nsURI="http://www.rigiresearch.com/middleware/Monitoring")
+@Ecore(nsPrefix="monitoring", nsURI="http://www.rigiresearch.com/middleware/monitoring/1.0.0")
 @GenModel(
     bundleManifest = "false",
     modelDirectory = "model/build/xcore/main",

@@ -1,4 +1,4 @@
-@Ecore(nsPrefix="hcl", nsURI="http://www.rigiresearch.com/middleware/Hcl")
+@Ecore(nsPrefix="hcl", nsURI="http://www.rigiresearch.com/middleware/hcl/1.0.0")
 @GenModel(
     bundleManifest = "false",
     modelDirectory = "model/build/xcore/main",
