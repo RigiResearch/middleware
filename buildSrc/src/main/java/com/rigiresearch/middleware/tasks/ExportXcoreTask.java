@@ -56,11 +56,11 @@ public class ExportXcoreTask extends DefaultTask {
     /**
      * Generates the .ecore and .genmodel files for the specified Xcore model.
      * This method is heavily inspired by <a href="https://git.io/fjcU8">
-     * github.com/merks/Xcore/.../ConvertToEcoreActionDelegate.java#L102</a>
+     * ConvertToEcoreActionDelegate.java#L102</a>
      * @throws IOException If saving the file fails
      */
     @TaskAction
-    public void generate() throws IOException {
+    public final void generate() throws IOException {
         XcoreStandaloneSetup.doSetup();
         final XtextResourceSet set = new XtextResourceSet();
         final URI uri =
