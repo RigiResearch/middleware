@@ -73,12 +73,12 @@ public class ExportXcoreTask extends DefaultTask {
             XcorePackage.Literals.XPACKAGE
         );
         final Resource input = xpackage.eResource();
-        this.save(
+        ExportXcoreTask.save(
             input,
             this.ecoreOutputFile,
             EcorePackage.Literals.EPACKAGE
         );
-        this.save(
+        ExportXcoreTask.save(
             input,
             this.genmodelOutputFile,
             GenModelPackage.Literals.GEN_MODEL
@@ -92,7 +92,7 @@ public class ExportXcoreTask extends DefaultTask {
      * @param literal The literal type (e.g., EcorePackage.Literals.EPACKAGE)
      * @throws IOException If saving the file fails
      */
-    private void save(final Resource input, final File file,
+    private static void save(final Resource input, final File file,
         final EClass literal) throws IOException {
         final URI uri = URI.createFileURI(file.getAbsolutePath());
         final ResourceSet set = input.getResourceSet();
@@ -110,7 +110,7 @@ public class ExportXcoreTask extends DefaultTask {
      * @return A file
      */
     @InputFile
-    public File getXcoreInputFile() {
+    public final File getXcoreInputFile() {
         return this.xcoreInputFile;
     }
 
@@ -119,7 +119,7 @@ public class ExportXcoreTask extends DefaultTask {
      * @return A file
      */
     @OutputFile
-    public File getEcoreOutputFile() {
+    public final File getEcoreOutputFile() {
         return this.ecoreOutputFile;
     }
 
@@ -128,7 +128,7 @@ public class ExportXcoreTask extends DefaultTask {
      * @return A file
      */
     @OutputFile
-    public File getGenmodelOutputFile() {
+    public final File getGenmodelOutputFile() {
         return this.genmodelOutputFile;
     }
 
