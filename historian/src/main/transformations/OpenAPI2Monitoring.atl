@@ -1,0 +1,118 @@
+-- @atlcompiler atl2006
+-- @nsURI openapi=http://som.uoc.edu/openapi/2.0.0
+-- @nsURI monitoring=http://www.rigiresearch.com/middleware/monitoring/1.0.0
+--
+-- This module creates a set of monitors based on the GET paths from the
+-- provided OpenAPI model. The mapping model is used to create the equivalences
+-- between the OpenAPI schemas and entities from the semantic model.
+
+
+module OpenAPI2Monitoring_;
+create OUT: monitoring from IN: openapi;
+
+-- helper getDataType: returns the appropriate data type (i.e., primitive,
+-- object or array) in the monitoring model for a particular OpenAPI schema.
+helper context openapi!Schema def: getDataType(): monitoring!DataType =
+    let type: monitoring!DataType =
+        OclUndefined
+    in
+        if self.type = #array then
+            thisModule.getArray(self)
+        else
+            if self.type = #object then
+                thisModule.getSchema(self)
+            else
+                thisModule.getDataType(self.type)
+            endif
+        endif;
+
+-- Matched rules
+
+rule Root {
+    from
+        r: openapi!Root
+    to
+        mr: monitoring!Root (
+            basePath <- r.api.basePath,
+            monitors <- r.api.paths
+                -> select(p | not p.get.oclIsUndefined())
+                -> collect(p | thisModule.getMonitor(p))
+        )
+}
+
+-- Lazy rules
+
+lazy rule getMonitor {
+    from
+        op: openapi!Path
+    to
+        mm: monitoring!Monitor (
+            path <- mp,
+            schema <- thisModule.getSchema(
+                op.get.responses
+                    -> select(r | r.code = '200')
+                    -> collect(r | r.schema)
+                    -> first()
+                ),
+            rate <- me
+        ),
+        mp: monitoring!Path (
+            url <- op.relativePath,
+            parameters <- op.get.parameters
+                -> collect(p | thisModule.getParameter(p))
+        ),
+        me: monitoring!CronExpression (
+            -- Use the default expression value
+        )
+}
+
+lazy rule getParameter {
+    from
+        op: openapi!Parameter
+    to
+        mp: monitoring!LocatedProperty (
+            name <- op.name,
+            type <- thisModule.getDataType(op.type),
+            location <- op.location
+        )
+}
+
+lazy rule getSchema {
+    from
+        os: openapi!Schema
+    to
+        ms: monitoring!Schema (
+            type <- os.type,
+            properties <- os.properties
+                -> collect(s | thisModule.getProperty(s))
+        )
+}
+
+lazy rule getArray {
+    from
+        os: openapi!Schema
+    to
+        mp: monitoring!Array (
+            type <- os.type,
+            subtype <- os.items -> getDataType()
+        )
+}
+
+lazy rule getProperty {
+    from
+        os: openapi!Schema
+    to
+        mp: monitoring!Property (
+            name <- os.name,
+            type <- os -> getDataType()
+        )
+}
+
+lazy rule getDataType {
+    from
+        ot: openapi!JSONDataType
+    to
+        mt: monitoring!DataType (
+            type <- ot
+        )
+}
