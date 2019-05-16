@@ -28,6 +28,9 @@ jar {
   from("model") {
     into("model")
   }
+  from("model-gen") {
+    into("model")
+  }
   from(sourceSets.main.allSource) {
     include "**/*.xtext"
     include "**/*.xcore"
