@@ -16,7 +16,7 @@ dependencies {
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
-  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:2.12.0" // TODO create variable
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:${emfVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore:${ecoreXcoreVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
 }
