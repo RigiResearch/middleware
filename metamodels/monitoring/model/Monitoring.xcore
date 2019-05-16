@@ -1,16 +1,18 @@
 /*
  * name: Monitoring
- * version: $Id$
  * domains: monitoring, API
- * authors: Miguel Jimenez (miguel <at> uvic.ca)
+ * authors: Miguel Jimenez (miguel@uvic.ca)
  * description: This metamodel is a representation of the monitors necessary to
  *  track cloud changes at run-time. These monitors are expected to act as
- *  historians that will keep asking the cloud provided for the list of
+ *  historians that will keep asking the cloud provider for the current list of
  *  computing resources (e.g., virtual machines, disks and networks). Each
- *  monitor concentrates on a specific type of resource, therefore it is given
- *  one single URL path.
+ *  monitor focuses on a specific type of resource, therefore it is given one
+ *  single URL path.
  */
-@Ecore(nsPrefix="monitoring", nsURI="http://www.rigiresearch.com/middleware/monitoring/1.0.0")
+@Ecore(
+    nsPrefix="monitoring",
+    nsURI="http://www.rigiresearch.com/middleware/monitoring/1.0.0"
+)
 @GenModel(
     bundleManifest = "false",
     modelDirectory = "model/build/xcore/main",
