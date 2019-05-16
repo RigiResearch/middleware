@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="monitoring" nsURI="http://www.rigiresearch.com/middleware/monitoring/1.0.0"
+    nsPrefix="monitoring">
+  <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+    <details key="documentation" value="name: Monitoring&#xA;version: $Id$&#xA;domains: monitoring, API&#xA;authors: Miguel Jimenez (miguel &lt;at> uvic.ca)&#xA;description: This metamodel is a representation of the monitors necessary to&#xA; track cloud changes at run-time. These monitors are expected to act as&#xA; historians that will keep asking the cloud provided for the list of&#xA; computing resources (e.g., virtual machines, disks and networks). Each&#xA; monitor concentrates on a specific type of resource, therefore it is given&#xA; one single URL path."/>
+    <details key="bundleManifest" value="false"/>
+    <details key="modelDirectory" value="model/build/xcore/main"/>
+    <details key="complianceLevel" value="8.0"/>
+    <details key="basePackage" value="com.rigiresearch.middleware.metamodels"/>
+  </eAnnotations>
+  <eClassifiers xsi:type="ecore:EClass" name="Root">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>The root element."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="basePath" unique="false"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="monitors" upperBound="-1"
+        eType="#//Monitor" containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Monitor">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A polling monitor associated with a specific data model and an endpoint&#xA;that returns the instances of the data model."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="path" eType="#//Path" containment="true"
+        resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="schema" eType="#//Schema"
+        containment="true" resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rate" eType="#//CronExpression"
+        containment="true" resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="equivalences" upperBound="-1"
+        eType="#//Equivalence" containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Path">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A GET HTTP path with parameters."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="url" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
+        iD="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameters" upperBound="-1"
+        eType="#//LocatedProperty" containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Property">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A typed property."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" eType="#//DataType"
+        containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Equivalence">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A pair of source-target properties that represents a relationship between&#xA;an property from the API specification model and the environment model."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="source" eType="#//ContainedProperty"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//ContainedProperty"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LocatedProperty" eSuperTypes="#//Property">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A property located at a specific location."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" unique="false"
+        eType="#//PropertyLocation"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ContainedProperty" eSuperTypes="#//Property">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A property contained either by the source or target model."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="container" unique="false"
+        eType="#//PropertyContainer"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CompositeProperty" eSuperTypes="#//Property">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A composite property to represent arrays and objects."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="properties" upperBound="-1"
+        eType="#//Property" containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CronExpression">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A Unix-like cron expression."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
+        defaultValueLiteral="0 0 * * * ?"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DataType">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A primitive data type."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" unique="false" eType="#//Type"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Schema" eSuperTypes="#//DataType">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>A composite data type."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="properties" upperBound="-1"
+        eType="#//Property" containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Array" eSuperTypes="#//DataType">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>An array data type."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subtype" eType="#//DataType"
+        containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Type">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>Possible property types based on the OpenAPI specification&#xA;(cf. JSONDataType)."/>
+    </eAnnotations>
+    <eLiterals name="ARRAY" literal="array"/>
+    <eLiterals name="BOOLEAN" value="1" literal="boolean"/>
+    <eLiterals name="FILE" value="2" literal="file"/>
+    <eLiterals name="INTEGER" value="3" literal="integer"/>
+    <eLiterals name="NULL" value="4" literal="null"/>
+    <eLiterals name="NUMBER" value="5" literal="number"/>
+    <eLiterals name="OBJECT" value="6" literal="object"/>
+    <eLiterals name="STRING" value="7" literal="string"/>
+    <eLiterals name="UNSPECIFIED" value="8" literal="unspecified"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="PropertyContainer">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>The source container for a given property."/>
+    </eAnnotations>
+    <eLiterals name="API" literal="api"/>
+    <eLiterals name="MODEL" value="1" literal="model"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="PropertyLocation">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>The location of a located property. This enum is based on the OpenAPI&#xA;specification (cf. ParameterLocation)"/>
+    </eAnnotations>
+    <eLiterals name="BODY" literal="body"/>
+    <eLiterals name="FORM_DATA" value="1" literal="formData"/>
+    <eLiterals name="HEADER" value="2" literal="header"/>
+    <eLiterals name="PATH" value="3" literal="path"/>
+    <eLiterals name="QUERY" value="4" literal="query"/>
+    <eLiterals name="UNSPECIFIED" value="5" literal="unspecified"/>
+  </eClassifiers>
+</ecore:EPackage>
