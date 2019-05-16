@@ -1,5 +1,6 @@
 rootProject.name = "middleware"
 
+include "metamodels"
 include "metamodels:hcl"
 include "metamodels:monitoring"
 include "notations:hcl.interpreter"

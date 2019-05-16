@@ -1,0 +1,9 @@
+plugins {
+  id "java"
+}
+
+dependencies {
+  implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:${emfVersion}"
+}
