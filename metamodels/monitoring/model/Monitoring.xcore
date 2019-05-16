@@ -1,3 +1,15 @@
+/*
+ * name: Monitoring
+ * version: $Id$
+ * domains: monitoring, API
+ * authors: Miguel Jimenez (miguel <at> uvic.ca)
+ * description: This metamodel is a representation of the monitors necessary to
+ *  track cloud changes at run-time. These monitors are expected to act as
+ *  historians that will keep asking the cloud provided for the list of
+ *  computing resources (e.g., virtual machines, disks and networks). Each
+ *  monitor concentrates on a specific type of resource, therefore it is given
+ *  one single URL path.
+ */
 @Ecore(nsPrefix="monitoring", nsURI="http://www.rigiresearch.com/middleware/monitoring/1.0.0")
 @GenModel(
     bundleManifest = "false",
@@ -6,8 +18,13 @@
 )
 package com.rigiresearch.middleware.metamodels.monitoring
 
-type URI wraps java.net.URI
-type Function<A, R> wraps java.util.function.Function
+/*
+ * <p>The root element.
+ */
+class Root {
+    String basePath
+    contains Monitor[] monitors
+}
 
 /*
  * <p>A polling monitor associated with a specific data model and an endpoint
@@ -21,73 +38,112 @@ class Monitor {
 }
 
 /*
- * <p>A GET HTTP path.
+ * <p>A GET HTTP path with parameters.
  */
 class Path {
-    id URI url
-    contains Property[] parameters
+    id String url
+    contains LocatedProperty[] parameters
 }
 
 /*
- * <p>An API response class.
- */
-class Schema {
-    id String name
-    contains Property[] properties
-}
-
-/*
- * <p>A schema property.
+ * <p>A typed property.
  */
 class Property {
-    id String name
-    Type ^type
-    boolean required
+    String name
+    contains DataType ^type
 }
 
 /*
  * <p>A pair of source-target properties that represents a relationship between
  * an property from the API specification model and the environment model.
- * <p>The {@code transform} function processes the properties as needed. It
- * should be the identity function if no transformation is needed.
  */
 class Equivalence {
     refers ContainedProperty source
     refers ContainedProperty target
-    Function<ContainedProperty, ContainedProperty> transform
+}
+
+/*
+ * <p>A property located at a specific location.
+ */
+class LocatedProperty extends Property {
+    PropertyLocation location
 }
 
 /*
  * <p>A property contained either by the source or target model.
  */
-class ContainedProperty {
-    refers Property property
+class ContainedProperty extends Property {
     PropertyContainer ^container
+}
+
+/*
+ * <p>A composite property to represent arrays and objects.
+ */
+class CompositeProperty extends Property {
+    contains Property[] properties
 }
 
 /*
  * <p>A Unix-like cron expression.
  */
 class CronExpression {
-    String value
+    String value = "0 0 * * * ?" // hourly
 }
 
 /*
- * Possible property types based on the OpenAPI specificatin
+ * <p>A primitive data type.
+ */
+class DataType {
+    Type ^type
+}
+
+/*
+ * <p>A composite data type.
+ */
+class Schema extends DataType {
+    contains Property[] properties
+}
+
+/*
+ * <p>An array data type.
+ */
+class Array extends DataType {
+    contains DataType subtype
+}
+
+/*
+ * <p>Possible property types based on the OpenAPI specification
+ * (cf. JSONDataType).
  */
 enum Type {
-    ARRAY,
-    BOOLEAN,
-    INTEGER,
-    NUMBER,
-    OBJECT,
-    STRING
+    ARRAY as "array" = 0,
+    BOOLEAN as "boolean" = 1,
+    FILE as "file" = 2,
+    INTEGER as "integer" = 3,
+    NULL as "null" = 4,
+    NUMBER as "number" = 5,
+    OBJECT as "object" = 6,
+    STRING as "string" = 7,
+    UNSPECIFIED as "unspecified" = 8
 }
 
 /*
  * <p>The source container for a given property.
  */
 enum PropertyContainer {
-    MODEL,
-    API
+    API as "api" = 0,
+    MODEL as "model" = 1
+}
+
+/*
+ * <p>The location of a located property. This enum is based on the OpenAPI
+ * specification (cf. ParameterLocation)
+ */
+enum PropertyLocation {
+    BODY as "body" = 0
+    FORM_DATA as "formData" = 1,
+    HEADER as "header" = 2,
+    PATH as "path" = 3,
+    QUERY as "query" = 4,
+    UNSPECIFIED as "unspecified" = 5
 }
