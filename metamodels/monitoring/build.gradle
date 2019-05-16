@@ -4,10 +4,14 @@ plugins {
   id "org.xtext.builder"
 }
 
+def xcoreInput = "model/Monitoring.xcore"
+def ecoreOutput = "model-gen/Monitoring.ecore"
+def genmodelOutput = "model-gen/Monitoring.genmodel"
+
 dependencies {
+  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
-  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
 
   xtextLanguages "org.antlr:antlr-runtime:3.2"
@@ -52,9 +56,27 @@ xtext {
   }
 }
 
-task exportXcore(type: ExportXcoreTask) {
-  xcoreInputFile = file("model/Monitoring.xcore")
-  ecoreOutputFile = file("model/Monitoring.ecore")
-  genmodelOutputFile = file("model/Monitoring.genmodel")
+task xcoreExport(type: ExportXcoreTask) {
+  xcoreInputFile = file(xcoreInput)
+  ecoreOutputFile = file(ecoreOutput)
+  genmodelOutputFile = file(genmodelOutput)
 }
-build.dependsOn exportXcore
+
+task xcoreProcess {
+  description = "Replaces platform URIs with Ecore's nsURI"
+  doLast {
+    ant.replace(
+      file: ecoreOutput,
+      token: "platform:/resource/org.eclipse.emf.ecore/model/Ecore.ecore",
+      value: "http://www.eclipse.org/emf/2002/Ecore"
+    )
+    ant.replace(
+      file: genmodelOutput,
+      token: "platform:/resource/org.eclipse.emf.ecore/model/Ecore.genmodel",
+      value: "http://www.eclipse.org/emf/2002/GenModel"
+    )
+  }
+  dependsOn xcoreExport
+}
+
+build.dependsOn xcoreProcess
