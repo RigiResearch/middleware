@@ -1,118 +1,165 @@
 -- @atlcompiler atl2006
 -- @nsURI openapi=http://som.uoc.edu/openapi/2.0.0
 -- @nsURI monitoring=http://www.rigiresearch.com/middleware/monitoring/1.0.0
---
--- This module creates a set of monitors based on the GET paths from the
--- provided OpenAPI model. The mapping model is used to create the equivalences
--- between the OpenAPI schemas and entities from the semantic model.
 
+
+--- This module creates a set of monitors based on the GET paths from the
+--- provided OpenAPI model. The mapping model is used to create the equivalences
+--- between the OpenAPI schemas and entities from the semantic model.
 
 module OpenAPI2Monitoring_;
 create OUT: monitoring from IN: openapi;
 
--- helper getDataType: returns the appropriate data type (i.e., primitive,
--- object or array) in the monitoring model for a particular OpenAPI schema.
+--- helper openapi!Schema getDataType: returns the appropriate data type (i.e.,
+--- primitive, object or array) in the monitoring model for a particular
+--- OpenAPI schema.
 helper context openapi!Schema def: getDataType(): monitoring!DataType =
-    let type: monitoring!DataType =
-        OclUndefined
-    in
-        if self.type = #array then
-            thisModule.getArray(self)
-        else
-            if self.type = #object then
-                thisModule.getSchema(self)
-            else
-                thisModule.getDataType(self.type)
-            endif
-        endif;
+	let type: monitoring!DataType =
+		OclUndefined
+	in
+		if self.type = #array then
+			thisModule._getArray(self)
+		else
+			if self.type = #object then
+				thisModule._getSchema(self)
+			else
+				-- JSONSchemaSubset
+				thisModule._getDataType(self.type)
+			endif
+		endif;
+
+--- helper openapi!Parameter getDataType: returns the appropriate data type
+--- (i.e., primitive, object or array) in the monitoring model for a particular
+--- OpenAPI parameter.
+helper context openapi!Parameter def: getDataType(): monitoring!DataType =
+	if self.schema = OclUndefined then
+		if self.items = OclUndefined then
+			-- JSONSchemaSubset
+			thisModule._getDataType(self.type)
+		else
+			-- ArrayContext
+			thisModule._getArrayFromContext(self)
+		endif
+	else
+		-- SchemaContext
+		thisModule._getSchema(self.schema)
+	endif;
+
+--- helper openapi!ArrayContext getDataType: returns the appropriate data type
+--- (i.e., primitive, object or array) in the monitoring model for a particular
+--- OpenAPI array context.
+helper context openapi!ArrayContext def: getDataType(): monitoring!DataType =
+	if self.items = OclUndefined then
+		-- JSONSchemaSubset
+		thisModule._getDataType(self.type)
+	else
+		-- ArrayContext
+		thisModule._getArrayFromContext(self)
+	endif;
+
 
 -- Matched rules
 
 rule Root {
-    from
-        r: openapi!Root
-    to
-        mr: monitoring!Root (
-            basePath <- r.api.basePath,
-            monitors <- r.api.paths
-                -> select(p | not p.get.oclIsUndefined())
-                -> collect(p | thisModule.getMonitor(p))
-        )
+	from
+		r: openapi!Root
+	to
+		mr: monitoring!Root (
+			host <- r.api.host,
+			basePath <- r.api.basePath,
+			https <- r.api.schemes -> select(s | s = #https).notEmpty(),
+			monitors <- r.api.paths
+				-> select(p | not p.get.oclIsUndefined())
+				-> select(p | not p.get.responses
+					-> select(p | p.code = '200')
+					-> collect(p | p.schema).isEmpty())
+				-> collect(p | thisModule._getMonitor(p))
+		)
 }
 
 -- Lazy rules
 
-lazy rule getMonitor {
-    from
-        op: openapi!Path
-    to
-        mm: monitoring!Monitor (
-            path <- mp,
-            schema <- thisModule.getSchema(
-                op.get.responses
-                    -> select(r | r.code = '200')
-                    -> collect(r | r.schema)
-                    -> first()
-                ),
-            rate <- me
-        ),
-        mp: monitoring!Path (
-            url <- op.relativePath,
-            parameters <- op.get.parameters
-                -> collect(p | thisModule.getParameter(p))
-        ),
-        me: monitoring!CronExpression (
-            -- Use the default expression value
-        )
+lazy rule _getMonitor {
+	from
+		op: openapi!Path
+	to
+		mm: monitoring!Monitor (
+			path <- mp,
+			schema <- thisModule._getSchema(
+				op.get.responses
+					-> select(r | r.code = '200')
+					-> collect(r | r.schema)
+					-> first()
+				),
+			rate <- me
+		),
+		mp: monitoring!Path (
+			url <- op.relativePath,
+			parameters <- op.get.parameters
+				-> collect(p | thisModule._getParameter(p))
+		),
+		me: monitoring!CronExpression (
+			-- Use the default expression value
+		)
 }
 
-lazy rule getParameter {
-    from
-        op: openapi!Parameter
-    to
-        mp: monitoring!LocatedProperty (
-            name <- op.name,
-            type <- thisModule.getDataType(op.type),
-            location <- op.location
-        )
+lazy rule _getParameter {
+	from
+		op: openapi!Parameter
+	to
+		mp: monitoring!LocatedProperty (
+			name <- op.name,
+			type <- op -> getDataType(),
+			location <- op.location
+		)
 }
 
-lazy rule getSchema {
-    from
-        os: openapi!Schema
-    to
-        ms: monitoring!Schema (
-            type <- os.type,
-            properties <- os.properties
-                -> collect(s | thisModule.getProperty(s))
-        )
+lazy rule _getSchema {
+	from
+		os: openapi!Schema
+	to
+		ms: monitoring!Schema (
+			type <- os.type,
+			properties <- os.properties
+				-> collect(s | thisModule._getProperty(s))
+		)
 }
 
-lazy rule getArray {
-    from
-        os: openapi!Schema
-    to
-        mp: monitoring!Array (
-            type <- os.type,
-            subtype <- os.items -> getDataType()
-        )
+lazy rule _getArray {
+	from
+		os: openapi!Schema
+	to
+		mp: monitoring!Array (
+			type <- os.type,
+			subtype <- os.items -> getDataType()
+		)
 }
 
-lazy rule getProperty {
-    from
-        os: openapi!Schema
-    to
-        mp: monitoring!Property (
-            name <- os.name,
-            type <- os -> getDataType()
-        )
+lazy rule _getArrayFromContext {
+	from
+		oa: openapi!ArrayContext
+	to
+		mp: monitoring!Array (
+			type <- #array,
+			subtype <- oa.items -> getDataType()
+		)
 }
 
-lazy rule getDataType {
-    from
-        ot: openapi!JSONDataType
-    to
-        mt: monitoring!DataType (
-            type <- ot
-        )
+lazy rule _getProperty {
+	from
+		os: openapi!Schema
+	to
+		mp: monitoring!Property (
+			name <- os.name,
+			type <- os -> getDataType()
+		)
+}
+
+lazy rule _getDataType {
+	from
+		ot: openapi!JSONDataType
+	to
+		mt: monitoring!DataType (
+			type <- ot
+		)
 }

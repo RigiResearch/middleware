@@ -24,7 +24,9 @@ package com.rigiresearch.middleware.metamodels.monitoring
  * <p>The root element.
  */
 class Root {
+    String host
     String basePath
+    boolean https
     contains Monitor[] monitors
 }
 
@@ -89,7 +91,10 @@ class CompositeProperty extends Property {
  * <p>A Unix-like cron expression.
  */
 class CronExpression {
-    String value = "0 0 * * * ?" // hourly
+    /*
+     * Every hour.
+     */
+    String value = "0 * * * *"
 }
 
 /*

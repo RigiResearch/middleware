@@ -33,7 +33,9 @@
       <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//PropertyLocation/UNSPECIFIED"/>
     </genEnums>
     <genClasses ecoreClass="Monitoring.ecore#//Root">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Root/host"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Root/basePath"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Root/https"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Root/monitors"/>
     </genClasses>
     <genClasses ecoreClass="Monitoring.ecore#//Monitor">
