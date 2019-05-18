@@ -25,6 +25,12 @@ sourceSets {
 }
 
 jar {
+  from("lib") {
+    into("lib")
+  }
+  from("transformations") {
+    into("transformations")
+  }
   from("model") {
     into("model")
   }

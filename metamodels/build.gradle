@@ -1,9 +1,24 @@
 plugins {
-  id "java"
+  id "java-library"
+}
+
+repositories {
+  maven {
+    url "https://repo.eclipse.org/content/repositories/atl-releases/"
+  }
+  maven {
+    url "https://packages.atlassian.com/3rdparty/"
+  }
 }
 
 dependencies {
-  implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
-  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
-  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:${emfVersion}"
+  api "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
+  api "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
+  api "org.eclipse.emf:org.eclipse.emf.ecore.xmi:${emfVersion}"
+
+  // Support for ATL transformations
+  api "org.ow2.asm:asm:6.0-atlassian-1"
+  api "org.eclipse.m2m.atl:org.eclipse.m2m.atl.common:${atlVersion}"
+  api "org.eclipse.m2m.atl:org.eclipse.m2m.atl.emftvm:${atlVersion}"
+  api "org.eclipse.m2m.atl:org.eclipse.m2m.atl.emftvm.trace:${atlVersion}"
 }

@@ -6,9 +6,16 @@ mainClassName = "com.rigiresearch.middleware.historian.Application"
 
 repositories {
   flatDir dirs: "lib"
+  maven {
+    url "https://repo.eclipse.org/content/repositories/atl-releases/"
+  }
+  maven {
+    url "https://packages.atlassian.com/3rdparty/"
+  }
 }
 
 dependencies {
+  implementation project(":metamodels")
   implementation project(":metamodels:monitoring")
   implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
   implementation name: "edu.uoc.som.openapi.io-1.0.3.201804111106"

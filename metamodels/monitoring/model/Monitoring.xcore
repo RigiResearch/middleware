@@ -1,5 +1,5 @@
 /*
- * name: Monitoring
+ * name: monitoring
  * domains: monitoring, API
  * authors: Miguel Jimenez (miguel@uvic.ca)
  * description: This metamodel is a representation of the monitors necessary to

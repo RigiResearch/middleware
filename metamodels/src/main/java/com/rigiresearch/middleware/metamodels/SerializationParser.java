@@ -6,7 +6,9 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -53,6 +55,18 @@ public final class SerializationParser {
      * @throws IOException @see Resource#save(OutputStream, Map)
      */
     public String asXml(final EObject... eobjects) throws IOException {
+        return this.asXml(Arrays.stream(eobjects).collect(Collectors.toList()));
+    }
+
+    /**
+     * Serializes an {@link EObject} to a String.
+     * Adapted from <a href="https://stackoverflow.com/a/43974978/738968">here
+     * </a>.
+     * @param eobjects The objects to serialize
+     * @return The corresponding XML-formatted string
+     * @throws IOException @see Resource#save(OutputStream, Map)
+     */
+    public String asXml(final List<EObject> eobjects) throws IOException {
         final ResourceSet set = new ResourceSetImpl();
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
         set.getResourceFactoryRegistry()
@@ -63,7 +77,7 @@ public final class SerializationParser {
         final Resource resource = set.createResource(
             URI.createURI("resource.xmi")
         );
-        Arrays.stream(eobjects).forEach(
+        eobjects.stream().forEach(
             object -> resource.getContents().add(object)
         );
         resource.save(stream, this.params);

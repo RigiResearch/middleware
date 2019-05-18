@@ -1,4 +1,4 @@
--- @atlcompiler atl2006
+-- @atlcompiler emftvm
 -- @nsURI openapi=http://som.uoc.edu/openapi/2.0.0
 -- @nsURI monitoring=http://www.rigiresearch.com/middleware/monitoring/1.0.0
 
@@ -7,7 +7,7 @@
 --- provided OpenAPI model. The mapping model is used to create the equivalences
 --- between the OpenAPI schemas and entities from the semantic model.
 
-module OpenAPI2Monitoring_;
+module OpenAPI2Monitoring;
 create OUT: monitoring from IN: openapi;
 
 --- helper openapi!Schema getDataType: returns the appropriate data type (i.e.,
