@@ -8,6 +8,8 @@
  *  computing resources (e.g., virtual machines, disks and networks). Each
  *  monitor focuses on a specific type of resource, therefore it is given one
  *  single URL path.
+ *
+ * TODO optional URL parameters, headers, authentication
  */
 @Ecore(
     nsPrefix="monitoring",
@@ -45,7 +47,8 @@ class Monitor {
  * <p>A GET HTTP path with parameters.
  */
 class Path {
-    id String url
+    id String ^id
+    String url
     contains LocatedProperty[] parameters
 }
 

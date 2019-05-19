@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ASCII"?>
 <monitoring:Root xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:monitoring="http://www.rigiresearch.com/middleware/monitoring/1.0.0" host="virtserver.swaggerhub.com" basePath="/maks/openstack_demo/1.0.0" https="true">
   <monitors>
-    <path url="/api/zones"/>
+    <path id="getZoneList" url="/api/zones"/>
     <schema type="object">
       <properties name="status">
         <type type="string"/>
@@ -34,7 +34,7 @@
     <rate/>
   </monitors>
   <monitors>
-    <path url="/api/stacks"/>
+    <path id="getStackList" url="/api/stacks"/>
     <schema type="object">
       <properties name="status">
         <type type="string"/>
@@ -58,7 +58,7 @@
     <rate/>
   </monitors>
   <monitors>
-    <path url="/api/stacks/zone/{idZone}">
+    <path id="getZoneId" url="/api/stacks/zone/{idZone}">
       <parameters name="idZone" location="path">
         <type type="integer"/>
       </parameters>
@@ -95,7 +95,7 @@
     <rate/>
   </monitors>
   <monitors>
-    <path url="/api/vms"/>
+    <path id="getVmList" url="/api/vms"/>
     <schema type="object">
       <properties name="status">
         <type type="string"/>
@@ -119,7 +119,7 @@
     <rate/>
   </monitors>
   <monitors>
-    <path url="/api/vms/stack/{idStack}">
+    <path id="getStackId" url="/api/vms/stack/{idStack}">
       <parameters name="idStack" location="path">
         <type type="integer"/>
       </parameters>
