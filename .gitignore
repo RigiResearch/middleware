@@ -4,6 +4,10 @@
 .settings
 .classpath
 
+build.properties
+plugin.properties
+plugin.xml
+
 ### Intellij ###
 
 # User-specific stuff:
