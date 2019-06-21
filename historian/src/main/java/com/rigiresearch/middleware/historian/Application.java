@@ -86,6 +86,7 @@ public final class Application {
         final Root openstack = new OpenAPIImporter()
             .createOpenAPIModelFromJson(new File(this.spec));
         final String output = "OUT";
+        final String path = "model/openstack.monitoring.xmi";
         final Map<String, Model> result = new AtlTransformation.Builder()
             .withMetamodel(
                 "monitoring",
@@ -96,8 +97,8 @@ public final class Application {
                 "lib/edu.uoc.som.openapi-1.0.2.201804111106.jar",
                 "model/openapi.ecore"
             )
-            .withInput("IN", openstack)
-            .withOutput(output, "model/openstack.monitoring.xmi")
+            .withModel(AtlTransformation.ModelType.INPUT, "IN", openstack)
+            .withModel(AtlTransformation.ModelType.OUTPUT, output, path)
             .withTransformation("transformations/OpenAPI2Monitoring.atl")
             .build()
             .run();
@@ -105,5 +106,4 @@ public final class Application {
             .getResource()
             .save(Collections.EMPTY_MAP);
     }
-
 }

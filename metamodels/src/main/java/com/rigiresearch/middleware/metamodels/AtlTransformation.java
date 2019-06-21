@@ -8,8 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.eclipse.emf.common.util.URI;
@@ -41,25 +45,18 @@ import org.eclipse.m2m.atl.emftvm.util.TimingData;
  */
 @RequiredArgsConstructor
 @ToString
+@SuppressWarnings("ClassDataAbstractionCoupling")
 public final class AtlTransformation {
 
     /**
-     * Pairs of metamodel name and file.
-     * <br />For example: (Metamodel, /path/to/Metamodel.ecore).
+     * Pairs of metamodel name and nsURI.
      */
-    private final Map<String, File> metamodels;
+    private final Map<String, URI> metamodels;
 
     /**
-     * Pairs of input variable name and model.
-     * <br />For example: (IN, /path/to/Model.xmi).
+     * A map of models organized by type.
      */
-    private final Map<String, File> inputs;
-
-    /**
-     * Pairs of output variable name and model.
-     * <br />For example: (OUT, /path/to/Model.xmi).
-     */
-    private final Map<String, File> outputs;
+    private final Map<ModelType, List<NamedModel>> models;
 
     /**
      * The transformation module.
@@ -71,40 +68,39 @@ public final class AtlTransformation {
      * @return The output models
      */
     public Map<String, Model> run() {
-        // Lazy registration first
-        final Map<File, URI> uris = new HashMap<>();
-        for (final Map.Entry<String, File> entry : this.metamodels.entrySet()) {
-            uris.put(entry.getValue(), this.nsUri(entry.getValue()));
-        }
         final ResourceSet set = new ResourceSetImpl();
         final ExecEnv environment = EmftvmFactory.eINSTANCE.createExecEnv();
-        this.registerMetamodels(uris, set, environment);
-        // Create and register resource factories to read/parse .xmi and .emftvm
-        // files. The latter corresponds to files created by the transformation
-        // compiler (ATL-EMFTV compiler)
-        set.getResourceFactoryRegistry()
-            .getExtensionToFactoryMap()
-            .put("xmi", new XMIResourceFactoryImpl());
-        set.getResourceFactoryRegistry()
-            .getExtensionToFactoryMap()
-            .put("emftvm", new EMFTVMResourceFactoryImpl());
-        // Register the input and out models
-        this.registerModels(set, environment, this.inputs, true);
-        final Map<String, Model> models =
-            this.registerModels(set, environment, this.outputs, false);
+        this.registerMetamodels(set, environment);
+        this.registerFactories(set);
+        // Register the models
+        final Map<String, Model> instances =
+            this.registerModels(set, environment, this.models);
         // Load and run the transformation module
-        final String directory =
-            String.format("%s/", this.transformation.getParent());
-        final String module = this.transformation.getName()
-            .substring(0, this.transformation.getName().lastIndexOf("."));
-        final DefaultModuleResolver resolver =
-            new DefaultModuleResolver(directory, set);
         final TimingData data = new TimingData();
-        environment.loadModule(resolver, module);
+        final DefaultModuleResolver resolver =
+            new DefaultModuleResolver(this.moduleDirectory(), set);
+        environment.loadModule(resolver, this.moduleName());
         data.finishLoading();
         environment.run(data);
         data.finish();
-        return models;
+        return instances;
+    }
+
+    /**
+     * The ATL module directory.
+     * @return The module directory path
+     */
+    private String moduleDirectory() {
+        return String.format("%s/", this.transformation.getParent());
+    }
+
+    /**
+     * The ATL module name.
+     * @return The module name without extension
+     */
+    private String moduleName() {
+        return this.transformation.getName()
+            .substring(0, this.transformation.getName().lastIndexOf("."));
     }
 
     /**
@@ -112,26 +108,36 @@ public final class AtlTransformation {
      * available in the execution environment.
      * @param set The resource set
      * @param environment The execution environment
-     * @param models The input/output models
-     * @param input Whether the models are input or not (i.e., output)
+     * @param config The input, output and in-out models
      * @return The registered models
      */
     @SuppressWarnings("ParameterNumber")
     private Map<String, Model> registerModels(final ResourceSet set,
-        final ExecEnv environment, final Map<String, File> models,
-        final boolean input) {
+        final ExecEnv environment,
+        final Map<ModelType, List<NamedModel>> config) {
         final Map<String, Model> result = new HashMap<>();
-        for (final Map.Entry<String, File> entry : models.entrySet()) {
-            final Model model = EmftvmFactory.eINSTANCE.createModel();
-            final URI uri = URI.createURI(entry.getValue().getAbsolutePath());
-            if (input) {
-                model.setResource(set.getResource(uri, true));
-                environment.registerInputModel(entry.getKey(), model);
-            } else {
-                model.setResource(set.createResource(uri));
-                environment.registerOutputModel(entry.getKey(), model);
+        for (final ModelType type : config.keySet()) {
+            for (final NamedModel ref : config.get(type)) {
+                final Model model = EmftvmFactory.eINSTANCE.createModel();
+                final URI uri = URI.createURI(ref.getPath().getAbsolutePath());
+                switch (type) {
+                    case INPUT:
+                        model.setResource(set.getResource(uri, true));
+                        environment.registerInputModel(ref.getName(), model);
+                        break;
+                    case OUTPUT:
+                        model.setResource(set.createResource(uri));
+                        environment.registerOutputModel(ref.getName(), model);
+                        break;
+                    case IN_OUT:
+                        model.setResource(set.getResource(uri, true));
+                        environment.registerInOutModel(ref.getName(), model);
+                        break;
+                    default:
+                        // Do nothing
+                }
+                result.put(ref.getName(), model);
             }
-            result.put(entry.getKey(), model);
         }
         return result;
     }
@@ -139,50 +145,76 @@ public final class AtlTransformation {
     /**
      * Loads the metamodels in the resource set and makes them available in the
      * execution environment.
-     * @param uris The nsUri for each metamodel
      * @param set The resource set
      * @param environment The execution environment
      */
-    private void registerMetamodels(final Map<File, URI> uris,
-        final ResourceSet set, final ExecEnv environment) {
-        for (final Map.Entry<String, File> entry : this.metamodels.entrySet()) {
+    private void registerMetamodels(final ResourceSet set,
+        final ExecEnv environment) {
+        for (final Map.Entry<String, URI> entry : this.metamodels.entrySet()) {
             final Metamodel metamodel =
                 EmftvmFactory.eINSTANCE.createMetamodel();
-            metamodel.setResource(
-                set.getResource(uris.get(entry.getValue()), true)
-            );
+            metamodel.setResource(set.getResource(entry.getValue(), true));
             environment.registerMetaModel(entry.getKey(), metamodel);
         }
     }
 
     /**
-     * Lazy registration of the metamodel to get the nsUri.
-     * @param metamodel The metamodel file to register
-     * @return The metamodel's nsUri
+     * Create and register resource factories to read/parse .xmi and .emftvm
+     * files. The latter corresponds to files created by the transformation
+     * compiler (ATL-EMFTV compiler).
+     * @param set The resource set
      */
-    private URI nsUri(final File metamodel) {
-        URI uri = URI.createURI("");
-        Resource.Factory.Registry.INSTANCE
+    private void registerFactories(final ResourceSet set) {
+        set.getResourceFactoryRegistry()
             .getExtensionToFactoryMap()
-            .put("ecore", new EcoreResourceFactoryImpl());
-        final ResourceSet set = new ResourceSetImpl();
-        final ExtendedMetaData metadata = new BasicExtendedMetaData(
-            EPackage.Registry.INSTANCE
-        );
-        set.getLoadOptions()
-            .put(XMLResource.OPTION_EXTENDED_META_DATA, metadata);
-        final Resource resource = set.getResource(
-            URI.createFileURI(metamodel.getAbsolutePath()), true
-        );
-        final EObject eobject = resource.getContents().get(0);
-        // A meta-model might have multiple packages we assume the main package
-        // is the first one listed
-        if (eobject instanceof EPackage) {
-            final EPackage epackage = (EPackage) eobject;
-            EPackage.Registry.INSTANCE.put(epackage.getNsURI(), epackage);
-            uri = URI.createURI(epackage.getNsURI());
-        }
-        return uri;
+            .put("xmi", new XMIResourceFactoryImpl());
+        set.getResourceFactoryRegistry()
+            .getExtensionToFactoryMap()
+            .put("emftvm", new EMFTVMResourceFactoryImpl());
+    }
+
+    /**
+     * A pair of variable name and file path.
+     * @author Miguel Jimenez (miguel@uvic.ca)
+     * @version $Id$
+     * @since 0.1.0
+     */
+    @Data
+    @AllArgsConstructor
+    public static final class NamedModel {
+
+        /**
+         * The variable name of the model in the ATL module.
+         */
+        private final String name;
+
+        /**
+         * The path to the XMI file.
+         */
+        private final File path;
+    }
+
+    /**
+     * ATL model types.
+     * @author Miguel Jimenez (miguel@uvic.ca)
+     * @version $Id$
+     * @since 0.1.0
+     */
+    public enum ModelType {
+        /**
+         * Input models.
+         */
+        INPUT,
+
+        /**
+         * Output models.
+         */
+        OUTPUT,
+
+        /**
+         * InOut models.
+         */
+        IN_OUT
     }
 
     /**
@@ -201,17 +233,12 @@ public final class AtlTransformation {
         /**
          * The metamodels.
          */
-        private final Map<String, File> metamodels;
+        private final Map<String, URI> metamodels;
 
         /**
-         * The input models.
+         * The input, output and in-out models.
          */
-        private final Map<String, File> inputs;
-
-        /**
-         * The output models.
-         */
-        private final Map<String, File> outputs;
+        private final Map<ModelType, List<NamedModel>> models;
 
         /**
          * The transformation.
@@ -223,8 +250,19 @@ public final class AtlTransformation {
          */
         public Builder() {
             this.metamodels = new HashMap<>();
-            this.inputs = new HashMap<>();
-            this.outputs = new HashMap<>();
+            this.models = Builder.emptyModels();
+        }
+
+        /**
+         * Initialize the list of models.
+         * @return A map
+         */
+        private static Map<ModelType, List<NamedModel>> emptyModels() {
+            final Map<ModelType, List<NamedModel>> models = new HashMap<>();
+            models.put(ModelType.INPUT, new ArrayList<>());
+            models.put(ModelType.IN_OUT, new ArrayList<>());
+            models.put(ModelType.OUTPUT, new ArrayList<>());
+            return models;
         }
 
         /**
@@ -273,31 +311,46 @@ public final class AtlTransformation {
          * @return This builder
          */
         public Builder withMetamodel(final String name, final String path) {
-            this.metamodels.put(name, new File(path));
+            this.metamodels.put(name, this.nsUri(new File(path)));
             return this;
         }
 
         /**
-         * Adds an input model to the transformation context.
-         * <p>This method creates a temporal .xmi file from the given model.
-         * @param name The name of the ATL variable (e.g., IN)
-         * @param model The model
+         * Adds a metamodel to the transformation context.
+         * @param name The name of the metamodel
+         * @param uri The nsURI of the metamodel
          * @return This builder
-         * @throws IOException If something happens while serializing the model
          */
-        public Builder withInput(final String name, final EObject model)
-            throws IOException {
-            return this.withInput(name, this.asFile(model).getPath());
+        public Builder withMetamodel(final String name, final URI uri) {
+            this.metamodels.put(name, uri);
+            return this;
         }
 
         /**
-         * Adds an input model to the transformation context.
-         * @param name The name of the ATL variable (e.g., IN)
-         * @param path The path to the input model
+         * Adds a model to the transformation context.
+         * @param type The type of the model
+         * @param name The name of the ATL variable (e.g., OUT)
+         * @param model The model object
+         * @return This builder
+         * @throws IOException {@link #asFile(EObject)}
+         */
+        public Builder withModel(final ModelType type, final String name,
+            final EObject model) throws IOException {
+            return this.withModel(type, name, this.asFile(model).getPath());
+        }
+
+        /**
+         * Adds a model to the transformation context.
+         * @param type The type of the model
+         * @param name The name of the ATL variable (e.g., OUT)
+         * @param path The path to the output model
          * @return This builder
          */
-        public Builder withInput(final String name, final String path) {
-            this.inputs.put(name, new File(path));
+        public Builder withModel(final ModelType type, final String name,
+            final String path) {
+            this.models
+                .get(type)
+                .add(new NamedModel(name, new File(path)));
             return this;
         }
 
@@ -319,51 +372,61 @@ public final class AtlTransformation {
         }
 
         /**
-         * Adds an output model to the transformation context.
-         * <p>This method creates a temporal .xmi file from the given model.
-         * @param name The name of the ATL variable (e.g., OUT)
-         * @param model The model
-         * @return This builder
-         * @throws IOException If something happens while serializing the model
+         * Lazy registration of the metamodel to get the nsUri.
+         * @param metamodel The metamodel file to register
+         * @return The metamodel's nsUri
          */
-        public Builder withOutput(final String name, final EObject model)
-            throws IOException {
-            return this.withOutput(name, this.asFile(model).getPath());
-        }
-
-        /**
-         * Adds an output model to the transformation context.
-         * @param name The name of the ATL variable (e.g., OUT)
-         * @param path The path to the output model
-         * @return This builder
-         */
-        public Builder withOutput(final String name, final String path) {
-            this.outputs.put(name, new File(path));
-            return this;
+        private URI nsUri(final File metamodel) {
+            URI uri = URI.createURI("");
+            Resource.Factory.Registry.INSTANCE
+                .getExtensionToFactoryMap()
+                .put("ecore", new EcoreResourceFactoryImpl());
+            final ResourceSet set = new ResourceSetImpl();
+            final ExtendedMetaData metadata = new BasicExtendedMetaData(
+                EPackage.Registry.INSTANCE
+            );
+            set.getLoadOptions()
+                .put(XMLResource.OPTION_EXTENDED_META_DATA, metadata);
+            final Resource resource = set.getResource(
+                URI.createFileURI(metamodel.getAbsolutePath()), true
+            );
+            final EObject eobject = resource.getContents().get(0);
+            // A meta-model might have multiple packages we assume the main package
+            // is the first one listed
+            if (eobject instanceof EPackage) {
+                final EPackage epackage = (EPackage) eobject;
+                EPackage.Registry.INSTANCE.put(epackage.getNsURI(), epackage);
+                uri = URI.createURI(epackage.getNsURI());
+            }
+            return uri;
         }
 
         /**
          * Builds the transformation.
          * @return A new ATL transformation
          */
+        @SuppressWarnings("PMD.CyclomaticComplexity")
         public AtlTransformation build() {
             if (this.transformation == null) {
                 throw new IllegalArgumentException(
                     "The transformation module is required");
-            } else if (this.metamodels.isEmpty()) {
+            }
+            if (this.metamodels.isEmpty()) {
                 throw new IllegalArgumentException(
                     "At least one metamodel is required");
-            } else if (this.inputs.isEmpty()) {
+            }
+            if (this.models.get(ModelType.INPUT).isEmpty()) {
                 throw new IllegalArgumentException(
                     "At least one input model is required");
-            } else if (this.outputs.isEmpty()) {
+            }
+            if (this.models.get(ModelType.OUTPUT).isEmpty()
+                && this.models.get(ModelType.IN_OUT).isEmpty()) {
                 throw new IllegalArgumentException(
                     "At least one output model is required");
             }
             return new AtlTransformation(
                 this.metamodels,
-                this.inputs,
-                this.outputs,
+                this.models,
                 this.transformation
             );
         }
