@@ -4,9 +4,9 @@ plugins {
   id "org.xtext.builder"
 }
 
-def xcoreInput = "model/monitoring.xcore"
-def ecoreOutput = "model-gen/monitoring.ecore"
-def genmodelOutput = "model-gen/monitoring.genmodel"
+def xcoreInput = "model/Monitoring.xcore"
+def ecoreOutput = "model-gen/Monitoring.ecore"
+def genmodelOutput = "model-gen/Monitoring.genmodel"
 
 dependencies {
   implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
