@@ -33,7 +33,7 @@ public class Monitor extends Thread {
      */
     @Override
     public void start() {
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -41,6 +41,6 @@ public class Monitor extends Thread {
      * does not interrupt ongoing requests.
      */
     public void halt() {
-
+        throw new UnsupportedOperationException();
     }
 }
