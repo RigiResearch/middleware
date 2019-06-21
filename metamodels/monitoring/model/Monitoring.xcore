@@ -9,7 +9,7 @@
  *  monitor focuses on a specific type of resource, therefore it is given one
  *  single URL path.
  *
- * TODO optional URL parameters, headers, authentication
+ * TODO optional URL parameters, headers, authentication, produces (XML, JSON)
  */
 @Ecore(
     nsPrefix="monitoring",
