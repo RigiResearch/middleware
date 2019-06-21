@@ -40,7 +40,6 @@ class Monitor {
     contains Path path
     contains Schema schema
     contains CronExpression rate
-    contains Equivalence[] equivalences
 }
 
 /*
@@ -61,26 +60,10 @@ class Property {
 }
 
 /*
- * <p>A pair of source-target properties that represents a relationship between
- * an property from the API specification model and the environment model.
- */
-class Equivalence {
-    refers ContainedProperty source
-    refers ContainedProperty target
-}
-
-/*
  * <p>A property located at a specific location.
  */
 class LocatedProperty extends Property {
     PropertyLocation location
-}
-
-/*
- * <p>A property contained either by the source or target model.
- */
-class ContainedProperty extends Property {
-    PropertyContainer ^container
 }
 
 /*
@@ -135,14 +118,6 @@ enum Type {
     OBJECT as "object" = 6,
     STRING as "string" = 7,
     UNSPECIFIED as "unspecified" = 8
-}
-
-/*
- * <p>The source container for a given property.
- */
-enum PropertyContainer {
-    API as "api" = 0,
-    MODEL as "model" = 1
 }
 
 /*
