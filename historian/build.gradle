@@ -26,4 +26,8 @@ dependencies {
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:${emfVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore:${ecoreXcoreVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
+
+  implementation "it.sauronsoftware.cron4j:cron4j:2.2.5"
+  implementation "org.apache.httpcomponents:httpclient:4.5.9"
+  implementation "org.apache.commons:commons-configuration2:2.5"
 }
