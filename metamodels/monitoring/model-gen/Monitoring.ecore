@@ -3,7 +3,7 @@
     xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="monitoring" nsURI="http://www.rigiresearch.com/middleware/monitoring/1.0.0"
     nsPrefix="monitoring">
   <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
-    <details key="documentation" value="name: monitoring&#xA;domains: monitoring, API&#xA;authors: Miguel Jimenez (miguel@uvic.ca)&#xA;description: This metamodel is a representation of the monitors necessary to&#xA; track cloud changes at run-time. These monitors are expected to act as&#xA; historians that will keep asking the cloud provider for the current list of&#xA; computing resources (e.g., virtual machines, disks and networks). Each&#xA; monitor focuses on a specific type of resource, therefore it is given one&#xA; single URL path.&#xA; * TODO optional URL parameters, headers, authentication"/>
+    <details key="documentation" value="name: monitoring&#xA;domains: monitoring, API&#xA;authors: Miguel Jimenez (miguel@uvic.ca)&#xA;description: This metamodel is a representation of the monitors necessary to&#xA; track cloud changes at run-time. These monitors are expected to act as&#xA; historians that will keep asking the cloud provider for the current list of&#xA; computing resources (e.g., virtual machines, disks and networks). Each&#xA; monitor focuses on a specific type of resource, therefore it is given one&#xA; single URL path.&#xA; * TODO optional URL parameters, headers, authentication, produces (XML, JSON)"/>
     <details key="bundleManifest" value="false"/>
     <details key="modelDirectory" value="model/build/xcore/main"/>
     <details key="complianceLevel" value="8.0"/>
@@ -68,9 +68,9 @@
       <details key="documentation" value="&lt;p>A Unix-like cron expression."/>
     </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
-        defaultValueLiteral="0 * * * *">
+        defaultValueLiteral="* * * * *">
       <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
-        <details key="documentation" value="Every hour."/>
+        <details key="documentation" value="Every minute."/>
       </eAnnotations>
     </eStructuralFeatures>
   </eClassifiers>

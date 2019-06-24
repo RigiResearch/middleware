@@ -13,7 +13,10 @@ import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The main class.
@@ -21,13 +24,19 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 @RequiredArgsConstructor
 public class Application {
 
     /**
+     * The logger.
+     */
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    /**
      * The properties configuration.
      */
-    private final Configuration config = initialize();
+    private final Configuration config = Application.initialize();
 
     /**
      * Loads the configuration file.
@@ -41,6 +50,7 @@ public class Application {
                 PropertiesConfiguration.class
             ).configure(
                 params.properties()
+                    .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
                     .setFileName("monitoring.properties")
             );
         try {
@@ -52,16 +62,16 @@ public class Application {
 
     /**
      * Instantiates and configures the list of monitors based on the properties
-     * files "monitoring.properties" (See {@link #initialize()}).
+     * file "monitoring.properties" (See {@link #initialize()}).
      * @param scheduler The task scheduler
      * @return A list of monitors
      * @throws MalformedURLException If any of the URLs is malformed
      */
-    public List<Monitor> monitors(final Scheduler scheduler)
+    private List<Monitor> monitors(final Scheduler scheduler)
         throws MalformedURLException {
-        final List<Monitor> monitors = new ArrayList<>();
-        for (final String path : this.config.getStringArray("paths")) {
-            final List<Parameter> parameters = new ArrayList<>();
+        final String[] paths = this.config.getStringArray("paths");
+        final List<Monitor> monitors = new ArrayList<>(paths.length);
+        for (final String path : paths) {
             final String url = this.config.getString(
                 String.format("%s.url", path)
             );
@@ -71,6 +81,7 @@ public class Application {
             final String[] params = this.config.getStringArray(
                 String.format("%s.parameters", path)
             );
+            final List<Parameter> parameters = new ArrayList<>(params.length);
             for (final String param : params) {
                 final String value = this.config.getString(
                     String.format("%s.%s.value", path, param)
@@ -97,14 +108,16 @@ public class Application {
      */
     public static void main(final String... args)
         throws MalformedURLException, InterruptedException {
-        final Application application = new Application();
         final Scheduler scheduler = new Scheduler();
-        final List<Monitor> monitors = application.monitors(scheduler);
+        final List<Monitor> monitors = new Application().monitors(scheduler);
         final ExecutorService exec = Executors.newFixedThreadPool(monitors.size());
+        Application.LOGGER.info("Starting the monitors...");
         exec.invokeAll(monitors);
+        scheduler.start();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void start() {
+                Application.LOGGER.info("Shutting down the monitors...");
                 monitors.forEach(m -> m.stop());
                 scheduler.stop();
                 exec.shutdown();

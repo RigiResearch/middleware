@@ -42,6 +42,11 @@ public final class Monitor implements Runnable, Callable<Void> {
     private static final int BUFFER_SIZE = 1024;
 
     /**
+     * HTTP 200 status code.
+     */
+    private static final int OK = 200;
+
+    /**
      * The URL this monitor queries.
      */
     private final URL url;
@@ -72,6 +77,7 @@ public final class Monitor implements Runnable, Callable<Void> {
     @Override
     public void run() {
         final URI uri = this.uri();
+        Monitor.LOGGER.info("Scheduling monitor for path {}", uri.toString());
         this.identifier = this.scheduler.schedule(this.expression, () -> {
             final CloseableHttpClient client = HttpClients.createDefault();
             final HttpUriRequest request = new HttpGet(uri);
@@ -79,10 +85,17 @@ public final class Monitor implements Runnable, Callable<Void> {
                 .forEach(p -> request.addHeader(p.name(), p.value()));
             try {
                 final CloseableHttpResponse response = client.execute(request);
-                // Instantiate the schema class based on the response content
-                Monitor.LOGGER.info(response.getEntity().getContentType());
-                Monitor.LOGGER.info(
-                    this.string(response.getEntity().getContent()));
+                if (response.getStatusLine().getStatusCode() == Monitor.OK) {
+                    // Instantiate the schema class based on the response content
+                    Monitor.LOGGER.info(response.getStatusLine().getReasonPhrase());
+                    Monitor.LOGGER.info(response.getEntity().getContentType());
+                    Monitor.LOGGER.info(this.string(response.getEntity().getContent()));
+                } else {
+                    Monitor.LOGGER.error(
+                        "Unexpected response code {}",
+                        response.getStatusLine().getStatusCode()
+                    );
+                }
             } catch (final IOException exception) {
                 Monitor.LOGGER.error("Request execution error", exception);
             }
@@ -92,10 +105,9 @@ public final class Monitor implements Runnable, Callable<Void> {
     /**
      * Schedules the periodic requests. See {@link #run()}.
      * @return Null
-     * @throws Exception Never
      */
     @Override
-    public Void call() throws Exception {
+    public Void call() {
         this.run();
         return null;
     }

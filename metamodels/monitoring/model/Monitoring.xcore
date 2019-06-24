@@ -78,9 +78,9 @@ class CompositeProperty extends Property {
  */
 class CronExpression {
     /*
-     * Every hour.
+     * Every minute.
      */
-    String value = "0 * * * *"
+    String value = "* * * * *"
 }
 
 /*

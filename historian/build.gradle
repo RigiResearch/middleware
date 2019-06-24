@@ -6,15 +6,20 @@ mainClassName = "com.rigiresearch.middleware.historian.Application"
 
 repositories {
   flatDir dirs: "lib"
+  mavenCentral()
   maven {
     url "https://repo.eclipse.org/content/repositories/atl-releases/"
   }
   maven {
     url "https://packages.atlassian.com/3rdparty/"
   }
+  maven {
+    url "https://repo.eclipse.org/content/repositories/acceleo-releases/"
+  }
 }
 
 dependencies {
+  // Model and code generation
   implementation project(":metamodels")
   implementation project(":metamodels:monitoring")
   implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
@@ -26,8 +31,22 @@ dependencies {
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:${emfVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore:${ecoreXcoreVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
+  // (Acceleo launcher)
+  implementation "org.eclipse.core:org.eclipse.core.runtime:3.7.0"
+  implementation ("org.eclipse.ocl:ecore:3.3.0-v20130520-1222") {
+    exclude group: "lpg.runtime", module: "java"
+    exclude group: "org.eclipse.emf.ecore", module: "xmi"
+    exclude group: "org.eclipse.emf", module: "ecore"
+  }
+  implementation "lpg.runtime:java:2.0.17-v201004271640"
+  implementation "org.eclipse.acceleo:org.eclipse.acceleo.common:3.5.1.201409021433"
+  implementation "org.eclipse.acceleo:org.eclipse.acceleo.engine:3.5.1.201409021433"
+  implementation "org.eclipse.acceleo:org.eclipse.acceleo.model:3.5.1.201409021433"
+  implementation "org.eclipse.acceleo:org.eclipse.acceleo.parser:3.5.1.201409021433"
 
+  // Runtime support
   implementation "it.sauronsoftware.cron4j:cron4j:2.2.5"
   implementation "org.apache.httpcomponents:httpclient:4.5.9"
   implementation "org.apache.commons:commons-configuration2:2.5"
+  implementation "commons-beanutils:commons-beanutils:1.9.3"
 }

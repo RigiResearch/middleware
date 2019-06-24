@@ -12,6 +12,8 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.emf.common.util.BasicMonitor;
+import org.eclipse.emf.common.util.URI;
 import org.eclipse.m2m.atl.emftvm.Model;
 
 /**
@@ -57,7 +59,7 @@ public final class Application {
     public static void main(final String... args) {
         if (args.length != 1) {
             throw new IllegalArgumentException(
-                "Expected an OpenAPI specification as input"
+                "Expected an OpenAPI specification as input (in JSON format)"
             );
         }
         try {
@@ -90,7 +92,7 @@ public final class Application {
         final Map<String, Model> result = new AtlTransformation.Builder()
             .withMetamodel(
                 "monitoring",
-                "../metamodels/monitoring/model-gen/monitoring.ecore"
+                "../metamodels/monitoring/model-gen/Monitoring.ecore"
             )
             .withMetamodelFromJar(
                 "openapi",
@@ -99,11 +101,17 @@ public final class Application {
             )
             .withModel(AtlTransformation.ModelType.INPUT, "IN", openstack)
             .withModel(AtlTransformation.ModelType.OUTPUT, output, path)
-            .withTransformation("transformations/OpenAPI2Monitoring.atl")
+            .withTransformation("model/atl/OpenAPI2Monitoring.atl")
             .build()
             .run();
         result.get(output)
             .getResource()
             .save(Collections.EMPTY_MAP);
+
+        // Generate the properties file
+        new Generate(
+            URI.createURI(path),
+            new File("src/main/resources/")
+        ).doGenerate(new BasicMonitor());
     }
 }
