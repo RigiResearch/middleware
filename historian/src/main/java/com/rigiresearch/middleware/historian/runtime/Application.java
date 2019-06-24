@@ -33,9 +33,10 @@ public class Application {
      * Loads the configuration file.
      * @return A {@link Configuration} instance.
      */
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private static Configuration initialize() {
         final Parameters params = new Parameters();
-        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+        final FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
             new FileBasedConfigurationBuilder<FileBasedConfiguration>(
                 PropertiesConfiguration.class
             ).configure(
@@ -71,7 +72,7 @@ public class Application {
                 String.format("%s.parameters", path)
             );
             for (final String param : params) {
-                final String value = config.getString(
+                final String value = this.config.getString(
                     String.format("%s.%s.value", path, param)
                 );
                 final Parameter.Location location = Parameter.Location.valueOf(
@@ -91,10 +92,10 @@ public class Application {
     /**
      * The main entry point.
      * @param args The program arguments
-     * @throws MalformedURLException
-     * @throws InterruptedException
+     * @throws MalformedURLException If any of the URL is malformed
+     * @throws InterruptedException If something goes wrong starting the monitors
      */
-    public static void main(String... args)
+    public static void main(final String... args)
         throws MalformedURLException, InterruptedException {
         final Application application = new Application();
         final Scheduler scheduler = new Scheduler();

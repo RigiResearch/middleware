@@ -37,6 +37,11 @@ public final class Monitor implements Runnable, Callable<Void> {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
+     * The default buffer size.
+     */
+    private static final int BUFFER_SIZE = 1024;
+
+    /**
      * The URL this monitor queries.
      */
     private final URL url;
@@ -44,7 +49,7 @@ public final class Monitor implements Runnable, Callable<Void> {
     /**
      * A list of parameters for the API requests.
      */
-    private final List<Parameter> parameters;
+    private final List<Parameter> params;
 
     /**
      * A cron expression for scheduling periodic requests.
@@ -64,6 +69,7 @@ public final class Monitor implements Runnable, Callable<Void> {
     /**
      * Schedules the periodic requests.
      */
+    @Override
     public void run() {
         final URI uri = this.uri();
         this.identifier = this.scheduler.schedule(this.expression, () -> {
@@ -88,6 +94,7 @@ public final class Monitor implements Runnable, Callable<Void> {
      * @return Null
      * @throws Exception Never
      */
+    @Override
     public Void call() throws Exception {
         this.run();
         return null;
@@ -105,19 +112,23 @@ public final class Monitor implements Runnable, Callable<Void> {
      * Builds the target URI replacing the parameters where corresponds.
      * @return A URI with the corresponding parameters set
      */
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private URI uri() {
-        final String flatpath = this.url.getPath();
+        final List<String> flatpath = Arrays.asList(this.url.getPath());
         this.parameters(Parameter.Location.PATH)
             .forEach(parameter -> {
-                flatpath.replaceAll(
-                    String.format("\\{%s\\}", parameter.name()),
-                    parameter.value()
+                flatpath.set(
+                    0,
+                    flatpath.get(0).replaceAll(
+                        String.format("\\{%s\\}", parameter.name()),
+                        parameter.value()
+                    )
                 );
             });
         final URIBuilder builder = new URIBuilder()
             .setScheme(this.url.getProtocol())
             .setHost(this.url.getHost())
-            .setPath(flatpath);
+            .setPath(flatpath.get(0));
         this.parameters(
             Parameter.Location.QUERY,
             Parameter.Location.FORM_DATA
@@ -133,12 +144,12 @@ public final class Monitor implements Runnable, Callable<Void> {
     }
 
     /**
-     * Filters out the parameters based on the given parameter locations.
+     * Filters out the params based on the given parameter locations.
      * @param criteria The filtering criteria
-     * @return A stream of Parameters
+     * @return A stream of parameters
      */
     private Stream<Parameter> parameters(final Parameter.Location... criteria) {
-        return this.parameters.stream()
+        return this.params.stream()
             .filter(p -> Arrays.asList(criteria).contains(p.location()));
     }
 
@@ -150,10 +161,11 @@ public final class Monitor implements Runnable, Callable<Void> {
      */
     private String string(final InputStream stream) throws IOException {
         final ByteArrayOutputStream result = new ByteArrayOutputStream();
-        final byte[] buffer = new byte[1024];
-        int length;
-        while ((length = stream.read(buffer)) != -1) {
+        final byte[] buffer = new byte[Monitor.BUFFER_SIZE];
+        int length = stream.read(buffer);
+        while (length != -1) {
             result.write(buffer, 0, length);
+            length = stream.read(buffer);
         }
         return result.toString(StandardCharsets.UTF_8.toString());
     }
