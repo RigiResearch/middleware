@@ -111,7 +111,7 @@ public final class Application {
         // Generate the properties file
         new Generate(
             URI.createURI(path),
-            new File("src/main/resources/")
+            new File("model/generated")
         ).doGenerate(new BasicMonitor());
     }
 }
