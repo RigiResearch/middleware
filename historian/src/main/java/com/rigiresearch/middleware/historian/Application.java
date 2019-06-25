@@ -88,7 +88,7 @@ public final class Application {
         final Root openstack = new OpenAPIImporter()
             .createOpenAPIModelFromJson(new File(this.spec));
         final String output = "OUT";
-        final String path = "model/openstack.monitoring.xmi";
+        final String path = "model/generated/openstack.monitoring.xmi";
         final Map<String, Model> result = new AtlTransformation.Builder()
             .withMetamodel(
                 "monitoring",
