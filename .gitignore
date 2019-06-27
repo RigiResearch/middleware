@@ -68,3 +68,4 @@ Thumbs.db
 
 ### Allow libraries ###
 !**/lib/*.jar
+!**/templates/**/*.jar

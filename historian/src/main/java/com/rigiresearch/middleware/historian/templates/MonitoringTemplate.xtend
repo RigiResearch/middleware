@@ -51,10 +51,12 @@ final class MonitoringTemplate {
         new File(target, "src/main/resources").mkdirs
 
         // Copy template files
-        Files.copy(
-            "src/main/resources/templates/build.gradle".toPath,
-            new File(target, "build.gradle").toPath,
-            StandardCopyOption.REPLACE_EXISTING
+        Files.walkFileTree(
+            "src/main/resources/templates/gradle".toPath,
+            new CopyFileVisitor(
+                target.toPath,
+                StandardCopyOption.REPLACE_EXISTING
+            )
         )
         Files.copy(
             "src/main/resources/templates/log4j2.xml".toPath,
