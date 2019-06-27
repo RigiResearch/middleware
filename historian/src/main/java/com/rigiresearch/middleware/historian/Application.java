@@ -2,6 +2,7 @@ package com.rigiresearch.middleware.historian;
 
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
+import com.rigiresearch.middleware.metamodels.monitoring.Root;
 import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.m2m.atl.emftvm.Model;
 
 /**
@@ -103,7 +105,14 @@ public final class Application {
             .withTransformation("src/main/resources/atl/OpenAPI2Monitoring.atl")
             .build()
             .run();
-        result.get(output).getResource()
-            .save(Collections.EMPTY_MAP);
+        final Resource resource = result.get(output).getResource();
+        resource.save(Collections.EMPTY_MAP);
+
+        // Move code to template (TODO create the actual files)
+        final Root root = (Root) resource.getContents().get(0);
+        final MonitoringTemplate template = new MonitoringTemplate();
+        Application.LOGGER.info(template.asProperties(root));
+        root.getMonitors().forEach(monitor ->
+            Application.LOGGER.info(template.asJavaClass(monitor)));
     }
 }
