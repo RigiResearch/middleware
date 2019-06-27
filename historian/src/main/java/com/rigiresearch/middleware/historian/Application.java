@@ -1,6 +1,7 @@
 package com.rigiresearch.middleware.historian;
 
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
+import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
 import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,6 +12,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.emf.common.util.URI;
 import org.eclipse.m2m.atl.emftvm.Model;
 
 /**
@@ -88,8 +90,8 @@ public final class Application {
         final String path = "build/resources/main/openstack.monitoring.xmi";
         final Map<String, Model> result = new AtlTransformation.Builder()
             .withMetamodel(
-                "monitoring",
-                "../metamodels/monitoring/model-gen/Monitoring.ecore"
+                MonitoringPackage.eINSTANCE.getName(),
+                URI.createURI(MonitoringPackage.eINSTANCE.getNsURI())
             )
             .withMetamodelFromJar(
                 "openapi",
