@@ -20,7 +20,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * The main class.
- * @author Miguel Jimenez (miguel@leslumier.es)
+ * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */

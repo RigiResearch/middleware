@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian
+package com.rigiresearch.middleware.historian.templates
 
 import com.rigiresearch.middleware.metamodels.monitoring.Array
 import com.rigiresearch.middleware.metamodels.monitoring.DataType
@@ -9,6 +9,12 @@ import com.rigiresearch.middleware.metamodels.monitoring.Schema
 import com.rigiresearch.middleware.metamodels.monitoring.Type
 import java.util.Date
 import java.util.List
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+import java.nio.file.StandardCopyOption
 
 /**
  * Generate classes from the monitoring model. More specifically, from the
@@ -24,6 +30,85 @@ import java.util.List
  * @since 0.1.0
  */
 final class MonitoringTemplate {
+
+    /**
+     * The package for the generated sources.
+     */
+	static final String PACKAGE = "com.rigiresearch.middleware.historian.api"
+
+    /**
+     * Generates the Java project for monitoring a specific cloud provider.
+     * The project contains Java classes, and a properties and gradle file.
+     * The target directory (tree) will be created if necessary.
+     * @param root The root model element
+     * @param target The target directory where the files are created
+     */
+    def void generateFiles(Root root, File target) throws IOException {
+        // Create the directories if necessary
+        val ^package = MonitoringTemplate.PACKAGE.replaceAll("\\.", "/")
+        target.mkdirs
+        new File(target, '''src/main/java/«^package»''').mkdirs
+        new File(target, "src/main/resources").mkdirs
+
+        // Copy template files
+        Files.copy(
+            "src/main/resources/templates/build.gradle".toPath,
+            new File(target, "build.gradle").toPath,
+            StandardCopyOption.REPLACE_EXISTING
+        )
+        Files.copy(
+            "src/main/resources/templates/log4j2.xml".toPath,
+            new File(target, "src/main/resources/log4j2.xml").toPath,
+            StandardCopyOption.REPLACE_EXISTING
+        )
+        Files.walkFileTree(
+            "src/main/resources/templates/source".toPath,
+            new CopyFileVisitor(
+                new File(target, "src/main/java").toPath,
+                StandardCopyOption.REPLACE_EXISTING
+            )
+        );
+
+        // Generate new files
+        root.monitors.forEach[m|m.asJavafile(target).write(m.asJavaClass)]
+        new File(target, "src/main/resources/monitoring.properties")
+            .write(root.asProperties)
+    }
+
+    /**
+     * Creates a {@link File} based on the monitor's path id.
+     * @param monitor The monitor instance
+     * @param target The target directory
+     * @return A {@link File}
+     */
+    def private asJavafile(Monitor monitor, File target) {
+        val ^package = MonitoringTemplate.PACKAGE.replaceAll("\\.", "/")
+        new File(target, '''src/main/java/«^package»/«monitor.path.id.toFirstUpper».java''')
+    }
+
+    /**
+     * Converts a {@link String} to a {@link Path}.
+     * @param path The path name
+     * @return A {@link Path}
+     */
+    def private toPath(String path) {
+        new File(path).toPath
+    }
+
+    /**
+     * Writes a file with the given content.
+     * @param file The file to write
+     * @param content The file content
+     * @throws IOException If there is a problem writing the file
+     */
+    def private write(File file, CharSequence content) throws IOException {
+        Files.write(
+            Paths.get(file.toURI),
+            content.toString.bytes,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        )
+    }
 
     /**
      * Creates a properties file based on the paths and their parameters.
@@ -70,7 +155,7 @@ final class MonitoringTemplate {
      * @return The contents of a Java class
      */
     def asJavaClass(Monitor monitor) '''
-        package com.rigiresearch.middleware.historian.api;
+        package «MonitoringTemplate.PACKAGE»;
 
         import javax.annotation.Generated;
 

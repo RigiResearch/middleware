@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.historian;
 
+import com.rigiresearch.middleware.historian.templates.MonitoringTemplate;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
 import com.rigiresearch.middleware.metamodels.monitoring.Root;
@@ -9,13 +10,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.m2m.atl.emftvm.Model;
 
 /**
  * The main class.
@@ -53,18 +50,23 @@ public final class Application {
     private final String spec;
 
     /**
+     * The path to a directory where the monitoring code will be generated.
+     */
+    private final String target;
+
+    /**
      * The main entry point.
      * @param args The application arguments
      */
     @SuppressWarnings("PMD.DoNotCallSystemExit")
     public static void main(final String... args) {
-        if (args.length != 1) {
+        if (args.length != 2) {
             throw new IllegalArgumentException(
-                "Expected an OpenAPI specification as input (in JSON format)"
+                "Expected a JSON OpenAPI specification and target directory as input"
             );
         }
         try {
-            new Application(args[0]).start();
+            new Application(args[0], args[1]).start();
         } catch (final FileNotFoundException exception) {
             Application.LOGGER.error(exception.getMessage(), exception);
             System.exit(Application.ERROR_NTE);
@@ -78,7 +80,8 @@ public final class Application {
     }
 
     /**
-     * Create the OpenAPI model and execute the transformation.
+     * Generates a gradle project containing the monitoring code for a
+     * particular API specification.
      * @throws FileNotFoundException If the spec file does not exist
      * @throws UnsupportedEncodingException If the encoding is not supported
      * @throws IOException If there is an error with the jar file or saving the
@@ -86,26 +89,23 @@ public final class Application {
      */
     private void start() throws FileNotFoundException,
         UnsupportedEncodingException, IOException {
-        final edu.uoc.som.openapi.Root openstack = new OpenAPIImporter()
+        final edu.uoc.som.openapi.Root root = new OpenAPIImporter()
             .createOpenAPIModelFromJson(new File(this.spec));
         final String output = "OUT";
-        final String path = "build/resources/main/openstack.monitoring.xmi";
-        final Map<String, Model> result = new AtlTransformation.Builder()
-            .withMetamodel(MonitoringPackage.eINSTANCE)
-            .withMetamodel(OpenAPIPackage.eINSTANCE)
-            .withModel(AtlTransformation.ModelType.INPUT, "IN", openstack)
-            .withModel(AtlTransformation.ModelType.OUTPUT, output, path)
-            .withTransformation("src/main/resources/atl/OpenAPI2Monitoring.atl")
-            .build()
-            .run();
-        final Resource resource = result.get(output).getResource();
-        resource.save(Collections.EMPTY_MAP);
-
-        // Move code to template (TODO create the actual files)
-        final Root root = (Root) resource.getContents().get(0);
-        final MonitoringTemplate template = new MonitoringTemplate();
-        Application.LOGGER.info(template.asProperties(root));
-        root.getMonitors().forEach(monitor ->
-            Application.LOGGER.info(template.asJavaClass(monitor)));
+        new MonitoringTemplate().generateFiles(
+            (Root) new AtlTransformation.Builder()
+                .withMetamodel(MonitoringPackage.eINSTANCE)
+                .withMetamodel(OpenAPIPackage.eINSTANCE)
+                .withModel(AtlTransformation.ModelType.INPUT, "IN", root)
+                .withModel(AtlTransformation.ModelType.OUTPUT, output, "monitoring.xmi")
+                .withTransformation("src/main/resources/atl/OpenAPI2Monitoring.atl")
+                .build()
+                .run()
+                .get(output)
+                .getResource()
+                .getContents()
+                .get(0),
+            new File(this.target)
+        );
     }
 }
