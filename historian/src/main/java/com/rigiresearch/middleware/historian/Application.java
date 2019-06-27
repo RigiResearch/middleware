@@ -1,7 +1,6 @@
 package com.rigiresearch.middleware.historian;
 
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
-import edu.uoc.som.openapi.Root;
 import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,8 +11,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.emf.common.util.BasicMonitor;
-import org.eclipse.emf.common.util.URI;
 import org.eclipse.m2m.atl.emftvm.Model;
 
 /**
@@ -65,13 +62,13 @@ public final class Application {
         try {
             new Application(args[0]).start();
         } catch (final FileNotFoundException exception) {
-            Application.LOGGER.error(exception.getMessage());
+            Application.LOGGER.error(exception.getMessage(), exception);
             System.exit(Application.ERROR_NTE);
         } catch (final UnsupportedEncodingException exception) {
-            Application.LOGGER.error(exception.getMessage());
+            Application.LOGGER.error(exception.getMessage(), exception);
             System.exit(Application.ERROR_EE);
         } catch (final IOException exception) {
-            Application.LOGGER.error(exception.getMessage());
+            Application.LOGGER.error(exception.getMessage(), exception);
             System.exit(Application.ERROR_IO);
         }
     }
@@ -85,10 +82,10 @@ public final class Application {
      */
     private void start() throws FileNotFoundException,
         UnsupportedEncodingException, IOException {
-        final Root openstack = new OpenAPIImporter()
+        final edu.uoc.som.openapi.Root openstack = new OpenAPIImporter()
             .createOpenAPIModelFromJson(new File(this.spec));
         final String output = "OUT";
-        final String path = "model/generated/openstack.monitoring.xmi";
+        final String path = "build/resources/main/openstack.monitoring.xmi";
         final Map<String, Model> result = new AtlTransformation.Builder()
             .withMetamodel(
                 "monitoring",
@@ -101,17 +98,10 @@ public final class Application {
             )
             .withModel(AtlTransformation.ModelType.INPUT, "IN", openstack)
             .withModel(AtlTransformation.ModelType.OUTPUT, output, path)
-            .withTransformation("model/atl/OpenAPI2Monitoring.atl")
+            .withTransformation("src/main/resources/atl/OpenAPI2Monitoring.atl")
             .build()
             .run();
-        result.get(output)
-            .getResource()
+        result.get(output).getResource()
             .save(Collections.EMPTY_MAP);
-
-        // Generate the properties file
-        new Generate(
-            URI.createURI(path),
-            new File("model/generated")
-        ).doGenerate(new BasicMonitor());
     }
 }
