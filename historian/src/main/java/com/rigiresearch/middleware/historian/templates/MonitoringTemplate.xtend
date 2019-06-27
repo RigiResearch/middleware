@@ -35,7 +35,7 @@ final class MonitoringTemplate {
         # Please edit the parameter values only
         #
         paths=«root.monitors.map[m|m.path.id].join(", ")»
-        «FOR m : root.monitors»
+        «FOR m : root.monitors SEPARATOR '\n'»
             «m.path.id».url=«root.baseUrl»«m.path.url»
             «m.path.id».expression=«m.rate.value»
             «IF !m.path.parameters.empty»
@@ -55,8 +55,7 @@ final class MonitoringTemplate {
      * @return The base URL
      */
     def private baseUrl(Root root) '''
-        http«IF root.https»s«ENDIF»://«root.host»«root.basePath»
-    '''
+        http«IF root.https»s«ENDIF»://«root.host»«root.basePath»'''
 
     /**
      * Generates a Java (value) class for a particular schema object.
@@ -86,7 +85,7 @@ final class MonitoringTemplate {
         @Generated(value = "Historian", date = "«new Date()»")
         public final class «monitor.path.id.toFirstUpper» {
 
-            «FOR property : monitor.schema.properties»
+            «FOR property : monitor.schema.properties SEPARATOR '\n'»
                 «property.asJavaField»
             «ENDFOR»
 
@@ -185,10 +184,10 @@ final class MonitoringTemplate {
                 @Value
                 public final class «name.asClassName»«calls» {
 
-                    «FOR property : type.properties»
+                    «FOR property : type.properties SEPARATOR '\n'»
                         «property.asJavaField»
                         ««« Recursive call: is this attribute an Object or Array?
-                        «classes.addAll(this.asInnerClasses(property.name, property.type, 0))»
+                        «val dummy = classes.addAll(this.asInnerClasses(property.name, property.type, 0))»
                     «ENDFOR»
 
                 }
@@ -230,7 +229,7 @@ final class MonitoringTemplate {
      */
     def private asJavaField(Property property) '''
         /**
-         * The value of the '<em><b>«property.name»</b></em>'.
+         * The value of the '<em><b>«property.name»</b></em>' property.
          */
         private final «property.asJavaType» «property.name»;
     '''
