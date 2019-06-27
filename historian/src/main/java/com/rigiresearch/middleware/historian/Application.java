@@ -3,6 +3,7 @@ package com.rigiresearch.middleware.historian;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
 import com.rigiresearch.middleware.metamodels.monitoring.Root;
+import edu.uoc.som.openapi.OpenAPIPackage;
 import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -13,7 +14,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.m2m.atl.emftvm.Model;
 
@@ -91,15 +91,8 @@ public final class Application {
         final String output = "OUT";
         final String path = "build/resources/main/openstack.monitoring.xmi";
         final Map<String, Model> result = new AtlTransformation.Builder()
-            .withMetamodel(
-                MonitoringPackage.eINSTANCE.getName(),
-                URI.createURI(MonitoringPackage.eINSTANCE.getNsURI())
-            )
-            .withMetamodelFromJar(
-                "openapi",
-                "lib/edu.uoc.som.openapi-1.0.2.201804111106.jar",
-                "model/openapi.ecore"
-            )
+            .withMetamodel(MonitoringPackage.eINSTANCE)
+            .withMetamodel(OpenAPIPackage.eINSTANCE)
             .withModel(AtlTransformation.ModelType.INPUT, "IN", openstack)
             .withModel(AtlTransformation.ModelType.OUTPUT, output, path)
             .withTransformation("src/main/resources/atl/OpenAPI2Monitoring.atl")
