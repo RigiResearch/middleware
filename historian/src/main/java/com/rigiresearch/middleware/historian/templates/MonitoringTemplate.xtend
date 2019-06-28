@@ -129,15 +129,28 @@ final class MonitoringTemplate {
             # The following are paths from the API specification
             paths=«root.monitors.map[m|m.path.id].join(", ")»
 
-            # Specify a path id from the previous list to request an authentication token
+            # Specify a path id from the previous list to request an authentication token.
             login=
-            login.output.parameters=token
-            login.token.selector=/@token
-
-            # Change the cron expression to reflect your needs. Here is the documentation
-            # for the scheduling patterns: http://www.sauronsoftware.it/projects/cron4j/manual.php#p02
             #
-            # Also, specify a parameter value where needed.
+            # Then, specify the output parameters using a Xpath selector. For example, for
+            # the following JSON response (from an authentication request):
+            #
+            # {
+            #   "auth_token" = "..."
+            # }
+            #
+            # The following is a valid configuration:
+            #
+            # login.output.parameters=token
+            # login.token.selector=/auth_token
+            #
+            # You may use the value "${login.token.value}" as a parameter value for other
+            # paths. For example: myPathId.parameter1.value=${login.token.value}
+            #
+            # Change the following parameter values and cron expressions to reflect your
+            # needs. Here is the documentation for the scheduling patterns:
+            # http://www.sauronsoftware.it/projects/cron4j/manual.php#p02
+            #
             «FOR m : root.monitors SEPARATOR '\n'»
                 «m.path.id».url=${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»
                 «m.path.id».expression=«m.rate.value»
