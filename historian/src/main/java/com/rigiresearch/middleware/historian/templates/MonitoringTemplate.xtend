@@ -132,6 +132,12 @@ final class MonitoringTemplate {
             # Specify a path id from the previous list to request an authentication token.
             login=
             #
+            # Now, setup basic HTTP authentication for the login path. In this case, the values
+            # are taken from the environment variables LOGIN_USERNAME and LOGIN_PASSWORD.
+            #
+            # <path-id>.username=${env:LOGIN_USERNAME}
+            # <path-id>.password=${env:LOGIN_PASSWORD}
+            #
             # Then, specify the output parameters using a Xpath selector. For example, for
             # the following JSON response (from an authentication request):
             #
@@ -150,6 +156,8 @@ final class MonitoringTemplate {
             # Change the following parameter values and cron expressions to reflect your
             # needs. Here is the documentation for the scheduling patterns:
             # http://www.sauronsoftware.it/projects/cron4j/manual.php#p02
+            # In the case of the login path, choose an appropriate expression to request an
+            # authentication token before the current one expires.
             #
             «FOR m : root.monitors SEPARATOR '\n'»
                 «m.path.id».url=${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»

@@ -16,6 +16,7 @@ mainClassName = "com.rigiresearch.middleware.historian.runtime.Application"
 
 repositories {
   jcenter()
+  mavenLocal()
 }
 
 dependencies {
@@ -34,6 +35,8 @@ dependencies {
   implementation "org.apache.httpcomponents:httpclient:4.5.9"
   implementation "org.apache.commons:commons-configuration2:2.5"
   implementation "commons-beanutils:commons-beanutils:1.9.3"
+
+  implementation"com.vmware.xpath:xpath:1.0.0"
 }
 
 test {

@@ -4,21 +4,14 @@ import it.sauronsoftware.cron4j.Scheduler;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,6 +21,7 @@ import org.apache.logging.log4j.Logger;
  * @version $Id$
  * @since 0.1.0
  */
+@Accessors(fluent = true)
 @RequiredArgsConstructor
 public final class Monitor implements Runnable, Callable<Void> {
 
@@ -44,27 +38,46 @@ public final class Monitor implements Runnable, Callable<Void> {
     /**
      * HTTP 200 status code.
      */
-    private static final int OK = 200;
+    private static final int OK_CODE = 200;
 
     /**
-     * The URL this monitor queries.
+     * The corresponding path's id.
      */
-    private final URL url;
-
-    /**
-     * A list of parameters for the API requests.
-     */
-    private final List<Parameter> params;
-
-    /**
-     * A cron expression for scheduling periodic requests.
-     */
-    private final String expression;
+    @Getter
+    private final String name;
 
     /**
      * The task scheduler.
      */
     private final Scheduler scheduler;
+
+    /**
+     * The request this monitor performs.
+     */
+    private final Request request;
+
+    /**
+     * A cron expression for scheduling periodic requests.
+     */
+    private final Supplier<String> expression;
+
+    /**
+     * The callback to execute when the request is executed.
+     */
+    @Setter
+    private Callback callback = response -> {
+        if (response.getStatusLine().getStatusCode() == Monitor.OK_CODE) {
+            // TODO Instantiate the schema class based on the response content
+            Monitor.LOGGER.info(response.getStatusLine().getReasonPhrase());
+            Monitor.LOGGER.info(response.getEntity().getContentType());
+            Monitor.LOGGER.info(this.string(response.getEntity().getContent()));
+        } else {
+            Monitor.LOGGER.error(
+                "Unexpected response code '{}'",
+                response.getStatusLine().getStatusCode()
+            );
+        }
+    };
 
     /**
      * The identifier of the scheduled task.
@@ -76,30 +89,11 @@ public final class Monitor implements Runnable, Callable<Void> {
      */
     @Override
     public void run() {
-        final URI uri = this.uri();
-        Monitor.LOGGER.info("Scheduling monitor for path {}", uri.toString());
-        this.identifier = this.scheduler.schedule(this.expression, () -> {
-            final CloseableHttpClient client = HttpClients.createDefault();
-            final HttpUriRequest request = new HttpGet(uri);
-            this.parameters(Parameter.Location.HEADER)
-                .forEach(p -> request.addHeader(p.name(), p.value()));
-            try {
-                final CloseableHttpResponse response = client.execute(request);
-                if (response.getStatusLine().getStatusCode() == Monitor.OK) {
-                    // Instantiate the schema class based on the response content
-                    Monitor.LOGGER.info(response.getStatusLine().getReasonPhrase());
-                    Monitor.LOGGER.info(response.getEntity().getContentType());
-                    Monitor.LOGGER.info(this.string(response.getEntity().getContent()));
-                } else {
-                    Monitor.LOGGER.error(
-                        "Unexpected response code {}",
-                        response.getStatusLine().getStatusCode()
-                    );
-                }
-            } catch (final IOException exception) {
-                Monitor.LOGGER.error("Request execution error", exception);
-            }
-        });
+        Monitor.LOGGER.info("Scheduling monitor '{}'", this.name);
+        this.identifier = this.scheduler.schedule(
+            this.expression.get(),
+            () -> this.collect()
+        );
     }
 
     /**
@@ -121,48 +115,14 @@ public final class Monitor implements Runnable, Callable<Void> {
     }
 
     /**
-     * Builds the target URI replacing the parameters where corresponds.
-     * @return A URI with the corresponding parameters set
+     * Collects the data from the API.
      */
-    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-    private URI uri() {
-        final List<String> flatpath = Arrays.asList(this.url.getPath());
-        this.parameters(Parameter.Location.PATH)
-            .forEach(parameter -> {
-                flatpath.set(
-                    0,
-                    flatpath.get(0).replaceAll(
-                        String.format("\\{%s\\}", parameter.name()),
-                        parameter.value()
-                    )
-                );
-            });
-        final URIBuilder builder = new URIBuilder()
-            .setScheme(this.url.getProtocol())
-            .setHost(this.url.getHost())
-            .setPath(flatpath.get(0));
-        this.parameters(
-            Parameter.Location.QUERY,
-            Parameter.Location.FORM_DATA
-        ).forEach(param -> {
-            builder.setParameter(param.name(), param.value());
-        });
+    public void collect() {
         try {
-            return builder.build();
-        } catch (final URISyntaxException exception) {
-            Monitor.LOGGER.error("Malformed URI", exception);
-            throw new RuntimeException(exception);
+            this.callback.run(this.request.response());
+        } catch (final IOException exception) {
+            Monitor.LOGGER.error("Request execution error", exception);
         }
-    }
-
-    /**
-     * Filters out the params based on the given parameter locations.
-     * @param criteria The filtering criteria
-     * @return A stream of parameters
-     */
-    private Stream<Parameter> parameters(final Parameter.Location... criteria) {
-        return this.params.stream()
-            .filter(p -> Arrays.asList(criteria).contains(p.location()));
     }
 
     /**
@@ -180,5 +140,20 @@ public final class Monitor implements Runnable, Callable<Void> {
             length = stream.read(buffer);
         }
         return result.toString(StandardCharsets.UTF_8.toString());
+    }
+
+    /**
+     * A callback to execute instead of the regular response handling procedure.
+     */
+    @FunctionalInterface
+    public interface Callback {
+
+        /**
+         * Run custom code on the given response.
+         * @param response The request's response
+         * @throws IOException If there is an input/output exception
+         */
+        void run(CloseableHttpResponse response) throws IOException;
+
     }
 }

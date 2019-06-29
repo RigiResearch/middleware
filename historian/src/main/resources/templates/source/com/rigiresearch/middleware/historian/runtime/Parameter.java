@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.historian.runtime;
 
+import java.util.function.Supplier;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -26,7 +27,7 @@ public final class Parameter {
     /**
      * The value.
      */
-    private final String value;
+    private final Supplier<String> value;
 
     /**
      * The location.
@@ -39,7 +40,7 @@ public final class Parameter {
      * @param location The parameter location
      */
     public Parameter(final String name, final Location location) {
-        this(name, "", location);
+        this(name, () -> "", location);
     }
 
     /**
@@ -48,7 +49,7 @@ public final class Parameter {
      * @param value The parameter value
      * @param location The parameter location
      */
-    public Parameter(final String name, final String value,
+    public Parameter(final String name, final Supplier<String> value,
         final Location location) {
         this.name = name;
         this.value = value;
