@@ -63,6 +63,11 @@ final class MonitoringTemplate {
             new File(target, "src/main/resources/log4j2.xml").toPath,
             StandardCopyOption.REPLACE_EXISTING
         )
+        Files.copy(
+            "src/main/resources/templates/log4j.xml".toPath,
+            new File(target, "src/main/resources/log4j.xml").toPath,
+            StandardCopyOption.REPLACE_EXISTING
+        )
         Files.walkFileTree(
             "src/main/resources/templates/source".toPath,
             new CopyFileVisitor(
