@@ -81,7 +81,7 @@ public class Application {
      */
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private List<Monitor> monitors(final Scheduler scheduler) {
-        final String login = this.config.getString("login");
+        final String login = this.config.getString("auth");
         return Arrays.stream(
             this.config.getStringArray("paths")
         )
@@ -120,7 +120,7 @@ public class Application {
                 () -> expression
             );
             if (path.equals(login)) {
-                monitor.callback(this.loginCallback());
+                monitor.callback(this.loginCallback(login));
                 monitor.collect();
             }
             return monitor;
@@ -137,9 +137,9 @@ public class Application {
     private Parameter parameter(final String path, final String name) {
         return new Parameter(
             name,
-            () -> this.config.getString(String.format("%s.%s.value", path, name)),
+            () -> this.config.getString(String.format("%s.parameters.%s.value", path, name)),
             Parameter.Location.valueOf(
-                this.config.getString(String.format("%s.%s.location", path, name))
+                this.config.getString(String.format("%s.parameters.%s.location", path, name))
             )
         );
     }
@@ -149,16 +149,17 @@ public class Application {
      * @return The callback
      */
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-    private Monitor.Callback loginCallback() {
+    private Monitor.Callback loginCallback(final String path) {
         return response -> {
             final int status = response.getStatusLine().getStatusCode();
             if (status != Application.OK_CODE) {
                 throw new RuntimeException(
-                    String.format("Unsuccessful login. Status code is ", status)
+                    String.format("Unsuccessful login. Status code is '%d'", status)
                 );
             }
-            final String[] parameters =
-                this.config.getStringArray("login.output.parameters");
+            final String[] parameters = this.config.getStringArray(
+                String.format("%s.output.parameters", path)
+            );
             final String type = response.getEntity()
                 .getContentType()
                 .getValue();
@@ -171,10 +172,18 @@ public class Application {
                     Arrays.stream(parameters)
                         .forEach(param -> {
                             final String selector = this.config.getString(
-                                String.format("login.%s.selector", param)
+                                String.format(
+                                    "%s.output.parameters.%s.selector",
+                                    path,
+                                    param
+                                )
                             );
                             this.config.setProperty(
-                                String.format("login.%s.value", param),
+                                String.format(
+                                    "%s.output.parameters.%s.value",
+                                    path,
+                                    param
+                                ),
                                 JsonXpath.find(content, selector).asText()
                             );
                         });
