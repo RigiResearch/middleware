@@ -56,7 +56,7 @@ public final class Monitor implements Runnable, Callable<Void> {
      */
     @Override
     public void run() {
-        Monitor.LOGGER.info("Scheduling monitor '{}'", this.name);
+        Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
         this.identifier = this.scheduler.schedule(
             this.expression.get(),
             () -> this.collector.collect()

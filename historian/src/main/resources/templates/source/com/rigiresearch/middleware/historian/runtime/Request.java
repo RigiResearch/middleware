@@ -66,7 +66,7 @@ public final class Request {
         final CloseableHttpClient client = HttpClients.createDefault();
         final CloseableHttpResponse response;
         if (this.provider != null) {
-            Request.LOGGER.info("Authentication data found");
+            Request.LOGGER.debug("Authentication data found");
             final HttpRequest request = new HttpPost(uri);
             this.parameters(Input.Location.HEADER)
                 .forEach(p -> request.addHeader(p.name(), p.value().get()));

@@ -76,7 +76,7 @@ public final class DataCollector {
                 // TODO Instantiate the schema class based on the response content
                 final String content =
                     DataCollector.asString(response.getEntity().getContent());
-                DataCollector.LOGGER.info(
+                DataCollector.LOGGER.debug(
                     "Data collected: {}...",
                     content.substring(0, Math.min(100, content.length()))
                 );
