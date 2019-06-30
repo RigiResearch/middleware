@@ -129,10 +129,21 @@ public class Application {
         final String key = String.format("%s.children", path);
         return Arrays.stream(this.config.getStringArray(key))
             .map(child -> {
+                final String expression = this.config.getString(
+                    String.format("%s.expression", child)
+                );
                 if (monitors.contains(child)) {
                     throw new IllegalArgumentException(
                         String.format(
                             "Child monitor '%s' must not be listed as a monitor",
+                            child
+                        )
+                    );
+                }
+                if (expression != null) {
+                    Application.LOGGER.warn(
+                        String.format(
+                            "Cron expression for child monitor '%s' will be ignored",
                             child
                         )
                     );
