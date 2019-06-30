@@ -1,15 +1,16 @@
 package com.rigiresearch.middleware.historian.runtime;
 
 import it.sauronsoftware.cron4j.Scheduler;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.logging.log4j.LogManager;
@@ -62,22 +63,9 @@ public final class Monitor implements Runnable, Callable<Void> {
     private final Supplier<String> expression;
 
     /**
-     * The callback to execute when the request is executed.
+     * A list of output parameters associated with this monitor's path.
      */
-    @Setter
-    private Callback callback = response -> {
-        if (response.getStatusLine().getStatusCode() == Monitor.OK_CODE) {
-            // TODO Instantiate the schema class based on the response content
-            Monitor.LOGGER.info(response.getStatusLine().getReasonPhrase());
-            Monitor.LOGGER.info(response.getEntity().getContentType());
-            Monitor.LOGGER.info(this.string(response.getEntity().getContent()));
-        } else {
-            Monitor.LOGGER.error(
-                "Unexpected response code '{}'",
-                response.getStatusLine().getStatusCode()
-            );
-        }
-    };
+    private final List<OutputParameter> outputs;
 
     /**
      * The identifier of the scheduled task.
@@ -119,7 +107,26 @@ public final class Monitor implements Runnable, Callable<Void> {
      */
     public void collect() {
         try {
-            this.callback.run(this.request.response());
+            final CloseableHttpResponse response = this.request.response();
+            if (response.getStatusLine().getStatusCode() == Monitor.OK_CODE) {
+                final String content = this.string(response.getEntity().getContent());
+                final String type = response.getEntity().getContentType().getValue();
+                this.outputs.stream()
+                    .forEach(param -> {
+                        try {
+                            param.update(content, type);
+                        } catch (final IOException exception) {
+                            Monitor.LOGGER.error(exception);
+                        }
+                    });
+                // TODO Instantiate the schema class based on the response content
+                Monitor.LOGGER.info(content.substring(0, Math.min(content.length(), 300)));
+            } else {
+                Monitor.LOGGER.error(
+                    "Unexpected response code '{}'",
+                    response.getStatusLine().getStatusCode()
+                );
+            }
         } catch (final IOException exception) {
             Monitor.LOGGER.error("Request execution error", exception);
         }
@@ -142,18 +149,4 @@ public final class Monitor implements Runnable, Callable<Void> {
         return result.toString(StandardCharsets.UTF_8.toString());
     }
 
-    /**
-     * A callback to execute instead of the regular response handling procedure.
-     */
-    @FunctionalInterface
-    public interface Callback {
-
-        /**
-         * Run custom code on the given response.
-         * @param response The request's response
-         * @throws IOException If there is an input/output exception
-         */
-        void run(CloseableHttpResponse response) throws IOException;
-
-    }
 }

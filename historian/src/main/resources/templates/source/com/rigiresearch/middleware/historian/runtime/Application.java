@@ -1,6 +1,5 @@
 package com.rigiresearch.middleware.historian.runtime;
 
-import com.vmware.xpath.json.JsonXpath;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,8 +22,6 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * The main class.
@@ -83,7 +80,7 @@ public class Application {
     private List<Monitor> monitors(final Scheduler scheduler) {
         final String login = this.config.getString("auth");
         return Arrays.stream(
-            this.config.getStringArray("paths")
+            this.config.getStringArray("monitors")
         )
         .map(path -> {
             final URL url;
@@ -117,10 +114,10 @@ public class Application {
                 path,
                 scheduler,
                 new Request(url, parameters, provider),
-                () -> expression
+                () -> expression,
+                this.outputParameters(path)
             );
             if (path.equals(login)) {
-                monitor.callback(this.loginCallback(login));
                 monitor.collect();
             }
             return monitor;
@@ -145,56 +142,15 @@ public class Application {
     }
 
     /**
-     * Sets up the login callback.
-     * @return The callback
+     * Instantiates a list of output parameters associated with the given path.
+     * @param path The path is
+     * @return A list of output parameters
      */
-    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-    private Monitor.Callback loginCallback(final String path) {
-        return response -> {
-            final int status = response.getStatusLine().getStatusCode();
-            if (status != Application.OK_CODE) {
-                throw new RuntimeException(
-                    String.format("Unsuccessful login. Status code is '%d'", status)
-                );
-            }
-            final String[] parameters = this.config.getStringArray(
-                String.format("%s.output.parameters", path)
-            );
-            final String type = response.getEntity()
-                .getContentType()
-                .getValue();
-            switch (type) {
-                case "application/json":
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final JsonNode content = mapper.readTree(
-                        response.getEntity().getContent()
-                    );
-                    Arrays.stream(parameters)
-                        .forEach(param -> {
-                            final String selector = this.config.getString(
-                                String.format(
-                                    "%s.output.parameters.%s.selector",
-                                    path,
-                                    param
-                                )
-                            );
-                            this.config.setProperty(
-                                String.format(
-                                    "%s.output.parameters.%s.value",
-                                    path,
-                                    param
-                                ),
-                                JsonXpath.find(content, selector).asText()
-                            );
-                        });
-                    break;
-                case "application/xml":
-                    // TODO Add support for XML content
-                default:
-                    Application.LOGGER.error("Unsupported content type '{}'", type);
-                    break;
-            }
-        };
+    private List<OutputParameter> outputParameters(final String path) {
+        final String key = String.format("%s.output.parameters", path);
+        return Arrays.stream(this.config.getStringArray(key))
+            .map(name -> new OutputParameter(this.config, path, name))
+            .collect(Collectors.toList());
     }
 
     /**
