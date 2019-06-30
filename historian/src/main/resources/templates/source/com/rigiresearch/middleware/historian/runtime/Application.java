@@ -83,42 +83,17 @@ public class Application {
             this.config.getStringArray("monitors")
         )
         .map(path -> {
-            final URL url;
-            try {
-                url = new URL(this.config.getString(String.format("%s.url", path)));
-            } catch (final MalformedURLException exception) {
-                Application.LOGGER.error("Malformed path URL", exception);
-                throw new RuntimeException(exception);
-            }
-            final String expression =
-                this.config.getString(String.format("%s.expression", path));
-            final List<Parameter> parameters =
-                Arrays.stream(
-                    this.config.getStringArray(String.format("%s.parameters", path))
-                )
-                .map(name -> this.parameter(path, name))
-                .collect(Collectors.toList());
-            final String username =
-                this.config.getString(String.format("%s.username", path));
-            final String password =
-                this.config.getString(String.format("%s.password", path));
-            CredentialsProvider provider = null;
-            if (username != null && password != null) {
-                provider = new BasicCredentialsProvider();
-                provider.setCredentials(
-                    new AuthScope(url.getHost(), url.getPort()),
-                    new UsernamePasswordCredentials(username, password)
-                );
-            }
+            final String key = String.format("%s.expression", path);
+            final String expression = this.config.getString(key);
             final Monitor monitor = new Monitor(
                 path,
                 scheduler,
-                new Request(url, parameters, provider),
                 () -> expression,
-                this.outputParameters(path)
+                this.collector(path)
             );
             if (path.equals(login)) {
-                monitor.collect();
+                // API authentication
+                monitor.collector().collect();
             }
             return monitor;
         })
@@ -126,35 +101,108 @@ public class Application {
     }
 
     /**
-     * Instantiates a {@link Parameter}.
+     * Instantiates a {@link Input}.
      * @param path The path to which this parameter is associated
      * @param name The parameter name
-     * @return A {@link Parameter}
+     * @return A {@link Input}
      */
-    private Parameter parameter(final String path, final String name) {
-        return new Parameter(
+    private Input parameter(final String path, final String name) {
+        final String value = String.format("%s.inputs.%s.value", path, name);
+        final String location = String.format("%s.inputs.%s.location", path, name);
+        return new Input(
             name,
-            () -> this.config.getString(String.format("%s.parameters.%s.value", path, name)),
-            Parameter.Location.valueOf(
-                this.config.getString(String.format("%s.parameters.%s.location", path, name))
+            () -> this.config.getString(value),
+            Input.Location.valueOf(
+                this.config.getString(location)
             )
         );
     }
 
     /**
-     * Instantiates a list of output parameters associated with the given path.
-     * @param path The path is
-     * @return A list of output parameters
+     * Instantiates a list of children data collector.
+     * @param path The path to which these collectors are associated
+     * @return A list of data collectors
      */
-    private List<OutputParameter> outputParameters(final String path) {
-        final String key = String.format("%s.output.parameters", path);
+    private List<DataCollector.ChildDataCollector> children(final String path) {
+        final List<String> monitors =
+            Arrays.asList(this.config.getStringArray("monitors"));
+        final String key = String.format("%s.children", path);
         return Arrays.stream(this.config.getStringArray(key))
-            .map(name -> new OutputParameter(this.config, path, name))
+            .map(child -> {
+                if (monitors.contains(child)) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            "Child monitor '%s' must not be listed as a monitor",
+                            child
+                        )
+                    );
+                }
+                final String input =
+                    String.format("%s.children.%s.input", path, child);
+                final String selector =
+                    String.format("%s.inputs.%s.selector", child, input);
+                return new DataCollector.ChildDataCollector(
+                    this.config.getString(selector),
+                    this.collector(child)
+                );
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Instantiates a data collector.
+     * @param path The path to which this collector is associated
+     * @return A data collector
+     */
+    private DataCollector collector(final String path) {
+        final URL url;
+        try {
+            url = new URL(this.config.getString(String.format("%s.url", path)));
+        } catch (final MalformedURLException exception) {
+            Application.LOGGER.error("Malformed path URL", exception);
+            throw new RuntimeException(exception);
+        }
+        final String key = String.format("%s.inputs", path);
+        final List<Input> inputs =
+            Arrays.stream(this.config.getStringArray(key))
+                .map(name -> this.parameter(path, name))
+                .collect(Collectors.toList());
+        final String username =
+            this.config.getString(String.format("%s.username", path));
+        final String password =
+            this.config.getString(String.format("%s.password", path));
+        CredentialsProvider provider = null;
+        if (username != null && password != null) {
+            provider = new BasicCredentialsProvider();
+            provider.setCredentials(
+                new AuthScope(url.getHost(), url.getPort()),
+                new UsernamePasswordCredentials(username, password)
+            );
+        }
+        return new DataCollector(
+            this.config,
+            path,
+            new Request(url, inputs, provider),
+            this.outputs(path),
+            this.children(path)
+        );
+    }
+
+    /**
+     * Instantiates a list of outputs associated with the given path.
+     * @param path The path is
+     * @return A list of outputs
+     */
+    private List<Output> outputs(final String path) {
+        final String key = String.format("%s.outputs", path);
+        return Arrays.stream(this.config.getStringArray(key))
+            .map(name -> new Output(this.config, path, name))
             .collect(Collectors.toList());
     }
 
     /**
      * The main entry point.
+     * TODO Move everything to a class MonitoringConfiguration
      * @param args The program arguments
      * @throws InterruptedException If something goes wrong starting the monitors
      */

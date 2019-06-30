@@ -152,15 +152,15 @@ final class MonitoringTemplate {
         #
         # The following is a valid configuration:
         #
-        # <monitor-id>.output.parameters=token
-        # <monitor-id>.output.parameters.token.selector=auth_token
+        # <monitor-id>.outputs=token
+        # <monitor-id>.outputs.token.selector=auth_token
         #
-        # You may use the value "${<monitor-id>.output.parameters.token.value}" as a
-        # parameter value for other monitors. For example:
+        # You may use the value "${<monitor-id>.outputs.token.value}" as an input
+        # value for other monitors. For example:
         #
-        # myMonitor.parameters.param1.value=${myAuthMonitor.output.parameters.token.value}
+        # myMonitor.inputs.param1.value=${myAuthMonitor.outputs.token.value}
         #
-        # Change the following parameter values and cron expressions to reflect your
+        # Change the following input values and cron expressions to reflect your
         # needs. Here is the documentation for the scheduling patterns:
         # http://www.sauronsoftware.it/projects/cron4j/manual.php#p02
         # In the case of the auth monitor, choose an appropriate expression to request
@@ -169,7 +169,7 @@ final class MonitoringTemplate {
         # You may use multiline strings by using the backslash character at the end of
         # each line. Notice that you may need to escape comma characters. For example:
         #
-        # myMonitor.parameters.param1.value=\
+        # myMonitor.inputs.param1.value=\
         # {\
         #   "attr": {\
         #     "prop1": ["value"]\,\
@@ -183,10 +183,11 @@ final class MonitoringTemplate {
             «m.path.id».url=${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»
             «m.path.id».expression=«m.rate.value»
             «IF !m.path.parameters.empty»
-                «m.path.id».parameters=«m.path.parameters.map[p|p.name].join(", ")»
+                «m.path.id».inputs=«m.path.parameters.map[p|p.name].join(", ")»
                 «FOR p : m.path.parameters»
-                    «m.path.id».parameters.«p.name».value=
-                    «m.path.id».parameters.«p.name».location=«p.location.toString.toUpperCase»
+                    «m.path.id».inputs.«p.name».value=
+                    «m.path.id».inputs.«p.name».location=«p.location.toString.toUpperCase»
+                    # «m.path.id».inputs.«p.name».selector=
                 «ENDFOR»
             «ENDIF»
         «ENDFOR»

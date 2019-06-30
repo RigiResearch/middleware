@@ -17,7 +17,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode
 @Getter
 @ToString
-public final class Parameter {
+public final class Input {
 
     /**
      * The name.
@@ -39,7 +39,7 @@ public final class Parameter {
      * @param name The parameter name
      * @param location The parameter location
      */
-    public Parameter(final String name, final Location location) {
+    public Input(final String name, final Location location) {
         this(name, () -> "", location);
     }
 
@@ -49,7 +49,7 @@ public final class Parameter {
      * @param value The parameter value
      * @param location The parameter location
      */
-    public Parameter(final String name, final Supplier<String> value,
+    public Input(final String name, final Supplier<String> value,
         final Location location) {
         this.name = name;
         this.value = value;

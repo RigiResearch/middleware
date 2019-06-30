@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -45,9 +46,9 @@ public final class Request {
     private final URL url;
 
     /**
-     * A list of parameters for the API requests.
+     * A list of input parameters for the API requests.
      */
-    private final List<Parameter> params;
+    private final List<Input> inputs;
 
     /**
      * A credentials provider (optional).
@@ -63,31 +64,33 @@ public final class Request {
     public CloseableHttpResponse response() throws IOException {
         final URI uri = this.uri();
         final CloseableHttpClient client = HttpClients.createDefault();
+        final CloseableHttpResponse response;
         if (this.provider != null) {
-            Request.LOGGER.info("Auth data found, performing POST request");
-            final HttpUriRequest request = new HttpPost(uri);
-            this.parameters(Parameter.Location.HEADER)
+            Request.LOGGER.info("Authentication data found");
+            final HttpRequest request = new HttpPost(uri);
+            this.parameters(Input.Location.HEADER)
                 .forEach(p -> request.addHeader(p.name(), p.value().get()));
             final HttpClientContext context = HttpClientContext.create();
             context.setCredentialsProvider(this.provider);
             final HttpHost host =
                 new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-            return client.execute(host, request, context);
+            response = client.execute(host, request, context);
         } else {
             final HttpUriRequest request = new HttpGet(uri);
-            this.parameters(Parameter.Location.HEADER)
+            this.parameters(Input.Location.HEADER)
                 .forEach(p -> request.addHeader(p.name(), p.value().get()));
-            return client.execute(request);
+            response = client.execute(request);
         }
+        return response;
     }
 
     /**
-     * Filters out the params based on the given parameter locations.
+     * Filters out the inputs based on the given parameter locations.
      * @param criteria The filtering criteria
      * @return A stream of parameters
      */
-    private Stream<Parameter> parameters(final Parameter.Location... criteria) {
-        return this.params.stream()
+    private Stream<Input> parameters(final Input.Location... criteria) {
+        return this.inputs.stream()
             .filter(p -> Arrays.asList(criteria).contains(p.location()));
     }
 
@@ -98,13 +101,13 @@ public final class Request {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private URI uri() {
         final List<String> flatpath = Arrays.asList(this.url.getPath());
-        this.parameters(Parameter.Location.PATH)
-            .forEach(parameter -> {
+        this.parameters(Input.Location.PATH)
+            .forEach(input -> {
                 flatpath.set(
                     0,
                     flatpath.get(0).replaceAll(
-                        String.format("\\{%s\\}", parameter.name()),
-                        parameter.value().get()
+                        String.format("\\{%s\\}", input.name()),
+                        input.value().get()
                     )
                 );
             });
@@ -113,8 +116,8 @@ public final class Request {
             .setHost(this.url.getHost())
             .setPath(flatpath.get(0));
         this.parameters(
-            Parameter.Location.QUERY,
-            Parameter.Location.FORM_DATA
+            Input.Location.QUERY,
+            Input.Location.FORM_DATA
         ).forEach(param -> {
             builder.setParameter(param.name(), param.value().get());
         });
