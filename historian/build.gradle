@@ -8,7 +8,6 @@ mainClassName = "com.rigiresearch.middleware.historian.Application"
 repositories {
   flatDir dirs: "lib"
   mavenCentral()
-  mavenLocal() // TODO remove
   maven {
     url "https://repo.eclipse.org/content/repositories/atl-releases/"
   }
@@ -33,14 +32,6 @@ dependencies {
 
   // Xtend templates
   implementation "org.eclipse.xtend:org.eclipse.xtend.lib:2.18.0"
-
-  // TODO remove
-  implementation "it.sauronsoftware.cron4j:cron4j:2.2.5"
-  implementation "org.apache.httpcomponents:httpclient:4.5.9"
-  implementation "org.apache.commons:commons-configuration2:2.5"
-  implementation "commons-beanutils:commons-beanutils:1.9.3"
-
-  implementation"com.vmware.xpath:xpath:1.0.0"
 }
 
 xtend {
