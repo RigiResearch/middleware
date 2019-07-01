@@ -1,15 +1,15 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.monitoring;
 
 import it.sauronsoftware.cron4j.Scheduler;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -25,14 +25,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The main class.
+ * Configuration of the monitors and their execution.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
-@Accessors(fluent = true)
-@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
-public class Application {
+@RequiredArgsConstructor
+public final class MonitoringConfiguration {
 
     /**
      * The logger.
@@ -40,28 +39,33 @@ public class Application {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
-     * HTTP 200 status code.
-     */
-    private static final int OK_CODE = 200;
-
-    /**
      * The properties configuration.
      */
-    private final Configuration config = Application.initialize();
+    private final Configuration config = MonitoringConfiguration.initialize();
+
+    /**
+     * A cron-like scheduler.
+     */
+    final Scheduler scheduler = new Scheduler();
 
     /**
      * An executor service.
      */
-    @Getter
     private final ExecutorService executor;
+
+    /**
+     * The configured monitors.
+     */
+    private final List<Monitor> monitors;
 
     /**
      * Default constructor.
      */
-    public Application() {
+    public MonitoringConfiguration() {
         this.executor = Executors.newFixedThreadPool(
             this.config.getInt("thread.pool.size", 30)
         );
+        this.monitors = this.setupMonitors();
     }
 
     /**
@@ -87,33 +91,52 @@ public class Application {
     }
 
     /**
+     * Starts the monitors.
+     * @throws InterruptedException See {@link ExecutorService#invokeAll(Collection)}
+     */
+    public void startMonitoring() throws InterruptedException {
+        MonitoringConfiguration.LOGGER.info("Starting the monitors...");
+        this.executor.invokeAll(this.monitors);
+        this.scheduler.start();
+    }
+
+    /**
+     * Stops the monitors.
+     */
+    public void stopMonitoring() {
+        MonitoringConfiguration.LOGGER.info("Shutting down the monitors...");
+        this.monitors.forEach(Monitor::stop);
+        this.scheduler.stop();
+        this.executor.shutdown();
+    }
+
+    /**
      * Instantiates and configures the list of monitors based on the properties
      * file "monitoring.properties" (See {@link #initialize()}).
-     * @param scheduler The task scheduler
      * @return A list of monitors
      */
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-    private List<Monitor> monitors(final Scheduler scheduler) {
+    private List<Monitor> setupMonitors() {
         final String login = this.config.getString("auth");
         return Arrays.stream(
             this.config.getStringArray("monitors")
         )
-        .map(path -> {
-            final String key = String.format("%s.expression", path);
-            final String expression = this.config.getString(key);
-            final Monitor monitor = new Monitor(
-                path,
-                scheduler,
-                () -> expression,
-                this.collector(path)
-            );
-            if (path.equals(login)) {
-                // API authentication
-                monitor.collector().collect();
-            }
-            return monitor;
-        })
-        .collect(Collectors.toList());
+            .map(path -> {
+                final String key = String.format("%s.expression", path);
+                final String expression = this.config.getString(key);
+                final Monitor monitor = new Monitor(
+                    path,
+                    this.scheduler,
+                    () -> expression,
+                    this.collector(path)
+                );
+                if (path.equals(login)) {
+                    // API authentication
+                    monitor.collector().collect();
+                }
+                return monitor;
+            })
+            .collect(Collectors.toList());
     }
 
     /**
@@ -157,7 +180,7 @@ public class Application {
                     );
                 }
                 if (expression != null) {
-                    Application.LOGGER.warn(
+                    MonitoringConfiguration.LOGGER.warn(
                         String.format(
                             "Cron expression for child monitor '%s' will be ignored",
                             child
@@ -186,7 +209,7 @@ public class Application {
         try {
             url = new URL(this.config.getString(String.format("%s.url", path)));
         } catch (final MalformedURLException exception) {
-            Application.LOGGER.error("Malformed path URL", exception);
+            MonitoringConfiguration.LOGGER.error("Malformed path URL", exception);
             throw new RuntimeException(exception);
         }
         final String key = String.format("%s.inputs", path);
@@ -228,30 +251,4 @@ public class Application {
             .collect(Collectors.toList());
     }
 
-    /**
-     * The main entry point.
-     * TODO Move everything to a class MonitoringConfiguration
-     * @param args The program arguments
-     * @throws InterruptedException If something goes wrong starting the monitors
-     */
-    public static void main(final String... args)
-        throws InterruptedException {
-        final Scheduler scheduler = new Scheduler();
-        final Application application = new Application();
-        final List<Monitor> monitors = application.monitors(scheduler);
-        Application.LOGGER.info("Starting the monitors...");
-        application.executor()
-            .invokeAll(monitors);
-        scheduler.start();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void start() {
-                Application.LOGGER.info("Shutting down the monitors...");
-                monitors.forEach(m -> m.stop());
-                scheduler.stop();
-                application.executor()
-                    .shutdown();
-            }
-        });
-    }
 }

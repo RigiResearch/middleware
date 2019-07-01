@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.monitoring;
 
 import java.util.function.Supplier;
 import lombok.EqualsAndHashCode;

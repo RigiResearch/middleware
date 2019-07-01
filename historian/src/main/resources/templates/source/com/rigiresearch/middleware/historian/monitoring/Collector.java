@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.monitoring;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -122,7 +122,7 @@ public final class Collector {
                 .request()
                 .inputs()
                 .stream()
-                .filter(param -> param.name().equals(variable))
+                .filter(in -> in.name().equals(variable))
                 .findFirst()
                 .get();
             final int index = child.collector()
@@ -141,7 +141,7 @@ public final class Collector {
                         .set(index, copy);
                     return clone;
                 })
-                .forEach(clone -> this.executor.submit(() -> clone.collect()));
+                .forEach(clone -> this.executor.submit(clone::collect));
         }
     }
 
@@ -150,14 +150,13 @@ public final class Collector {
      * @param content The request's response
      */
     private void updateOutputs(final String content) {
-        this.outputs.stream()
-            .forEach(outputs -> {
-                try {
-                    outputs.update(content);
-                } catch (final IOException exception) {
-                    Collector.LOGGER.error(exception);
-                }
-            });
+        this.outputs.forEach(outputs -> {
+            try {
+                outputs.update(content);
+            } catch (final IOException exception) {
+                Collector.LOGGER.error(exception);
+            }
+        });
     }
 
     /**
@@ -184,10 +183,10 @@ public final class Collector {
             this.path,
             this.request().clone(),
             this.outputs.stream()
-                .map(out -> out.clone())
+                .map(Output::clone)
                 .collect(Collectors.toList()),
             this.children.stream()
-                .map(child -> child.clone())
+                .map(ChildDataCollector::clone)
                 .collect(Collectors.toList()),
             this.executor
         );

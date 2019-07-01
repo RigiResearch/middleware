@@ -4,4 +4,4 @@
  * @version $Id$
  * @since 0.1.0
  */
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.monitoring;

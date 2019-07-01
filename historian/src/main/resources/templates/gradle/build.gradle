@@ -6,13 +6,13 @@ plugins {
 
 apply plugin: "maven"
 
-group = "com.rigiresearch.middleware.historian.runtime"
+group = "com.rigiresearch.middleware.historian.monitoring"
 version = "0.1.0"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-mainClassName = "com.rigiresearch.middleware.historian.runtime.Application"
+mainClassName = "com.rigiresearch.middleware.historian.Application"
 
 repositories {
   jcenter()

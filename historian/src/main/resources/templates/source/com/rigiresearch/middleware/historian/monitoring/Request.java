@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.monitoring;
 
 import java.io.IOException;
 import java.net.URI;

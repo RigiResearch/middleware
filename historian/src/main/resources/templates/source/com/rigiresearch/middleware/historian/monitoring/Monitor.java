@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.monitoring;
 
 import it.sauronsoftware.cron4j.Scheduler;
 import java.util.concurrent.Callable;

@@ -134,6 +134,9 @@ final class MonitoringTemplate {
         # The following are paths from the API specification
         monitors=«root.monitors.map[m|m.path.id].join(", ")»
 
+        # AUTHENTICATION
+        # ==============
+        #
         # If the API calls require authentication, specify a monitor id from the
         # previous list to request an authentication token:
         #
@@ -146,8 +149,11 @@ final class MonitoringTemplate {
         # <monitor-id>.username=${env:API_AUTH_USERNAME}
         # <monitor-id>.password=${env:API_AUTH_PASSWORD}
         #
-        # Then, specify the output parameters using a Xpath selector. For example, for
-        # the following JSON response (from an authentication request):
+        # INPUTS AND OUTPUTS
+        # ==================
+        #
+        # Specify output parameters using an Xpath selector. For example, for the
+        # following JSON response (from an authentication request):
         #
         # {
         #   "auth_token" = "..."
@@ -163,12 +169,6 @@ final class MonitoringTemplate {
         #
         # myMonitor.inputs.param1.value=${myAuthMonitor.outputs.token.value}
         #
-        # Change the following input values and cron expressions to reflect your
-        # needs. Here is the documentation for the scheduling patterns:
-        # http://www.sauronsoftware.it/projects/cron4j/manual.php#p02
-        # In the case of the auth monitor, choose an appropriate expression to request
-        # an authentication token before the current one expires.
-        #
         # You may use multiline strings by using the backslash character at the end of
         # each line. Notice that you may need to escape comma characters. For example:
         #
@@ -182,14 +182,59 @@ final class MonitoringTemplate {
         #   }\
         # }
         #
+        # CRON EXPRESSIONS
+        # ================
+        #
+        # Update the cron expressions to reflect your needs. Here is the documentation
+        # for the scheduling patterns:
+        #
+        # http://www.sauronsoftware.it/projects/cron4j/manual.php#p02
+        #
+        # In the case of the auth monitor, choose an appropriate expression to request
+        # an authentication token before the current one expires.
+        #
+        # DEPENDENT MONITORS
+        # ==================
+        #
+        # Dependent monitors are useful when one monitor requires input data provided
+        # by another one to collect further details. For example, let's assume monitor
+        # "VMs" collects the following data:
+        #
+        # {
+        #   "value": [
+        #     {
+        #       "vm": "vm-123",
+        #       "name": "my-awesome-vm",
+        #       ...
+        #     },
+        #     ...
+        #   ]
+        # }
+        #
+        # To collect further details about my-awesome-vm (and the rest of VMs), another
+        # monitor would need the to know its id (i.e., "vm-123"). An output parameter
+        # is not enough in this case because there can be many values. This can be
+        # configured using the property "children", as follows:
+        #
+        # VMs.children=VM
+        # VMs.children.VM.input=id
+        #
+        # That configuration assumes that monitor "VM" has an input parameter "id".
+        # Such a parameter will be set at run-time automatically. Any value setup in
+        # this file will be ignored, as well as any expression setup for monitor "VM".
+        # An extra property "selector" must be configured for input "id", which is an
+        # Xpath selector. This is to extract the values from the data collected by the
+        # parent monitor. Any child monitor must not be listed in the variable "monitors".
+        #
         «FOR m : root.monitors SEPARATOR '\n'»
             «m.path.id».url=${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»
             «m.path.id».expression=«m.rate.value»
+            # «m.path.id».children=
             «IF !m.path.parameters.empty»
                 «m.path.id».inputs=«m.path.parameters.map[p|p.name].join(", ")»
                 «FOR p : m.path.parameters»
-                    «m.path.id».inputs.«p.name».value=
                     «m.path.id».inputs.«p.name».location=«p.location.toString.toUpperCase»
+                    # «m.path.id».inputs.«p.name».value=
                     # «m.path.id».inputs.«p.name».selector=
                 «ENDFOR»
             «ENDIF»
