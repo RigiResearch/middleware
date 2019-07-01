@@ -44,7 +44,7 @@ public final class Monitor implements Runnable, Callable<Void> {
      * A data collector.
      */
     @Getter
-    private final DataCollector collector;
+    private final Collector collector;
 
     /**
      * The identifier of the scheduled task.

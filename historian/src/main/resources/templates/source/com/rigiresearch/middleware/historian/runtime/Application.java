@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -29,8 +30,8 @@ import org.apache.logging.log4j.Logger;
  * @version $Id$
  * @since 0.1.0
  */
+@Accessors(fluent = true)
 @SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
-@RequiredArgsConstructor
 public class Application {
 
     /**
@@ -47,6 +48,21 @@ public class Application {
      * The properties configuration.
      */
     private final Configuration config = Application.initialize();
+
+    /**
+     * An executor service.
+     */
+    @Getter
+    private final ExecutorService executor;
+
+    /**
+     * Default constructor.
+     */
+    public Application() {
+        this.executor = Executors.newFixedThreadPool(
+            this.config.getInt("thread.pool.size", 30)
+        );
+    }
 
     /**
      * Loads the configuration file.
@@ -123,7 +139,7 @@ public class Application {
      * @param path The path to which these collectors are associated
      * @return A list of data collectors
      */
-    private List<DataCollector.ChildDataCollector> children(final String path) {
+    private List<Collector.ChildDataCollector> children(final String path) {
         final List<String> monitors =
             Arrays.asList(this.config.getStringArray("monitors"));
         final String key = String.format("%s.children", path);
@@ -152,7 +168,7 @@ public class Application {
                     String.format("%s.children.%s.input", path, child);
                 final String selector =
                     String.format("%s.inputs.%s.selector", child, input);
-                return new DataCollector.ChildDataCollector(
+                return new Collector.ChildDataCollector(
                     this.config.getString(selector),
                     this.collector(child)
                 );
@@ -165,7 +181,7 @@ public class Application {
      * @param path The path to which this collector is associated
      * @return A data collector
      */
-    private DataCollector collector(final String path) {
+    private Collector collector(final String path) {
         final URL url;
         try {
             url = new URL(this.config.getString(String.format("%s.url", path)));
@@ -190,12 +206,13 @@ public class Application {
                 new UsernamePasswordCredentials(username, password)
             );
         }
-        return new DataCollector(
+        return new Collector(
             this.config,
             path,
             new Request(url, inputs, provider),
             this.outputs(path),
-            this.children(path)
+            this.children(path),
+            this.executor
         );
     }
 
@@ -220,10 +237,11 @@ public class Application {
     public static void main(final String... args)
         throws InterruptedException {
         final Scheduler scheduler = new Scheduler();
-        final List<Monitor> monitors = new Application().monitors(scheduler);
-        final ExecutorService exec = Executors.newFixedThreadPool(monitors.size());
+        final Application application = new Application();
+        final List<Monitor> monitors = application.monitors(scheduler);
         Application.LOGGER.info("Starting the monitors...");
-        exec.invokeAll(monitors);
+        application.executor()
+            .invokeAll(monitors);
         scheduler.start();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -231,7 +249,8 @@ public class Application {
                 Application.LOGGER.info("Shutting down the monitors...");
                 monitors.forEach(m -> m.stop());
                 scheduler.stop();
-                exec.shutdown();
+                application.executor()
+                    .shutdown();
             }
         });
     }

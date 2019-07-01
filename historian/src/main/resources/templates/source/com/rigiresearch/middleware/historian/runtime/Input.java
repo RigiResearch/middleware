@@ -56,6 +56,15 @@ public final class Input {
         this.location = location;
     }
 
+    @Override
+    protected Input clone() {
+        return new Input(
+            this.name,
+            this.value,
+            this.location
+        );
+    }
+
     /**
      * Location of a request parameter.
      * @author Miguel Jimenez (miguel@uvic.ca)

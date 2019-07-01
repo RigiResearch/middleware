@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -22,7 +24,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Accessors(fluent = true)
 @RequiredArgsConstructor
-public final class DataCollector {
+public final class Collector {
 
     /**
      * The logger.
@@ -67,29 +69,30 @@ public final class DataCollector {
     private final List<ChildDataCollector> children;
 
     /**
+     * An executor service.
+     */
+    private final ExecutorService executor;
+
+    /**
      * Collects the data from the API.
      */
     public void collect() {
         try {
             final CloseableHttpResponse response = this.request.response();
-            if (response.getStatusLine().getStatusCode() == DataCollector.OK_CODE) {
+            if (response.getStatusLine().getStatusCode() == Collector.OK_CODE) {
                 // TODO Instantiate the schema class based on the response content
                 final String content =
-                    DataCollector.asString(response.getEntity().getContent());
-                DataCollector.LOGGER.debug(
-                    "Data collected: {}...",
-                    content.substring(0, Math.min(100, content.length()))
-                );
+                    Collector.asString(response.getEntity().getContent());
                 this.updateOutputs(content);
                 this.childrenCollect(content);
             } else {
-                DataCollector.LOGGER.error(
+                Collector.LOGGER.error(
                     "Unexpected response code '{}'",
                     response.getStatusLine().getStatusCode()
                 );
             }
         } catch (final IOException exception) {
-            DataCollector.LOGGER.error("Request execution error", exception);
+            Collector.LOGGER.error("Request execution error", exception);
         }
     }
 
@@ -108,25 +111,37 @@ public final class DataCollector {
                     child.collector().path()
                 )
             );
-            final String input = String.format(
-                "%s.inputs.%s.value",
-                child.collector().path(),
-                variable
+            final String selector = this.config.getString(
+                String.format(
+                    "%s.inputs.%s.selector",
+                    child.collector().path(),
+                    variable
+                )
             );
-            final String selector = String.format(
-                "%s.inputs.%s.selector",
-                child.collector().path(),
-                variable
-            );
-            final List<String> values = new XpathValue(
-                this.config.getString(selector),
-                content
-            ).values();
-            for (final String value : values) {
-                // One bye one, collect the corresponding data
-                this.config.setProperty(input, value);
-                child.collector().collect();
-            }
+            final Input input = child.collector()
+                .request()
+                .inputs()
+                .stream()
+                .filter(param -> param.name().equals(variable))
+                .findFirst()
+                .get();
+            final int index = child.collector()
+                .request()
+                .inputs()
+                .indexOf(input);
+            new XpathValue(selector, content)
+                .values()
+                .stream()
+                .map(value -> {
+                    final Collector clone = child.collector().clone();
+                    final Input copy =
+                        new Input(input.name(), () -> value, input.location());
+                    clone.request()
+                        .inputs()
+                        .set(index, copy);
+                    return clone;
+                })
+                .forEach(clone -> this.executor.submit(() -> clone.collect()));
         }
     }
 
@@ -140,7 +155,7 @@ public final class DataCollector {
                 try {
                     outputs.update(content);
                 } catch (final IOException exception) {
-                    DataCollector.LOGGER.error(exception);
+                    Collector.LOGGER.error(exception);
                 }
             });
     }
@@ -153,13 +168,29 @@ public final class DataCollector {
      */
     private static String asString(final InputStream stream) throws IOException {
         final ByteArrayOutputStream result = new ByteArrayOutputStream();
-        final byte[] buffer = new byte[DataCollector.BUFFER_SIZE];
+        final byte[] buffer = new byte[Collector.BUFFER_SIZE];
         int length = stream.read(buffer);
         while (length != -1) {
             result.write(buffer, 0, length);
             length = stream.read(buffer);
         }
         return result.toString(StandardCharsets.UTF_8.toString());
+    }
+
+    @Override
+    protected Collector clone() {
+        return new Collector(
+            this.config,
+            this.path,
+            this.request().clone(),
+            this.outputs.stream()
+                .map(out -> out.clone())
+                .collect(Collectors.toList()),
+            this.children.stream()
+                .map(child -> child.clone())
+                .collect(Collectors.toList()),
+            this.executor
+        );
     }
 
     /**
@@ -180,7 +211,15 @@ public final class DataCollector {
         /**
          * The child data collector.
          */
-        private final DataCollector collector;
+        private final Collector collector;
+
+        @Override
+        protected ChildDataCollector clone() {
+            return new ChildDataCollector(
+                this.selector,
+                this.collector.clone()
+            );
+        }
 
     }
 

@@ -57,4 +57,13 @@ public final class Output {
         );
     }
 
+    @Override
+    protected Output clone() {
+        return new Output(
+            this.config,
+            this.path,
+            this.name
+        );
+    }
+
 }

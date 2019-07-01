@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,7 @@ public final class Request {
                 .forEach(p -> request.addHeader(p.name(), p.value().get()));
             response = client.execute(request);
         }
+        Request.LOGGER.debug(uri.getPath());
         return response;
     }
 
@@ -127,6 +129,17 @@ public final class Request {
             Request.LOGGER.error("Malformed URI", exception);
             throw new RuntimeException(exception);
         }
+    }
+
+    @Override
+    protected Request clone() {
+        return new Request(
+            this.url,
+            this.inputs.stream()
+                .map(in -> in.clone())
+                .collect(Collectors.toList()),
+            this.provider
+        );
     }
 
 }
