@@ -76,24 +76,24 @@ public final class Collector {
     /**
      * Collects the data from the API.
      */
-    public void collect() {
+    public String collect() {
+        String content = "";
         try {
             final CloseableHttpResponse response = this.request.response();
+            content = Collector.asString(response.getEntity().getContent());
             if (response.getStatusLine().getStatusCode() == Collector.OK_CODE) {
-                // TODO Instantiate the schema class based on the response content
-                final String content =
-                    Collector.asString(response.getEntity().getContent());
                 this.updateOutputs(content);
                 this.childrenCollect(content);
             } else {
                 Collector.LOGGER.error(
-                    "Unexpected response code '{}'",
+                    "Unexpected response code '{}'.",
                     response.getStatusLine().getStatusCode()
                 );
             }
         } catch (final IOException exception) {
             Collector.LOGGER.error("Request execution error", exception);
         }
+        return content;
     }
 
     /**

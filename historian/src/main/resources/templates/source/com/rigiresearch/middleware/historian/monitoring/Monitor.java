@@ -41,6 +41,11 @@ public final class Monitor implements Runnable, Callable<Void> {
     private final Supplier<String> expression;
 
     /**
+     * Whether to process the collected data or not.
+     */
+    private final Supplier<Boolean> process;
+
+    /**
      * A data collector.
      */
     @Getter
@@ -57,10 +62,12 @@ public final class Monitor implements Runnable, Callable<Void> {
     @Override
     public void run() {
         Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
-        this.identifier = this.scheduler.schedule(
-            this.expression.get(),
-            () -> this.collector.collect()
-        );
+        this.identifier = this.scheduler.schedule(this.expression.get(), () -> {
+            final String content = this.collector.collect();
+            if (this.process.get()) {
+                // TODO Instantiate the schema class based on the response content
+            }
+        });
     }
 
     /**

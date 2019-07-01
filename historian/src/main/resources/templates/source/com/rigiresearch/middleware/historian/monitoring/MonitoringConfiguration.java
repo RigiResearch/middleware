@@ -122,12 +122,16 @@ public final class MonitoringConfiguration {
             this.config.getStringArray("monitors")
         )
             .map(path -> {
-                final String key = String.format("%s.expression", path);
-                final String expression = this.config.getString(key);
                 final Monitor monitor = new Monitor(
                     path,
                     this.scheduler,
-                    () -> expression,
+                    () -> this.config.getString(
+                        String.format("%s.expression", path)
+                    ),
+                    () -> this.config.getBoolean(
+                        String.format("%s.response.process", path),
+                        true
+                    ),
                     this.collector(path)
                 );
                 if (path.equals(login)) {
