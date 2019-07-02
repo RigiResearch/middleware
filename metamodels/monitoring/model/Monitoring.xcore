@@ -123,7 +123,7 @@ enum Type {
 /*
  * <p>The location of a located property. This enum is based on the OpenAPI
  * specification (cf. ParameterLocation). However, as the monitoring paths are
- * only of type GET, the BODY and FORM_DATA constants are not used.
+ * only of type GET, the BODY constant is not used.
  */
 enum PropertyLocation {
     BODY as "body" = 0
