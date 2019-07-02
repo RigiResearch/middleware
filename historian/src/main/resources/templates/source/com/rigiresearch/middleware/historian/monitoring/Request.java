@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 @Accessors(fluent = true)
 @Getter
 @RequiredArgsConstructor
-public final class Request {
+public final class Request implements Cloneable {
 
     /**
      * The logger.

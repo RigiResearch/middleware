@@ -229,6 +229,7 @@ final class MonitoringTemplate {
         «FOR m : root.monitors SEPARATOR '\n'»
             «m.path.id».url=${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»
             «m.path.id».expression=«m.rate.value»
+            «m.path.id».response.class=«MonitoringTemplate.PACKAGE».«m.path.id.asClassName»
             # «m.path.id».children=
             «IF !m.path.parameters.empty»
                 «m.path.id».inputs=«m.path.parameters.map[p|p.name].join(", ")»

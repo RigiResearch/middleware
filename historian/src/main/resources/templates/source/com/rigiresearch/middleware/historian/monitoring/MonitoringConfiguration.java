@@ -124,16 +124,13 @@ public final class MonitoringConfiguration {
             .map(path -> {
                 final Monitor monitor = new Monitor(
                     path,
+                    this.config,
                     this.scheduler,
-                    () -> this.config.getString(
-                        String.format("%s.expression", path)
-                    ),
-                    () -> this.config.getBoolean(
-                        String.format("%s.response.process", path),
-                        true
-                    ),
-                    this.collector(path)
+                    this.collector(path),
+                    this.dependent(path),
+                    this.executor
                 );
+                // TODO move login to a separate method
                 if (path.equals(login)) {
                     // API authentication
                     monitor.collector().collect();
@@ -166,8 +163,8 @@ public final class MonitoringConfiguration {
      * @param path The path to which these collectors are associated
      * @return A list of data collectors
      */
-    private List<Collector.ChildDataCollector> children(final String path) {
-        final List<String> monitors =
+    private List<Monitor.DependentMonitor> dependent(final String path) {
+        final List<String> ids =
             Arrays.asList(this.config.getStringArray("monitors"));
         final String key = String.format("%s.children", path);
         return Arrays.stream(this.config.getStringArray(key))
@@ -175,10 +172,10 @@ public final class MonitoringConfiguration {
                 final String expression = this.config.getString(
                     String.format("%s.expression", child)
                 );
-                if (monitors.contains(child)) {
+                if (ids.contains(child)) {
                     throw new IllegalArgumentException(
                         String.format(
-                            "Child monitor '%s' must not be listed as a monitor",
+                            "Dependent monitor '%s' must not be listed as a monitor",
                             child
                         )
                     );
@@ -186,7 +183,7 @@ public final class MonitoringConfiguration {
                 if (expression != null) {
                     MonitoringConfiguration.LOGGER.warn(
                         String.format(
-                            "Cron expression for child monitor '%s' will be ignored",
+                            "Cron expression for dependent monitor '%s' will be ignored",
                             child
                         )
                     );
@@ -195,9 +192,16 @@ public final class MonitoringConfiguration {
                     String.format("%s.children.%s.input", path, child);
                 final String selector =
                     String.format("%s.inputs.%s.selector", child, input);
-                return new Collector.ChildDataCollector(
+                return new Monitor.DependentMonitor(
                     this.config.getString(selector),
-                    this.collector(child)
+                    new Monitor(
+                        child,
+                        this.config,
+                        this.scheduler,
+                        this.collector(child),
+                        this.dependent(child),
+                        this.executor
+                    )
                 );
             })
             .collect(Collectors.toList());
@@ -234,12 +238,9 @@ public final class MonitoringConfiguration {
             );
         }
         return new Collector(
-            this.config,
             path,
             new Request(url, inputs, provider),
-            this.outputs(path),
-            this.children(path),
-            this.executor
+            this.outputs(path)
         );
     }
 

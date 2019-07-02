@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
  * @since 0.1.0
  */
 @RequiredArgsConstructor
-public final class Output {
+public final class Output implements Cloneable {
 
     /**
      * The logger.
