@@ -280,7 +280,7 @@ final class MonitoringTemplate {
         @Accessors(fluent = true)
         @Value
         @Generated(value = "Historian", date = "«new Date()»")
-        public final class «monitor.path.id.toFirstUpper» {
+        public final class «monitor.path.id.asClassName» {
 
             «FOR property : monitor.schema.properties SEPARATOR '\n'»
                 «property.asJavaField»
