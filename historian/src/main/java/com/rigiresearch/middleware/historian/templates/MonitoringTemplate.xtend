@@ -77,7 +77,7 @@ final class MonitoringTemplate {
         );
 
         // Generate new files
-        root.monitors.forEach[m|m.asJavafile(target).write(m.asJavaClass)]
+        root.monitors.forEach[m|m.asJavaFile(target).write(m.asJavaClass)]
         new File(target, "src/main/resources/monitoring.properties")
             .write(root.asProperties)
     }
@@ -88,9 +88,9 @@ final class MonitoringTemplate {
      * @param target The target directory
      * @return A {@link File}
      */
-    def private asJavafile(Monitor monitor, File target) {
+    def private asJavaFile(Monitor monitor, File target) {
         val ^package = MonitoringTemplate.PACKAGE.replaceAll("\\.", "/")
-        new File(target, '''src/main/java/«^package»/«monitor.path.id.toFirstUpper».java''')
+        new File(target, '''src/main/java/«^package»/«monitor.path.id.asClassName».java''')
     }
 
     /**
@@ -352,7 +352,13 @@ final class MonitoringTemplate {
      * @return A valid camel-case class name
      */
     def private asClassName(String name) {
-        name.split("_").map[t|t.substring(0, 1).toUpperCase + t.substring(1)].join
+        name.split("_")
+            .map[t|t.substring(0, 1).toUpperCase + t.substring(1)]
+            .join
+            .split("-")
+            .map[t|t.substring(0, 1).toUpperCase + t.substring(1)]
+            .join
+            .replaceAll("[^a-zA-Z0-9]", "")
     }
 
     /**

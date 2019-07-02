@@ -62,6 +62,23 @@ helper context openapi!ArrayContext def: getDataType(): monitoring!DataType =
 		thisModule._getArrayFromContext(self)
 	endif;
 
+--- helper openapi!Path createName: returns a path id composed of the path's
+--- GET operation id and the last segment of the relative path. If the last
+--- segment is a parameter, it takes the one before.
+--- 
+--- TODO This helper should be improved. It may generate duplicate names.
+helper context openapi!Path def: createName(): String =
+	let index: Integer =
+		if self.relativePath.endsWith('}') then
+			self.relativePath.split('/').size() - 1
+		else
+			self.relativePath.split('/').size()
+		endif
+	in 
+		self.get.operationId + '-'
+			+ self.relativePath.split('/').at(index)
+				.replaceAll('[^a-zA-Z0-9]', '-').replaceAll('-$', '');
+
 
 -- Matched rules
 
@@ -99,7 +116,7 @@ lazy rule _getMonitor {
 			rate <- me
 		),
 		mp: monitoring!Path (
-			id <- op.get.operationId,
+			id <- op->createName(),
 			url <- op.relativePath,
 			parameters <- op.get.parameters
 				-> collect(p | thisModule._getParameter(p))
