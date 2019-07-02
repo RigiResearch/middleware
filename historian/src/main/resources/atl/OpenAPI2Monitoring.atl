@@ -23,8 +23,13 @@ helper context openapi!Schema def: getDataType(): monitoring!DataType =
 			if self.type = #object then
 				thisModule._getSchema(self)
 			else
-				-- JSONSchemaSubset
-				thisModule._getDataType(self.type)
+				-- Type reference (Schema without type)
+				if self.type = #unspecified and not (self.value = OclUndefined) then
+					self.value->getDataType()
+				else
+					-- JSONSchemaSubset
+					thisModule._getDataType(self.type)
+				endif
 			endif
 		endif;
 
