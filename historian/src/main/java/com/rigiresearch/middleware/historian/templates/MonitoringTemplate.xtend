@@ -272,14 +272,16 @@ final class MonitoringTemplate {
 
         import javax.annotation.Generated;
 
-        import lombok.Value;
-        import lombok.experimental.Accessors;
+        import lombok.Data;
+        import lombok.NoArgsConstructor;
+        import lombok.AllArgsConstructor;
 
         /**
          * Response object for path '<em><b>«monitor.path.id»</b></em>'.
          */
-        @Accessors(fluent = true)
-        @Value
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
         @Generated(value = "Historian", date = "«new Date()»")
         public final class «monitor.path.id.asClassName» {
 
@@ -378,8 +380,9 @@ final class MonitoringTemplate {
                 /**
                  * Java class for schema object from property '<em><b>«name»</b></em>'.
                  */
-                @Accessors(fluent = true)
-                @Value
+                @Data
+                @AllArgsConstructor
+                @NoArgsConstructor
                 public final class «name.asClassName»«calls» {
 
                     «FOR property : type.properties SEPARATOR '\n'»
@@ -429,7 +432,7 @@ final class MonitoringTemplate {
         /**
          * The value of the '<em><b>«property.name»</b></em>' property.
          */
-        private final «property.asJavaType» «property.name»;
+        private «property.asJavaType» «property.name»;
     '''
 
 }
