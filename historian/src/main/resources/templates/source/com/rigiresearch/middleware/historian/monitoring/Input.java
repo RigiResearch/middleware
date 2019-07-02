@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 
 /**
  * A request parameter.
+ * TODO Add attribute "required" to verify miss-configurations.
  * @see Location
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
