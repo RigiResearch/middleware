@@ -342,7 +342,7 @@ final class MonitoringTemplate {
      */
     def private fail(Type type) {
         throw new IllegalArgumentException(
-            '''Unsupported property value «type.toString»'''
+            '''Unsupported property value "«type.toString»"'''
         );
     }
 
