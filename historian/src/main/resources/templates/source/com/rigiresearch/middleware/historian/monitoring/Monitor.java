@@ -138,7 +138,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         final String content = this.collector.collect();
         if (process) {
             try {
-                if (this.class == Object.class) {
+                if (this.clazz == Object.class) {
                     this.clazz = Class.forName(this.config.getString(fqn));
                 }
                 if (!Monitor.objects.containsKey(this.name)) {
