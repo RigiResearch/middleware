@@ -3,7 +3,9 @@ package com.rigiresearch.middleware.historian.monitoring;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +35,12 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(Monitor.class);
+
+    /**
+     * A globally shared repository of collected objects.
+     * The key is the path id.
+     */
+    private static final Map<String, Object> objects = new HashMap<>();
 
     /**
      * The corresponding path's id.
@@ -88,39 +96,13 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     private String identifier = "";
 
     /**
-     * The previous copy of the data.
-     */
-    private Object previous = null;
-
-    /**
      * Schedules the periodic requests.
      */
     @Override
     public void run() {
-        final String fqn = String.format("%s.response.class", this.name);
         final String expression = this.config.getString(
             String.format("%s.expression", this.name)
         );
-        final boolean process = this.config.getBoolean(
-            String.format("%s.response.process", this.name),
-            true
-        );
-        if (process) {
-            try {
-                this.clazz = Class.forName(this.config.getString(fqn));
-                if (this.previous == null) {
-                    this.previous = this.clazz.newInstance();
-                }
-            } catch (final ClassNotFoundException exception) {
-                final String cnf = String.format(
-                    "Class '%s' for monitor '%s' was not found", fqn, this.name);
-                Monitor.LOGGER.error(cnf, exception);
-            } catch (final IllegalAccessException | InstantiationException exception) {
-                final String error =
-                    String.format("Initialization problem for class '%s'", fqn);
-                Monitor.LOGGER.error(error, exception);
-            }
-        }
         Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
         this.identifier = this.scheduler.schedule(expression, () -> this.collect());
     }
@@ -148,6 +130,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      * @return The collected data
      */
     private String collect() {
+        final String fqn = String.format("%s.response.class", this.name);
         final boolean process = this.config.getBoolean(
             String.format("%s.response.process", this.name),
             true
@@ -155,13 +138,32 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         final String content = this.collector.collect();
         if (process) {
             try {
+                if (this.class == Object.class) {
+                    this.clazz = Class.forName(this.config.getString(fqn));
+                }
+                if (!Monitor.objects.containsKey(this.name)) {
+                    Monitor.objects.put(this.name, this.clazz.newInstance());
+                }
+            } catch (final ClassNotFoundException exception) {
+                final String cnf = String.format(
+                    "Class '%s' for monitor '%s' was not found", fqn, this.name);
+                Monitor.LOGGER.error(cnf, exception);
+            } catch (final IllegalAccessException | InstantiationException exception) {
+                final String error =
+                    String.format("Initialization problem for class '%s'", fqn);
+                Monitor.LOGGER.error(error, exception);
+            }
+            try {
                 // TODO Add a config property to interpret the first collected
                 //  resources as new (this as an alternative to just keep them)
                 final Object current = this.mapper.readValue(content, this.clazz);
-                final Diff diff = this.javers.compare(this.previous, current);
+                final Diff diff = this.javers.compare(
+                    Monitor.objects.get(this.name),
+                    current
+                );
                 if (!diff.getChanges().isEmpty()) {
                     Monitor.LOGGER.info("{}", diff.changesSummary());
-                    this.previous = current;
+                    Monitor.objects.put(this.name, current);
                 }
             } catch (final IOException exception) {
                 final String error =
