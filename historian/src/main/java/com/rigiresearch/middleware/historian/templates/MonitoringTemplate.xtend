@@ -3,18 +3,21 @@ package com.rigiresearch.middleware.historian.templates
 import com.rigiresearch.middleware.metamodels.monitoring.Array
 import com.rigiresearch.middleware.metamodels.monitoring.DataType
 import com.rigiresearch.middleware.metamodels.monitoring.Monitor
+import com.rigiresearch.middleware.metamodels.monitoring.Path
 import com.rigiresearch.middleware.metamodels.monitoring.Property
 import com.rigiresearch.middleware.metamodels.monitoring.Root
 import com.rigiresearch.middleware.metamodels.monitoring.Schema
 import com.rigiresearch.middleware.metamodels.monitoring.Type
-import java.util.Date
-import java.util.List
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.util.Date
+import java.util.List
+import java.util.Map
+import org.eclipse.xtend.lib.annotations.Data
 
 /**
  * Generate classes from the monitoring model. More specifically, from the
@@ -34,7 +37,19 @@ final class MonitoringTemplate {
     /**
      * The package for the generated sources.
      */
-	static final String PACKAGE = "com.rigiresearch.middleware.historian.api"
+    static final String PACKAGE = "com.rigiresearch.middleware.historian.api"
+
+    /**
+     * A list of used class names to prevent duplicates.
+     */
+    final Map<String, List<String>> names
+
+    /**
+     * Default constructor.
+     */
+    new() {
+        this.names = newHashMap
+    }
 
     /**
      * Generates the Java project for monitoring a specific cloud provider.
@@ -226,7 +241,7 @@ final class MonitoringTemplate {
         # Xpath selector. This is to extract the values from the data collected by the
         # parent monitor. Any child monitor must not be listed in the variable "monitors".
         #
-        «FOR m : root.monitors SEPARATOR '\n'»
+        «FOR m : root.monitors SEPARATOR '\n\n'»
             «m.path.id».url=${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»
             «m.path.id».expression=«m.rate.value»
             «m.path.id».response.class=«MonitoringTemplate.PACKAGE».«m.path.id.asClassName»
@@ -268,6 +283,7 @@ final class MonitoringTemplate {
      * @return The contents of a Java class
      */
     def asJavaClass(Monitor monitor) '''
+        «val className = monitor.path.id.asClassName»
         package «MonitoringTemplate.PACKAGE»;
 
         import javax.annotation.Generated;
@@ -283,41 +299,43 @@ final class MonitoringTemplate {
         @AllArgsConstructor
         @NoArgsConstructor
         @Generated(value = "Historian", date = "«new Date()»")
-        public final class «monitor.path.id.asClassName» {
+        public final class «className» {
 
-            «FOR property : monitor.schema.properties SEPARATOR '\n'»
-                «property.asJavaField»
-            «ENDFOR»
-
-            «FOR property : monitor.schema.properties.filter[p|p.type.hasInnerClass]»
-                «property.asInnerClasses»
-            «ENDFOR»
+            «monitor.asJavaMembers(className)»
 
         }
     '''
 
     /**
-     * Maps the given property to its Java type version.
-     * @param property The schema property
-     * @return The name of the corresponding Java type
+     * Generate class attributes and inner classes for a given monitor.
+     * @param monitor The monitor for which the members are generated
+     * @param className The name of the enclosing class
      */
-    def private asJavaType(Property property) {
-        property.type.asJavaType(property.name, 0)
-    }
+    def asJavaMembers(Monitor monitor, String className) {
+        val fields = newArrayList
+        val classes = newArrayList
+        monitor.schema.properties.forEach[ property |
+            if (property.type.hasInnerClass) {
+                val result = property.asInnerClasses(className)
+                val typeName = '''«result.typeName»«IF result.fromArray»[]«ENDIF»'''
+                fields.add(property.asJavaField(typeName))
+                classes.addAll(result.classes)
+            } else {
+                // This branch would only be visited if the request returns a
+                // primitive value instead of a JSON/XML document.
+                val primitive = property.type.type.asJavaType
+                fields.add(property.asJavaField(primitive))
+            }
+        ]
+        '''
+            «FOR field : fields.reverseView SEPARATOR '\n'»
+                «field»
+            «ENDFOR»
 
-    /**
-     * Maps the given data type to its Java version.
-     * @param type The data type
-     * @param name The name of the associated property
-     * @param calls The number of inner calls
-     * @return The name of the corresponding Java type
-     */
-    def private String asJavaType(DataType type, String name, int calls) {
-        switch type {
-            Schema: '''«name.asClassName»«calls»'''
-            Array: '''«type.subtype.asJavaType(name + type.hashCode, calls + 1)»[]'''
-            default: type.type.asJavaType
-        }
+            «FOR clazz : classes.reverseView SEPARATOR '\n'»
+                «clazz»
+            «ENDFOR»
+        '''
     }
 
     /**
@@ -328,7 +346,8 @@ final class MonitoringTemplate {
     def private asJavaType(Type type) {
         switch type {
             case BOOLEAN: "boolean"
-            case INTEGER: "int"
+            // TODO Add support for int64 format
+            case INTEGER: "long"
             case NUMBER: "double"
             case STRING: "String"
             default: this.fail(type)
@@ -364,55 +383,68 @@ final class MonitoringTemplate {
     /**
      * Creates inner classes (as Strings) based on a given property.
      * @param property The schema property
-     * @return Java code containing the inner classes and nothing else
+     * @param className The name of the enclosing class
+     * @return A pair containing the type name of the source property and the
+     *  inner classes generated
      */
-    def private asInnerClasses(Property property) {
-        this.asInnerClasses(property.name, property.type, 0).join("\n")
+    def private asInnerClasses(Property property, String className) {
+        this.asInnerClasses(
+            className,
+            property.name,
+            property.type,
+            property.type instanceof Array
+        )
     }
 
     /**
      * Creates inner classes (as Strings) based on a given data type. This
      * method is recursive.
-     * @param name The associated property's name
-     * @param type The current data type being consider for class creation
-     * @param calls The number of inner calls
-     * @return A list of inner classes
+     * @param className The name of the enclosing class
+     * @param name The name of the associated property
+     * @param type The current data type being considered for class creation
+     * @return A pair containing the type name of the source property and the
+     *  inner classes generated
      */
-    def private List<String> asInnerClasses(String name, DataType type, int calls) {
+    def private Result asInnerClasses(String className,
+        String name, DataType type, boolean fromArray) {
+        var _fromArray = false
+        var typeName = ""
         val classes = newArrayList
         switch type {
             Schema: {
+                typeName = this.nextName(className, name)
                 val clazz = '''
-                /**
-                 * Java class for schema object from property '<em><b>«name»</b></em>'.
-                 */
-                @Data
-                @AllArgsConstructor
-                @NoArgsConstructor
-                public final class «name.asClassName»«calls» {
+                    /**
+                     * Java class for schema object from property '<em><b>«name»</b></em>'.
+                     */
+                    @Data
+                    @AllArgsConstructor
+                    @NoArgsConstructor
+                    public static final class «typeName» {
 
-                    «FOR property : type.properties SEPARATOR '\n'»
-                        «property.asJavaField»
-                        ««« Recursive call: is this attribute an Object or Array?
-                        «val dummy = classes.addAll(this.asInnerClasses(property.name, property.type, 0))»
-                    «ENDFOR»
+                        «FOR property : type.properties SEPARATOR '\n'»
+                            ««« Recursive call: is this attribute an Object or Array?
+                            «val innerResult = this.asInnerClasses(className, property.name, property.type, false)»
+                            «val dummy = classes.addAll(innerResult.classes)»
+                            «property.asJavaField('''«innerResult.typeName»«IF innerResult.fromArray»[]«ENDIF»''')»
+                        «ENDFOR»
 
-                }
+                    }
                 '''
                 classes.add(clazz)
             }
             Array: {
-                classes.addAll(
-                    // Recursive call: is the sub-type an Object or Array?
-                    this.asInnerClasses(
-                        name + type.hashCode,
-                        type.subtype,
-                        calls + 1
-                    )
-                )
+                // Recursive call: is the sub-type an Object or Array?
+                val innerResult = this.asInnerClasses(className, name, type.subtype, true)
+                classes.addAll(innerResult.classes)
+                _fromArray = true
+                typeName = innerResult.typeName
+            }
+            default: {
+                typeName = asJavaType(type.type)
             }
         }
-        return classes
+        return new Result(_fromArray, typeName, classes)
     }
 
     /**
@@ -434,11 +466,57 @@ final class MonitoringTemplate {
      * @param property The associated property
      * @return A field declaration
      */
-    def private asJavaField(Property property) '''
+    def private asJavaField(Property property, String typeName) '''
         /**
          * The value of the '<em><b>«property.name»</b></em>' property.
          */
-        private «property.asJavaType» «property.name»;
+        private «typeName» «property.name»;
     '''
+
+    /**
+     * Generates a new name if the given one already exists.
+     * @param className The name of the enclosing class
+     * @param innerClassName The name under test
+     * @return A name which hasn't been used before in the context of the enclosing class
+     */
+    def private String nextName(String className, String innerClassName) {
+        var List<String> current = null
+        var name = innerClassName.asClassName
+        var tmp = name
+        var number = 1
+        if (!this.names.containsKey(className)) {
+            current = newArrayList
+            this.names.put(className, current)
+        } else {
+            current = this.names.get(className)
+        }
+        while (current.contains(tmp)) {
+            tmp = name + (number++)
+        }
+        current.add(tmp)
+        return tmp
+    }
+
+    /**
+     * A partial result from the Java code generation.
+     */
+    @Data
+    static final class Result {
+
+        /**
+         * Whether the source property is an array.
+         */
+        boolean fromArray
+
+        /**
+         * The name of the generated type for the source property.
+         */
+        String typeName
+
+        /**
+         * A list of inner classes (their Java code).
+         */
+        List<String> classes
+    }
 
 }
