@@ -43,17 +43,19 @@ public final class Output implements Cloneable {
      */
     public void update(final String content)
         throws IOException {
-        Output.LOGGER.debug(
-            "Updating output {}.outputs.{}",
-            this.path,
-            this.name
-        );
         final String selector = this.config.getString(
             String.format("%s.outputs.%s.selector", this.path, this.name)
         );
+        final String value = new XpathValue(selector, content).value();
         this.config.setProperty(
             String.format("%s.outputs.%s.value", this.path, this.name),
-            new XpathValue(selector, content).value()
+            value
+        );
+        Output.LOGGER.debug(
+            "Output '{}.outputs.{}' was updated to '{}'",
+            this.path,
+            this.name,
+            value
         );
     }
 

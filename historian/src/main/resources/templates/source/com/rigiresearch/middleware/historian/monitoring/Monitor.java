@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -125,7 +126,6 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             // TODO Instantiate the schema class
             try {
                 Object object = this.mapper.readValue(content, clazz);
-                Monitor.LOGGER.debug(object);
             } catch (IOException exception) {
                 Monitor.LOGGER.error(
                     String.format("Error mapping content to class '%s'", clazz),
@@ -170,32 +170,39 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                     variable
                 )
             );
-            final Input input = child.monitor().collector()
+            final Optional<Input> opin = child.monitor().collector()
                 .request()
                 .inputs()
                 .stream()
                 .filter(in -> in.name().equals(variable))
-                .findFirst()
-                .get();
-            final int index = child.monitor()
-                .collector()
-                .request()
-                .inputs()
-                .indexOf(input);
-            new XpathValue(selector, content)
-                .values()
-                .stream()
-                .map(value -> {
-                    final Monitor clone = child.monitor().clone();
-                    final Input copy =
-                        new Input(input.name(), () -> value, input.location());
-                    clone.collector()
-                        .request()
-                        .inputs()
-                        .set(index, copy);
-                    return clone;
-                })
-                .forEach(clone -> this.executor.submit(clone::collect));
+                .findFirst();
+            if (opin.isPresent()) {
+                final Input input = opin.get();
+                final int index = child.monitor()
+                    .collector()
+                    .request()
+                    .inputs()
+                    .indexOf(input);
+                new XpathValue(selector, content)
+                    .values()
+                    .stream()
+                    .map(value -> {
+                        final Monitor clone = child.monitor().clone();
+                        final Input copy =
+                            new Input(input.name(), () -> value, input.location());
+                        clone.collector()
+                            .request()
+                            .inputs()
+                            .set(index, copy);
+                        return clone;
+                    })
+                    .forEach(clone -> this.executor.submit(clone::collect));
+            } else {
+                Monitor.LOGGER.error(
+                    "Missing property '{}'. Dependent monitor won't collect any data.",
+                    variable
+                );
+            }
         }
     }
 

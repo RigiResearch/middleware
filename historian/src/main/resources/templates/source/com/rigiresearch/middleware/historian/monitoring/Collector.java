@@ -67,8 +67,9 @@ public final class Collector implements Cloneable {
                 this.updateOutputs(content);
             } else {
                 Collector.LOGGER.error(
-                    "Unexpected response code '{}'.",
-                    response.getStatusLine().getStatusCode()
+                    "Unexpected response code '{}' from monitor '{}'.",
+                    response.getStatusLine().getStatusCode(),
+                    this.path
                 );
             }
         } catch (final IOException exception) {
