@@ -79,8 +79,8 @@ final class MonitoringTemplate {
             StandardCopyOption.REPLACE_EXISTING
         )
         Files.copy(
-            "src/main/resources/templates/log4j.xml".toPath,
-            new File(target, "src/main/resources/log4j.xml").toPath,
+            "src/main/resources/templates/logback.xml".toPath,
+            new File(target, "src/main/resources/logback.xml").toPath,
             StandardCopyOption.REPLACE_EXISTING
         )
         Files.walkFileTree(

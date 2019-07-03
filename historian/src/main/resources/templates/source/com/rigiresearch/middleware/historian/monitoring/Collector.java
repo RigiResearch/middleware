@@ -10,8 +10,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A data collector.
@@ -26,7 +26,8 @@ public final class Collector implements Cloneable {
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(Collector.class);
 
     /**
      * The default buffer size.
@@ -87,7 +88,7 @@ public final class Collector implements Cloneable {
             try {
                 outputs.update(content);
             } catch (final IOException exception) {
-                Collector.LOGGER.error(exception);
+                Collector.LOGGER.error("Error updating output", exception);
             }
         });
     }

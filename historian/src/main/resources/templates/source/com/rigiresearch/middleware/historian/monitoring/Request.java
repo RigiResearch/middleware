@@ -22,8 +22,8 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple HTTP request.
@@ -39,7 +39,8 @@ public final class Request implements Cloneable {
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(Request.class);
 
     /**
      * The URL this monitor queries.
@@ -67,7 +68,9 @@ public final class Request implements Cloneable {
         final CloseableHttpClient client = HttpClients.createDefault();
         final CloseableHttpResponse response;
         if (this.provider != null) {
-            Request.LOGGER.debug("Authentication data found");
+            Request.LOGGER.debug(
+                "Credentials provider found for path '{}'", uri.getPath()
+            );
             final HttpRequest request = new HttpPost(uri);
             this.parameters(Input.Location.HEADER)
                 .forEach(p -> request.addHeader(p.name(), p.value().get()));

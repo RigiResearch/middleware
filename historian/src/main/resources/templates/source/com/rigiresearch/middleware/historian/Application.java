@@ -1,8 +1,8 @@
 package com.rigiresearch.middleware.historian;
 
 import com.rigiresearch.middleware.historian.monitoring.MonitoringConfiguration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The main class.
@@ -15,7 +15,8 @@ public final class Application {
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(Application.class);
 
     /**
      * Default constructor.

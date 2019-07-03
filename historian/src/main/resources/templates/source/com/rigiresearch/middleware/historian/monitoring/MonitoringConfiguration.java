@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -21,8 +20,10 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.javers.core.Javers;
+import org.javers.core.JaversBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration of the monitors and their execution.
@@ -30,13 +31,13 @@ import org.apache.logging.log4j.Logger;
  * @version $Id$
  * @since 0.1.0
  */
-@RequiredArgsConstructor
 public final class MonitoringConfiguration {
 
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(MonitoringConfiguration.class);
 
     /**
      * The properties configuration.
@@ -46,7 +47,12 @@ public final class MonitoringConfiguration {
     /**
      * A cron-like scheduler.
      */
-    final Scheduler scheduler = new Scheduler();
+    private final Scheduler scheduler = new Scheduler();
+
+    /**
+     * The Javers instance to use.
+     */
+    private final Javers javers;
 
     /**
      * An executor service.
@@ -62,6 +68,7 @@ public final class MonitoringConfiguration {
      * Default constructor.
      */
     public MonitoringConfiguration() {
+        this.javers = JaversBuilder.javers().build();
         this.executor = Executors.newFixedThreadPool(
             this.config.getInt("thread.pool.size", 30)
         );
@@ -126,6 +133,7 @@ public final class MonitoringConfiguration {
                     path,
                     this.config,
                     this.scheduler,
+                    this.javers,
                     this.collector(path),
                     this.dependent(path),
                     this.executor
@@ -198,6 +206,7 @@ public final class MonitoringConfiguration {
                         child,
                         this.config,
                         this.scheduler,
+                        this.javers,
                         this.collector(child),
                         this.dependent(child),
                         this.executor
@@ -231,6 +240,18 @@ public final class MonitoringConfiguration {
             this.config.getString(String.format("%s.password", path));
         CredentialsProvider provider = null;
         if (username != null && password != null) {
+            if (username.isEmpty()) {
+                MonitoringConfiguration.LOGGER.warn(
+                    "Authentication for path '{}' contains an empty username",
+                    path
+                );
+            }
+            if (password.isEmpty()) {
+                MonitoringConfiguration.LOGGER.warn(
+                    "Authentication for path '{}' contains an empty password",
+                    path
+                );
+            }
             provider = new BasicCredentialsProvider();
             provider.setCredentials(
                 new AuthScope(url.getHost(), url.getPort()),

@@ -3,8 +3,8 @@ package com.rigiresearch.middleware.historian.monitoring;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.configuration2.Configuration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An output parameter that updates the configuration every time a request is
@@ -19,7 +19,8 @@ public final class Output implements Cloneable {
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(Output.class);
 
     /**
      * The properties configuration;

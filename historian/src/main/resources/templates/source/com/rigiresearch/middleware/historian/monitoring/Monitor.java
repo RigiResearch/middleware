@@ -13,11 +13,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.Configuration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.javers.core.Javers;
-import org.javers.core.JaversBuilder;
 import org.javers.core.diff.Diff;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A polling monitor to collect resources from a REST API.
@@ -32,7 +31,8 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(Monitor.class);
 
     /**
      * The corresponding path's id.
@@ -49,6 +49,11 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      * The task scheduler.
      */
     private final Scheduler scheduler;
+
+    /**
+     * The Javers instance to use.
+     */
+    private final Javers javers;
 
     /**
      * A data collector.
@@ -73,6 +78,11 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     private final ObjectMapper mapper = new ObjectMapper();
 
     /**
+     * The class associated with this monitor.
+     */
+    private Class<?> clazz = Object.class;
+
+    /**
      * The identifier of the scheduled task.
      */
     private String identifier = "";
@@ -87,15 +97,32 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      */
     @Override
     public void run() {
-        final Javers javers = JaversBuilder.javers().build();
+        final String fqn = String.format("%s.response.class", this.name);
         final String expression = this.config.getString(
             String.format("%s.expression", this.name)
         );
-        Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
-        this.identifier = this.scheduler.schedule(
-            expression,
-            () -> this.collect(javers)
+        final boolean process = this.config.getBoolean(
+            String.format("%s.response.process", this.name),
+            true
         );
+        if (process) {
+            try {
+                this.clazz = Class.forName(this.config.getString(fqn));
+                if (this.previous == null) {
+                    this.previous = this.clazz.newInstance();
+                }
+            } catch (final ClassNotFoundException exception) {
+                final String cnf = String.format(
+                    "Class '%s' for monitor '%s' was not found", fqn, this.name);
+                Monitor.LOGGER.error(cnf, exception);
+            } catch (final IllegalAccessException | InstantiationException exception) {
+                final String error =
+                    String.format("Initialization problem for class '%s'", fqn);
+                Monitor.LOGGER.error(error, exception);
+            }
+        }
+        Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
+        this.identifier = this.scheduler.schedule(expression, () -> this.collect());
     }
 
     /**
@@ -118,31 +145,9 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
 
     /**
      * Collect the data.
-     * @param javers A Javaers instance
      * @return The collected data
      */
-    protected String collect(final Javers javers) {
-        final String fqn = String.format("%s.response.class", this.name);
-        Class<?> clazz = Object.class;
-        try {
-            // TODO move class initialization to #run
-            clazz = Class.forName(this.config.getString(fqn));
-            if (this.previous == null) {
-                this.previous = clazz.newInstance();
-            }
-        } catch (final ClassNotFoundException exception) {
-            Monitor.LOGGER.error(
-                String.format(
-                    "Class '%s' for monitor '%s' was not found", fqn, this.name
-                ),
-                exception
-            );
-        } catch (final Exception exception) {
-            Monitor.LOGGER.error(
-                String.format("Initialization problem for class '%s'", fqn),
-                exception
-            );
-        }
+    private String collect() {
         final boolean process = this.config.getBoolean(
             String.format("%s.response.process", this.name),
             true
@@ -152,21 +157,20 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             try {
                 // TODO Add a config property to interpret the first collected
                 //  resources as new (this as an alternative to just keep them)
-                Object current = this.mapper.readValue(content, clazz);
-                final Diff diff = javers.compare(this.previous, current);
-                if (diff.getChanges().size() > 0) {
-                    Monitor.LOGGER.info(diff);
+                final Object current = this.mapper.readValue(content, this.clazz);
+                final Diff diff = this.javers.compare(this.previous, current);
+                if (!diff.getChanges().isEmpty()) {
+                    Monitor.LOGGER.info("{}", diff.changesSummary());
+                    this.previous = current;
                 }
-                this.previous = current;
-            } catch (IOException exception) {
-                Monitor.LOGGER.error(
-                    String.format("Error mapping content to class '%s'", clazz),
-                    exception
-                );
+            } catch (final IOException exception) {
+                final String error =
+                    String.format("Error mapping content to class '%s'", this.clazz);
+                Monitor.LOGGER.error(error, exception);
             }
         }
         try {
-            this.dependentCollect(content, javers);
+            this.dependentCollect(content);
         } catch (final IOException exception) {
             Monitor.LOGGER.error(
                 "Could not collect data from dependent monitors",
@@ -179,11 +183,9 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     /**
      * Collects data from dependent monitors.
      * @param content The content collected by this monitor
-     * @param javers A Javaers instance
      * @throws IOException If something bad happens extracting the data
      */
-    private void dependentCollect(final String content, final Javers javers)
-        throws IOException {
+    private void dependentCollect(final String content) throws IOException {
         for (final DependentMonitor child : this.dependent) {
             final String variable = this.config.getString(
                 String.format(
@@ -230,7 +232,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                         return clone;
                     })
                     .forEach(clone -> {
-                        this.executor.submit(() -> clone.collect(javers));
+                        this.executor.submit(clone::collect);
                     });
             } else {
                 Monitor.LOGGER.error(
@@ -247,6 +249,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             this.name,
             this.config,
             this.scheduler,
+            this.javers,
             this.collector.clone(),
             this.dependent.stream()
                 .map(DependentMonitor::clone)
