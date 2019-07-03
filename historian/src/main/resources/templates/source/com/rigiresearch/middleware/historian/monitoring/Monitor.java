@@ -15,6 +15,9 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.javers.core.Javers;
+import org.javers.core.JaversBuilder;
+import org.javers.core.diff.Diff;
 
 /**
  * A polling monitor to collect resources from a REST API.
@@ -75,15 +78,24 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     private String identifier = "";
 
     /**
+     * The previous copy of the data.
+     */
+    private Object previous = null;
+
+    /**
      * Schedules the periodic requests.
      */
     @Override
     public void run() {
+        final Javers javers = JaversBuilder.javers().build();
         final String expression = this.config.getString(
             String.format("%s.expression", this.name)
         );
         Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
-        this.identifier = this.scheduler.schedule(expression, () -> this.collect());
+        this.identifier = this.scheduler.schedule(
+            expression,
+            () -> this.collect(javers)
+        );
     }
 
     /**
@@ -104,16 +116,30 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         this.scheduler.deschedule(this.identifier);
     }
 
-    protected String collect() {
+    /**
+     * Collect the data.
+     * @param javers A Javaers instance
+     * @return The collected data
+     */
+    protected String collect(final Javers javers) {
         final String fqn = String.format("%s.response.class", this.name);
         Class<?> clazz = Object.class;
         try {
+            // TODO move class initialization to #run
             clazz = Class.forName(this.config.getString(fqn));
+            if (this.previous == null) {
+                this.previous = clazz.newInstance();
+            }
         } catch (final ClassNotFoundException exception) {
             Monitor.LOGGER.error(
                 String.format(
                     "Class '%s' for monitor '%s' was not found", fqn, this.name
                 ),
+                exception
+            );
+        } catch (final Exception exception) {
+            Monitor.LOGGER.error(
+                String.format("Initialization problem for class '%s'", fqn),
                 exception
             );
         }
@@ -123,9 +149,15 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         );
         final String content = this.collector.collect();
         if (process) {
-            // TODO Instantiate the schema class
             try {
-                Object object = this.mapper.readValue(content, clazz);
+                // TODO Add a config property to interpret the first collected
+                //  resources as new (this as an alternative to just keep them)
+                Object current = this.mapper.readValue(content, clazz);
+                final Diff diff = javers.compare(this.previous, current);
+                if (diff.getChanges().size() > 0) {
+                    Monitor.LOGGER.info(diff);
+                }
+                this.previous = current;
             } catch (IOException exception) {
                 Monitor.LOGGER.error(
                     String.format("Error mapping content to class '%s'", clazz),
@@ -134,7 +166,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             }
         }
         try {
-            this.dependentCollect(content);
+            this.dependentCollect(content, javers);
         } catch (final IOException exception) {
             Monitor.LOGGER.error(
                 "Could not collect data from dependent monitors",
@@ -147,9 +179,10 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     /**
      * Collects data from dependent monitors.
      * @param content The content collected by this monitor
+     * @param javers A Javaers instance
      * @throws IOException If something bad happens extracting the data
      */
-    private void dependentCollect(final String content)
+    private void dependentCollect(final String content, final Javers javers)
         throws IOException {
         for (final DependentMonitor child : this.dependent) {
             final String variable = this.config.getString(
@@ -196,7 +229,9 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                             .set(index, copy);
                         return clone;
                     })
-                    .forEach(clone -> this.executor.submit(clone::collect));
+                    .forEach(clone -> {
+                        this.executor.submit(() -> clone.collect(javers));
+                    });
             } else {
                 Monitor.LOGGER.error(
                     "Missing property '{}'. Dependent monitor won't collect any data.",
