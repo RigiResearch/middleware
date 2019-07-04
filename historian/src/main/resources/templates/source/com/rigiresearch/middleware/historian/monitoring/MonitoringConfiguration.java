@@ -131,6 +131,7 @@ public final class MonitoringConfiguration {
             .map(path -> {
                 final Monitor monitor = new Monitor(
                     path,
+                    path,
                     this.config,
                     this.scheduler,
                     this.javers,
@@ -203,6 +204,7 @@ public final class MonitoringConfiguration {
                 return new Monitor.DependentMonitor(
                     this.config.getString(selector),
                     new Monitor(
+                        child,
                         child,
                         this.config,
                         this.scheduler,

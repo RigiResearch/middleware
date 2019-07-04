@@ -43,6 +43,12 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     private static final Map<String, Object> objects = new HashMap<>();
 
     /**
+     * A unique id.
+     */
+    @Getter
+    private final String id;
+
+    /**
      * The corresponding path's id.
      */
     @Getter
@@ -141,8 +147,9 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                 if (this.clazz == Object.class) {
                     this.clazz = Class.forName(this.config.getString(fqn));
                 }
-                if (!Monitor.objects.containsKey(this.name)) {
-                    Monitor.objects.put(this.name, this.clazz.newInstance());
+                if (!Monitor.objects.containsKey(this.id)) {
+                    Monitor.LOGGER.debug(this.id);
+                    Monitor.objects.put(this.id, this.clazz.newInstance());
                 }
             } catch (final ClassNotFoundException exception) {
                 final String cnf = String.format(
@@ -158,12 +165,12 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                 //  resources as new (this as an alternative to just keep them)
                 final Object current = this.mapper.readValue(content, this.clazz);
                 final Diff diff = this.javers.compare(
-                    Monitor.objects.get(this.name),
+                    Monitor.objects.get(this.id),
                     current
                 );
                 if (!diff.getChanges().isEmpty()) {
                     Monitor.LOGGER.info("{}", diff.changesSummary());
-                    Monitor.objects.put(this.name, current);
+                    Monitor.objects.put(this.id, current);
                 }
             } catch (final IOException exception) {
                 final String error =
@@ -224,7 +231,14 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                     .values()
                     .stream()
                     .map(value -> {
-                        final Monitor clone = child.monitor().clone();
+                        final Monitor clone = child.monitor()
+                            .clone(
+                                String.format(
+                                    "%s-%s",
+                                    child.monitor().name(),
+                                    value
+                                )
+                            );
                         final Input copy =
                             new Input(input.name(), () -> value, input.location());
                         clone.collector()
@@ -245,16 +259,22 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         }
     }
 
-    @Override
-    public Monitor clone() {
+    /**
+     * Clones this monitor, setting a special (unique) name.
+     * @param id A unique name based on the value extracted with the dependent
+     *  monitor's selector.
+     * @return The cloned monitor
+     */
+    public Monitor clone(final String id) {
         return new Monitor(
+            id,
             this.name,
             this.config,
             this.scheduler,
             this.javers,
             this.collector.clone(),
             this.dependent.stream()
-                .map(DependentMonitor::clone)
+                .map(monitor -> monitor.clone(id))
                 .collect(Collectors.toList()),
             this.executor
         );
@@ -280,11 +300,16 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
          */
         private final Monitor monitor;
 
-        @Override
-        protected DependentMonitor clone() {
+        /**
+         * Clones this dependent monitor, setting a special (unique) name.
+         * @param id A unique name based on the value extracted with the
+         *  selector.
+         * @return The cloned monitor
+         */
+        protected DependentMonitor clone(final String id) {
             return new DependentMonitor(
                 this.selector,
-                this.monitor.clone()
+                this.monitor.clone(id)
             );
         }
 
