@@ -77,10 +77,7 @@ class CompositeProperty extends Property {
  * <p>A Unix-like cron expression.
  */
 class CronExpression {
-    /*
-     * Every minute.
-     */
-    String value = "* * * * *"
+    String value
 }
 
 /*
