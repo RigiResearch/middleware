@@ -58,23 +58,21 @@ public final class Collector implements Cloneable {
 
     /**
      * Collects the data from the API.
+     * @return The collected content
+     * @throws IOException If there is a request execution error
+     * @throws UnexpectedResponseCode If the response code is different than 200
      */
-    public String collect() {
-        String content = "";
-        try {
-            final CloseableHttpResponse response = this.request.response();
-            content = Collector.asString(response.getEntity().getContent());
-            if (response.getStatusLine().getStatusCode() == Collector.OK_CODE) {
-                this.updateOutputs(content);
-            } else {
-                Collector.LOGGER.error(
-                    "Unexpected response code '{}' from monitor '{}'.",
-                    response.getStatusLine().getStatusCode(),
-                    this.path
-                );
-            }
-        } catch (final IOException exception) {
-            Collector.LOGGER.error("Request execution error", exception);
+    public String collect() throws IOException, UnexpectedResponseCode {
+        final CloseableHttpResponse response = this.request.response();
+        final String content = Collector.asString(response.getEntity().getContent());
+        if (response.getStatusLine().getStatusCode() == Collector.OK_CODE) {
+            this.updateOutputs(content);
+        } else {
+            throw new UnexpectedResponseCode(
+                "Unexpected response code '%s' from monitor '%s'.",
+                response.getStatusLine().getStatusCode(),
+                this.path
+            );
         }
         return content;
     }

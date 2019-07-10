@@ -21,4 +21,5 @@
       </else>
     </if>
   </root>
+  <logger name="com.rigiresearch.middleware.historian" level="debug"/>
 </configuration>

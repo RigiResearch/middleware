@@ -136,58 +136,54 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      * @return The collected data
      */
     private String collect() {
-        final String fqn = String.format("%s.response.class", this.name);
         final boolean process = this.config.getBoolean(
             String.format("%s.response.process", this.name),
             true
         );
-        final String content = this.collector.collect();
-        if (process) {
-            try {
-                if (this.clazz == Object.class) {
-                    this.clazz = Class.forName(this.config.getString(fqn));
-                }
-                if (!Monitor.objects.containsKey(this.id)) {
-                    Monitor.LOGGER.debug(this.id);
-                    Monitor.objects.put(this.id, this.clazz.newInstance());
-                }
-            } catch (final ClassNotFoundException exception) {
-                final String cnf = String.format(
-                    "Class '%s' for monitor '%s' was not found", fqn, this.name);
-                Monitor.LOGGER.error(cnf, exception);
-            } catch (final IllegalAccessException | InstantiationException exception) {
-                final String error =
-                    String.format("Initialization problem for class '%s'", fqn);
-                Monitor.LOGGER.error(error, exception);
-            }
-            try {
-                // TODO Add a config property to interpret the first collected
-                //  resources as new (this as an alternative to just keep them)
-                final Object current = this.mapper.readValue(content, this.clazz);
-                final Diff diff = this.javers.compare(
-                    Monitor.objects.get(this.id),
-                    current
-                );
-                if (!diff.getChanges().isEmpty()) {
-                    Monitor.LOGGER.info("{} {}", this.id, diff.changesSummary());
-                    Monitor.LOGGER.debug("{} {}", this.id, diff);
-                    Monitor.objects.put(this.id, current);
-                }
-            } catch (final IOException exception) {
-                final String error =
-                    String.format("Error mapping content to class '%s'", this.clazz);
-                Monitor.LOGGER.error(error, exception);
-            }
-        }
+        String content = "";
         try {
+            content = this.collector.collect();
+            if (process) {
+                this.process(content);
+            }
             this.dependentCollect(content);
-        } catch (final IOException exception) {
-            Monitor.LOGGER.error(
-                "Could not collect data from dependent monitors",
-                exception
-            );
+        } catch (final Exception exception) {
+            Monitor.LOGGER.error("[%s] %s", this.id, exception.getMessage());
         }
         return content;
+    }
+
+    /**
+     * Processes the collected content.
+     * @param content The collected content
+     * @throws ClassNotFoundException If the mapping class is not found
+     * @throws IOException If there is a problem mapping the content
+     * @throws IllegalAccessException If there is a problem instantiating the class
+     * @throws InstantiationException If there is a problem instantiating the class
+     */
+    private void process(final String content)
+        throws ClassNotFoundException, IOException, IllegalAccessException,
+            InstantiationException {
+        final String fqn = String.format("%s.response.class", this.name);
+        if (this.clazz == Object.class) {
+            this.clazz = Class.forName(this.config.getString(fqn));
+        }
+        if (!Monitor.objects.containsKey(this.id)) {
+            Monitor.LOGGER.debug(this.id);
+            Monitor.objects.put(this.id, this.clazz.newInstance());
+        }
+        // TODO Add a config property to interpret the first collected
+        //  resources as new (this as an alternative to just keep them)
+        final Object current = this.mapper.readValue(content, this.clazz);
+        final Diff diff = this.javers.compare(
+            Monitor.objects.get(this.id),
+            current
+        );
+        if (!diff.getChanges().isEmpty()) {
+            Monitor.LOGGER.info("[{}] {}", this.id, diff.changesSummary());
+            Monitor.LOGGER.debug("[{}] {}", this.id, diff);
+            Monitor.objects.put(this.id, current);
+        }
     }
 
     /**

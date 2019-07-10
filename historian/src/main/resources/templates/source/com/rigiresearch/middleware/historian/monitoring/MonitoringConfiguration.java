@@ -1,8 +1,10 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
 import it.sauronsoftware.cron4j.Scheduler;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -73,7 +75,7 @@ public final class MonitoringConfiguration {
         this.executor = Executors.newFixedThreadPool(
             this.config.getInt("thread.pool.size", 30)
         );
-        this.monitors = this.setupMonitors();
+        this.monitors = new ArrayList<>();
     }
 
     /**
@@ -133,32 +135,43 @@ public final class MonitoringConfiguration {
      * Instantiates and configures the list of monitors based on the properties
      * file "monitoring.properties" (See {@link #initialize()}).
      * @return A list of monitors
+     * @throws IOException If there is an error during authentication
+     * @throws UnexpectedResponseCode If the authentication returns an unexpected
+     *  response code
      */
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-    private List<Monitor> setupMonitors() {
+    public void setupMonitors()
+        throws IOException, UnexpectedResponseCode {
+        final String[] ids = this.config.getStringArray("monitors");
+        final List<Monitor> list = new ArrayList<>(ids.length);
         final String login = this.config.getString("auth");
-        return Arrays.stream(
-            this.config.getStringArray("monitors")
-        )
-            .map(path -> {
-                final Monitor monitor = new Monitor(
-                    path,
-                    path,
-                    this.config,
-                    this.scheduler,
-                    this.javers,
-                    this.collector(path),
-                    this.dependent(path),
-                    this.executor
-                );
-                // TODO move login to a separate method
-                if (path.equals(login)) {
-                    // API authentication
+        for (String path : ids) {
+            final Monitor monitor = new Monitor(
+                path,
+                path,
+                this.config,
+                this.scheduler,
+                this.javers,
+                this.collector(path),
+                this.dependent(path),
+                this.executor
+            );
+            // TODO move login to a separate method
+            if (path.equals(login)) {
+                // API authentication
+                try {
                     monitor.collector().collect();
+                } catch (final IOException | UnexpectedResponseCode exception) {
+                    MonitoringConfiguration.LOGGER.error(
+                        "Error during authentication: {}",
+                        exception.getMessage()
+                    );
+                    throw exception;
                 }
-                return monitor;
-            })
-            .collect(Collectors.toList());
+            }
+            list.add(monitor);
+        }
+        this.monitors.addAll(list);
     }
 
     /**
