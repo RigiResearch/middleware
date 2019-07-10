@@ -169,8 +169,8 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                     current
                 );
                 if (!diff.getChanges().isEmpty()) {
-                    Monitor.LOGGER.info("{}", diff.changesSummary());
-                    Monitor.LOGGER.debug("{}", diff);
+                    Monitor.LOGGER.info("{} {}", this.id, diff.changesSummary());
+                    Monitor.LOGGER.debug("{} {}", this.id, diff);
                     Monitor.objects.put(this.id, current);
                 }
             } catch (final IOException exception) {
