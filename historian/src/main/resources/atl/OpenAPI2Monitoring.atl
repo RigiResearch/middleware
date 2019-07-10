@@ -116,7 +116,8 @@ lazy rule _getParameter {
 		mp: monitoring!LocatedProperty (
 			name <- op.name,
 			type <- op -> getDataType(),
-			location <- op.location
+			location <- op.location,
+			required <- not op.required.oclIsUndefined() and op.required
 		)
 }
 
