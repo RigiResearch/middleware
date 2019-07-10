@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.apache.commons.configuration2.CompositeConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -82,19 +83,30 @@ public final class MonitoringConfiguration {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private static Configuration initialize() {
         final Parameters params = new Parameters();
-        final FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+        final FileBasedConfigurationBuilder<FileBasedConfiguration> _default =
             new FileBasedConfigurationBuilder<FileBasedConfiguration>(
                 PropertiesConfiguration.class
             ).configure(
                 params.properties()
                     .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
-                    .setFileName("monitoring.properties")
+                    .setFileName("default.properties")
             );
+        final FileBasedConfigurationBuilder<FileBasedConfiguration> custom =
+            new FileBasedConfigurationBuilder<FileBasedConfiguration>(
+                PropertiesConfiguration.class
+            ).configure(
+                params.properties()
+                    .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
+                    .setFileName("custom.properties")
+            );
+        final CompositeConfiguration composite = new CompositeConfiguration();
         try {
-            return builder.getConfiguration();
+            composite.addConfiguration(custom.getConfiguration());
+            composite.addConfiguration(_default.getConfiguration());
         } catch (final ConfigurationException exception) {
             throw new RuntimeException(exception);
         }
+        return composite;
     }
 
     /**
