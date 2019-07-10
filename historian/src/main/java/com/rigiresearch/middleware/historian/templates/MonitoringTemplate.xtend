@@ -20,6 +20,10 @@ import java.util.Map
 import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.io.FileHandler
 import org.eclipse.xtend.lib.annotations.Data
+import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage
+import org.eclipse.emf.ecore.EcorePackage
+import com.rigiresearch.middleware.metamodels.monitoring.MonitoringFactory
+import com.rigiresearch.middleware.metamodels.monitoring.PropertyLocation
 
 /**
  * Generate classes from the monitoring model. More specifically, from the
@@ -166,7 +170,22 @@ final class MonitoringTemplate {
         config.layout.setBlancLinesBefore("base", 1)
         config.layout.setComment("base", "The base URL")
 
+        // FIXME Manually add vmware's session id while vmware/vmware-openapi-generator/#44 remains open
+        EcorePackage.eINSTANCE.eClass()
+        MonitoringPackage.eINSTANCE.eClass()
+
         for (m : root.monitors) {
+
+            // FIXME Manually add vmware's session id while vmware/vmware-openapi-generator/#44 remains open
+            val type = MonitoringFactory.eINSTANCE.createDataType
+            type.type = Type.STRING
+            val parameter = MonitoringFactory.eINSTANCE.createLocatedProperty
+            parameter.name = "vmware-api-session-id"
+            parameter.location = PropertyLocation.HEADER
+            parameter.required = true
+            parameter.type = type
+            m.path.parameters.add(parameter)
+
             if (!m.path.parameters.empty) {
                 config.setProperty('''«m.path.id».inputs''', m.path.parameters.map[p|p.name].join(", ").toString)
                 config.layout.setBlancLinesBefore('''«m.path.id».inputs''', 1)
