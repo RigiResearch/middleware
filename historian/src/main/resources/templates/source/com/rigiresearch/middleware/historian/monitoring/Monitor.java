@@ -148,7 +148,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             }
             this.dependentCollect(content);
         } catch (final Exception exception) {
-            Monitor.LOGGER.error("[%s] %s", this.id, exception.getMessage());
+            Monitor.LOGGER.error("[{}] {}", this.id, exception.getMessage());
         }
         return content;
     }
