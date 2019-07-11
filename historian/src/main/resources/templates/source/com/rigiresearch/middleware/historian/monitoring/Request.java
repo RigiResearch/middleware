@@ -85,7 +85,6 @@ public final class Request implements Cloneable {
                 .forEach(p -> request.addHeader(p.name(), p.value().get()));
             response = client.execute(request);
         }
-        Request.LOGGER.debug(uri.getPath());
         return response;
     }
 
