@@ -53,8 +53,7 @@ subprojects { project ->
     testImplementation "org.junit.jupiter:junit-jupiter:5.4.2"
 
     // Logs
-    implementation "org.apache.logging.log4j:log4j-api:2.11.2"
-    implementation "org.apache.logging.log4j:log4j-core:2.11.2"
+    implementation "ch.qos.logback:logback-classic:1.2.3"
 
     // Annotation processor to ease development
     implementation "org.projectlombok:lombok:1.18.6"

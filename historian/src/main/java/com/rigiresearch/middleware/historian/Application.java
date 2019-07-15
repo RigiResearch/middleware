@@ -11,8 +11,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The main class.
@@ -27,7 +27,8 @@ public final class Application {
     /**
      * The logger.
      */
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(Application.class);
 
     /**
      * Error code for file-not-found exception.
