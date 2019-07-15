@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 @Accessors(fluent = true)
 @RequiredArgsConstructor
-public final class Collector implements Cloneable {
+public final class Collector {
 
     /**
      * The logger.
@@ -82,9 +82,9 @@ public final class Collector implements Cloneable {
      * @param content The request's response
      */
     private void updateOutputs(final String content) {
-        this.outputs.forEach(outputs -> {
+        this.outputs.forEach(output -> {
             try {
-                outputs.update(content);
+                output.update(content);
             } catch (final IOException exception) {
                 Collector.LOGGER.error("Error updating output", exception);
             }
@@ -108,13 +108,16 @@ public final class Collector implements Cloneable {
         return result.toString(StandardCharsets.UTF_8.toString());
     }
 
-    @Override
-    protected Collector clone() {
+    /**
+     * Duplicates this object.
+     * @return A clone
+     */
+    Collector duplicate() {
         return new Collector(
             this.path,
-            this.request().clone(),
+            this.request().duplicate(),
             this.outputs.stream()
-                .map(Output::clone)
+                .map(Output::duplicate)
                 .collect(Collectors.toList())
         );
     }

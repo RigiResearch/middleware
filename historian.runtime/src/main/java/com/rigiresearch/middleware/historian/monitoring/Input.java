@@ -33,14 +33,14 @@ public final class Input {
     /**
      * The location.
      */
-    private final Location location;
+    private final Input.Location location;
 
     /**
      * Secondary constructor.
      * @param name The parameter name
      * @param location The parameter location
      */
-    public Input(final String name, final Location location) {
+    public Input(final String name, final Input.Location location) {
         this(name, () -> "", location);
     }
 
@@ -51,14 +51,17 @@ public final class Input {
      * @param location The parameter location
      */
     public Input(final String name, final Supplier<String> value,
-        final Location location) {
+        final Input.Location location) {
         this.name = name;
         this.value = value;
         this.location = location;
     }
 
-    @Override
-    protected Input clone() {
+    /**
+     * Duplicates this object.
+     * @return A clone
+     */
+    Input duplicate() {
         return new Input(
             this.name,
             this.value,

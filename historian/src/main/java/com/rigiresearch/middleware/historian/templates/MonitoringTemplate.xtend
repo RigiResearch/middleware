@@ -89,13 +89,6 @@ final class MonitoringTemplate {
             new File(target, "src/main/resources/logback.xml").toPath,
             StandardCopyOption.REPLACE_EXISTING
         )
-        Files.walkFileTree(
-            "src/main/resources/templates/source".toPath,
-            new CopyFileVisitor(
-                new File(target, "src/main/java").toPath,
-                StandardCopyOption.REPLACE_EXISTING
-            )
-        );
 
         // Generate new files
         root.monitors.forEach[m|m.asJavaFile(target).write(m.asJavaClass)]

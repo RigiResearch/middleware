@@ -23,7 +23,7 @@ public final class Output implements Cloneable {
         LoggerFactory.getLogger(Output.class);
 
     /**
-     * The properties configuration;
+     * The properties configuration.
      */
     private final Configuration config;
 
@@ -60,8 +60,11 @@ public final class Output implements Cloneable {
         );
     }
 
-    @Override
-    protected Output clone() {
+    /**
+     * Duplicates this object.
+     * @return A clone
+     */
+    Output duplicate() {
         return new Output(
             this.config,
             this.path,

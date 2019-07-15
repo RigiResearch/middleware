@@ -1,7 +1,5 @@
-package com.rigiresearch.middleware.historian;
+package com.rigiresearch.middleware.historian.monitoring;
 
-import com.rigiresearch.middleware.historian.monitoring.MonitoringConfiguration;
-import com.rigiresearch.middleware.historian.monitoring.UnexpectedResponseCode;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +38,8 @@ public final class Application {
         } catch (final InterruptedException exception) {
             Application.LOGGER.error("Error starting the monitors", exception);
         } finally {
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void start() {
-                    config.stopMonitoring();
-                }
-            });
+            Runtime.getRuntime()
+                .addShutdownHook(new Thread(config::stopMonitoring));
         }
     }
 }

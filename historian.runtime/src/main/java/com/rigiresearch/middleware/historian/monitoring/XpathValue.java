@@ -50,11 +50,11 @@ public final class XpathValue {
 
     /**
      * Finds a single value selected by the given Xpath selector.
-     * @return a string value from the input content
+     * @return A string value from the input content
      * @throws IOException If something bad happens while finding the value
      */
     public String value() throws IOException {
-        JsonNode node = this.mapper.readTree(content);
+        final JsonNode node = this.mapper.readTree(this.content);
         if (!JsonXpath.exists(node, this.selector)) {
             XpathValue.LOGGER.error(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
@@ -70,7 +70,7 @@ public final class XpathValue {
      * @throws IOException If something bad happens while finding the values
      */
     public List<String> values() throws IOException {
-        final JsonNode node = this.mapper.readTree(content);
+        final JsonNode node = this.mapper.readTree(this.content);
         final DistinctTextValueJsonXpathVisitor visitor =
             new DistinctTextValueJsonXpathVisitor(this.selector);
         JsonXpath.findAndUpdateMultiple(node, this.selector, visitor);

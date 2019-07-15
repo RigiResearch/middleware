@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.configuration2.CompositeConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public final class MonitoringConfiguration {
 
     /**
@@ -43,14 +45,24 @@ public final class MonitoringConfiguration {
         LoggerFactory.getLogger(MonitoringConfiguration.class);
 
     /**
+     * The default thread pool size.
+     */
+    private static final int DEFAULT_POOL_SIZE = 30;
+
+    /**
+     * Property key "monitors".
+     */
+    private static final String MONITORS = "monitors";
+
+    /**
      * The properties configuration.
      */
-    private final Configuration config = MonitoringConfiguration.initialize();
+    private final Configuration config;
 
     /**
      * A cron-like scheduler.
      */
-    private final Scheduler scheduler = new Scheduler();
+    private final Scheduler scheduler;
 
     /**
      * The Javers instance to use.
@@ -71,9 +83,14 @@ public final class MonitoringConfiguration {
      * Default constructor.
      */
     public MonitoringConfiguration() {
+        this.config = MonitoringConfiguration.initialize();
+        this.scheduler = new Scheduler();
         this.javers = JaversBuilder.javers().build();
         this.executor = Executors.newFixedThreadPool(
-            this.config.getInt("thread.pool.size", 30)
+            this.config.getInt(
+                "thread.pool.size",
+                MonitoringConfiguration.DEFAULT_POOL_SIZE
+            )
         );
         this.monitors = new ArrayList<>();
     }
@@ -85,7 +102,7 @@ public final class MonitoringConfiguration {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private static Configuration initialize() {
         final Parameters params = new Parameters();
-        final FileBasedConfigurationBuilder<FileBasedConfiguration> _default =
+        final FileBasedConfigurationBuilder<FileBasedConfiguration> properties =
             new FileBasedConfigurationBuilder<FileBasedConfiguration>(
                 PropertiesConfiguration.class
             ).configure(
@@ -104,7 +121,7 @@ public final class MonitoringConfiguration {
         final CompositeConfiguration composite = new CompositeConfiguration();
         try {
             composite.addConfiguration(custom.getConfiguration());
-            composite.addConfiguration(_default.getConfiguration());
+            composite.addConfiguration(properties.getConfiguration());
         } catch (final ConfigurationException exception) {
             throw new RuntimeException(exception);
         }
@@ -134,7 +151,6 @@ public final class MonitoringConfiguration {
     /**
      * Instantiates and configures the list of monitors based on the properties
      * file "monitoring.properties" (See {@link #initialize()}).
-     * @return A list of monitors
      * @throws IOException If there is an error during authentication
      * @throws UnexpectedResponseCode If the authentication returns an unexpected
      *  response code
@@ -142,10 +158,11 @@ public final class MonitoringConfiguration {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     public void setupMonitors()
         throws IOException, UnexpectedResponseCode {
-        final String[] ids = this.config.getStringArray("monitors");
-        final List<Monitor> list = new ArrayList<>(ids.length);
+        final String[] ids =
+            this.config.getStringArray(MonitoringConfiguration.MONITORS);
+        final Collection<Monitor> list = new ArrayList<>(ids.length);
         final String login = this.config.getString("auth");
-        for (String path : ids) {
+        for (final String path : ids) {
             final Monitor monitor = new Monitor(
                 path,
                 path,
@@ -199,21 +216,26 @@ public final class MonitoringConfiguration {
      */
     private List<Monitor.DependentMonitor> dependent(final String path) {
         final List<String> ids =
-            Arrays.asList(this.config.getStringArray("monitors"));
+            Arrays.asList(
+                this.config.getStringArray(MonitoringConfiguration.MONITORS)
+            );
         final String key = String.format("%s.children", path);
+        final Stream<String> children =
+            Arrays.stream(this.config.getStringArray(key));
+        final Stream<String> dependent = children.filter(ids::contains);
+        if (dependent.findFirst().isPresent()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Dependent monitor '%s' must not be listed as a monitor",
+                    dependent.findFirst().get()
+                )
+            );
+        }
         return Arrays.stream(this.config.getStringArray(key))
             .map(child -> {
                 final String expression = this.config.getString(
                     String.format("%s.expression", child)
                 );
-                if (ids.contains(child)) {
-                    throw new IllegalArgumentException(
-                        String.format(
-                            "Dependent monitor '%s' must not be listed as a monitor",
-                            child
-                        )
-                    );
-                }
                 if (expression != null) {
                     MonitoringConfiguration.LOGGER.warn(
                         String.format(
@@ -248,6 +270,7 @@ public final class MonitoringConfiguration {
      * @param path The path to which this collector is associated
      * @return A data collector
      */
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private Collector collector(final String path) {
         final URL url;
         try {

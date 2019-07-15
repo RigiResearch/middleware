@@ -5,3 +5,4 @@ include "metamodels:hcl"
 include "metamodels:monitoring"
 include "notations:hcl.interpreter"
 include "historian"
+include 'historian.runtime'

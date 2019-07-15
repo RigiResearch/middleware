@@ -37,10 +37,15 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         LoggerFactory.getLogger(Monitor.class);
 
     /**
+     * Format string for logging data.
+     */
+    private static final String FORMAT = "[{}] {}";
+
+    /**
      * A globally shared repository of collected objects.
      * The key is the path id.
      */
-    private static final Map<String, Object> objects = new HashMap<>();
+    private static final Map<String, Object> OBJECTS = new HashMap<>();
 
     /**
      * A unique id.
@@ -76,9 +81,9 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     private final Collector collector;
 
     /**
-     * the dependent monitors.
+     * The dependent monitors.
      */
-    private final List<DependentMonitor> dependent;
+    private final List<Monitor.DependentMonitor> dependent;
 
     /**
      * An executor service.
@@ -110,7 +115,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             String.format("%s.expression", this.name)
         );
         Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
-        this.identifier = this.scheduler.schedule(expression, () -> this.collect());
+        this.identifier = this.scheduler.schedule(expression, this::collect);
     }
 
     /**
@@ -147,8 +152,10 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                 this.process(content);
             }
             this.dependentCollect(content);
-        } catch (final Exception exception) {
-            Monitor.LOGGER.error("[{}] {}", this.id, exception.getMessage());
+        } catch (final IOException | ClassNotFoundException
+            | IllegalAccessException | InstantiationException
+            | UnexpectedResponseCode exception) {
+            Monitor.LOGGER.error(Monitor.FORMAT, this.id, exception.getMessage());
         }
         return content;
     }
@@ -165,24 +172,24 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
         throws ClassNotFoundException, IOException, IllegalAccessException,
             InstantiationException {
         final String fqn = String.format("%s.response.class", this.name);
-        if (this.clazz == Object.class) {
+        if (this.clazz.equals(Object.class)) {
             this.clazz = Class.forName(this.config.getString(fqn));
         }
-        if (!Monitor.objects.containsKey(this.id)) {
+        if (!Monitor.OBJECTS.containsKey(this.id)) {
             Monitor.LOGGER.debug(this.id);
-            Monitor.objects.put(this.id, this.clazz.newInstance());
+            Monitor.OBJECTS.put(this.id, this.clazz.newInstance());
         }
         // TODO Add a config property to interpret the first collected
         //  resources as new (this as an alternative to just keep them)
         final Object current = this.mapper.readValue(content, this.clazz);
         final Diff diff = this.javers.compare(
-            Monitor.objects.get(this.id),
+            Monitor.OBJECTS.get(this.id),
             current
         );
         if (!diff.getChanges().isEmpty()) {
-            Monitor.LOGGER.info("[{}] {}", this.id, diff.changesSummary());
-            Monitor.LOGGER.debug("[{}] {}", this.id, diff);
-            Monitor.objects.put(this.id, current);
+            Monitor.LOGGER.info(Monitor.FORMAT, this.id, diff.changesSummary());
+            Monitor.LOGGER.debug(Monitor.FORMAT, this.id, diff);
+            Monitor.OBJECTS.put(this.id, current);
         }
     }
 
@@ -192,7 +199,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      * @throws IOException If something bad happens extracting the data
      */
     private void dependentCollect(final String content) throws IOException {
-        for (final DependentMonitor child : this.dependent) {
+        for (final Monitor.DependentMonitor child : this.dependent) {
             final String variable = this.config.getString(
                 String.format(
                     "%s.children.%s.input",
@@ -229,7 +236,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
                     .stream()
                     .map(value -> {
                         final Monitor clone = child.monitor()
-                            .clone(
+                            .duplicate(
                                 String.format(
                                     "%s-%s",
                                     child.monitor().name(),
@@ -258,20 +265,21 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
 
     /**
      * Clones this monitor, setting a special (unique) name.
-     * @param id A unique name based on the value extracted with the dependent
+     * @param identifier A unique name based on the value extracted with the dependent
      *  monitor's selector.
      * @return The cloned monitor
      */
-    public Monitor clone(final String id) {
+    @SuppressWarnings("checkstyle:HiddenField")
+    public Monitor duplicate(final String identifier) {
         return new Monitor(
-            id,
+            identifier,
             this.name,
             this.config,
             this.scheduler,
             this.javers,
-            this.collector.clone(),
+            this.collector.duplicate(),
             this.dependent.stream()
-                .map(monitor -> monitor.clone(id))
+                .map(monitor -> monitor.clone(identifier))
                 .collect(Collectors.toList()),
             this.executor
         );
@@ -285,7 +293,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      */
     @Accessors(fluent = true)
     @Value
-    public static final class DependentMonitor implements Cloneable {
+    public static final class DependentMonitor {
 
         /**
          * An Xpath selector for extracting the particular input values.
@@ -303,10 +311,10 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
          *  selector.
          * @return The cloned monitor
          */
-        protected DependentMonitor clone(final String id) {
-            return new DependentMonitor(
+        Monitor.DependentMonitor clone(final String id) {
+            return new Monitor.DependentMonitor(
                 this.selector,
-                this.monitor.clone(id)
+                this.monitor.duplicate(id)
             );
         }
 

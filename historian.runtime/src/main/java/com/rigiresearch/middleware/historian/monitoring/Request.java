@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 @Accessors(fluent = true)
 @Getter
 @RequiredArgsConstructor
-public final class Request implements Cloneable {
+public final class Request {
 
     /**
      * The logger.
@@ -67,7 +67,12 @@ public final class Request implements Cloneable {
         final URI uri = this.uri();
         final CloseableHttpClient client = HttpClients.createDefault();
         final CloseableHttpResponse response;
-        if (this.provider != null) {
+        if (this.provider == null) {
+            final HttpUriRequest request = new HttpGet(uri);
+            this.parameters(Input.Location.HEADER)
+                .forEach(p -> request.addHeader(p.name(), p.value().get()));
+            response = client.execute(request);
+        } else {
             Request.LOGGER.debug(
                 "Credentials provider found for path '{}'", uri.getPath()
             );
@@ -79,11 +84,6 @@ public final class Request implements Cloneable {
             final HttpHost host =
                 new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
             response = client.execute(host, request, context);
-        } else {
-            final HttpUriRequest request = new HttpGet(uri);
-            this.parameters(Input.Location.HEADER)
-                .forEach(p -> request.addHeader(p.name(), p.value().get()));
-            response = client.execute(request);
         }
         return response;
     }
@@ -133,12 +133,15 @@ public final class Request implements Cloneable {
         }
     }
 
-    @Override
-    protected Request clone() {
+    /**
+     * Duplicates this object.
+     * @return A clone of this object
+     */
+    Request duplicate() {
         return new Request(
             this.url,
             this.inputs.stream()
-                .map(in -> in.clone())
+                .map(Input::duplicate)
                 .collect(Collectors.toList()),
             this.provider
         );
