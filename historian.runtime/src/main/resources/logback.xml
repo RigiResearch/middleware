@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="COLOR" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} | %highlight(%-5p) | %logger{0}:%L - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="NOCOLOR" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} | %-5p | %logger{0}:%L - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="info">
+    <!-- to use enable this mode pass -Dcolor to jvm -->
+    <if condition='isDefined("color")'>
+      <then>
+        <appender-ref ref="COLOR"/>
+      </then>
+      <else>
+        <appender-ref ref="NOCOLOR"/>
+      </else>
+    </if>
+  </root>
+  <logger name="com.rigiresearch.middleware.historian" level="debug"/>
+</configuration>
