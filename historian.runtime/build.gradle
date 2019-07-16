@@ -24,6 +24,7 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   }
   implementation "org.javers:javers-core:5.6.1"
+  implementation "org.javers:javers-persistence-mongo:5.6.2"
   implementation "it.sauronsoftware.cron4j:cron4j:2.2.5"
   implementation "org.apache.httpcomponents:httpclient:4.5.9"
   implementation "org.apache.commons:commons-configuration2:2.5"

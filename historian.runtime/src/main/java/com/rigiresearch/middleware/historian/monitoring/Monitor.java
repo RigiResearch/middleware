@@ -190,6 +190,7 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             Monitor.LOGGER.info(Monitor.FORMAT, this.id, diff.changesSummary());
             Monitor.LOGGER.debug(Monitor.FORMAT, this.id, diff);
             Monitor.OBJECTS.put(this.id, current);
+            this.javers.commit("historian", current);
         }
     }
 

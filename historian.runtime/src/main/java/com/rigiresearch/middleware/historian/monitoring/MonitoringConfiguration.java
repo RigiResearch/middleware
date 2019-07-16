@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
+import com.mongodb.MongoClient;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -26,6 +27,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.javers.core.Javers;
 import org.javers.core.JaversBuilder;
+import org.javers.repository.mongo.MongoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,10 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since 0.1.0
  */
-@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
+@SuppressWarnings({
+    "checkstyle:ClassDataAbstractionCoupling",
+    "checkstyle:ClassFanOutComplexity"
+})
 public final class MonitoringConfiguration {
 
     /**
@@ -85,7 +90,7 @@ public final class MonitoringConfiguration {
     public MonitoringConfiguration() {
         this.config = MonitoringConfiguration.initialize();
         this.scheduler = new Scheduler();
-        this.javers = JaversBuilder.javers().build();
+        this.javers = this.buildJavers();
         this.executor = Executors.newFixedThreadPool(
             this.config.getInt(
                 "thread.pool.size",
@@ -93,6 +98,26 @@ public final class MonitoringConfiguration {
             )
         );
         this.monitors = new ArrayList<>();
+    }
+
+    /**
+     * Builds the Javers instance.
+     * @return A Javers instance
+     */
+    private Javers buildJavers() {
+        final JaversBuilder builder = JaversBuilder.javers();
+        final String host = "mong.host";
+        final String database = "mongo.database";
+        if (this.config.containsKey(host) && this.config.containsKey(database)) {
+            // TODO Add support for authentication
+            builder.registerJaversRepository(
+                new MongoRepository(
+                    new MongoClient(this.config.getString(host))
+                        .getDatabase(this.config.getString(database))
+                )
+            );
+        }
+        return builder.build();
     }
 
     /**
