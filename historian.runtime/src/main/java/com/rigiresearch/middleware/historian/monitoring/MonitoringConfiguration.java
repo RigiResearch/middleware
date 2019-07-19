@@ -106,7 +106,7 @@ public final class MonitoringConfiguration {
      */
     private Javers buildJavers() {
         final JaversBuilder builder = JaversBuilder.javers();
-        final String host = "mong.host";
+        final String host = "mongo.host";
         final String database = "mongo.database";
         if (this.config.containsKey(host) && this.config.containsKey(database)) {
             // TODO Add support for authentication
