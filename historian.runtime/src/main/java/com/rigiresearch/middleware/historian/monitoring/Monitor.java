@@ -3,9 +3,7 @@ package com.rigiresearch.middleware.historian.monitoring;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -16,7 +14,8 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.Configuration;
 import org.javers.core.Javers;
-import org.javers.core.diff.Diff;
+import org.javers.core.commit.Commit;
+import org.javers.core.diff.Change;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +39,6 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      * Format string for logging data.
      */
     private static final String FORMAT = "[{}] {}";
-
-    /**
-     * A globally shared repository of collected objects.
-     * The key is the path id.
-     */
-    private static final Map<String, Object> OBJECTS = new HashMap<>();
 
     /**
      * A unique id.
@@ -153,7 +146,6 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             }
             this.dependentCollect(content);
         } catch (final IOException | ClassNotFoundException
-            | IllegalAccessException | InstantiationException
             | UnexpectedResponseCode exception) {
             Monitor.LOGGER.error(Monitor.FORMAT, this.id, exception.getMessage());
         }
@@ -165,32 +157,18 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
      * @param content The collected content
      * @throws ClassNotFoundException If the mapping class is not found
      * @throws IOException If there is a problem mapping the content
-     * @throws IllegalAccessException If there is a problem instantiating the class
-     * @throws InstantiationException If there is a problem instantiating the class
      */
     private void process(final String content)
-        throws ClassNotFoundException, IOException, IllegalAccessException,
-            InstantiationException {
+        throws ClassNotFoundException, IOException {
         final String fqn = String.format("%s.response.class", this.name);
         if (this.clazz.equals(Object.class)) {
             this.clazz = Class.forName(this.config.getString(fqn));
         }
-        if (!Monitor.OBJECTS.containsKey(this.id)) {
-            Monitor.LOGGER.debug(this.id);
-            Monitor.OBJECTS.put(this.id, this.clazz.newInstance());
-        }
-        // TODO Add a config property to interpret the first collected
-        //  resources as new (this as an alternative to just keep them)
         final Object current = this.mapper.readValue(content, this.clazz);
-        final Diff diff = this.javers.compare(
-            Monitor.OBJECTS.get(this.id),
-            current
-        );
-        if (!diff.getChanges().isEmpty()) {
-            Monitor.LOGGER.info(Monitor.FORMAT, this.id, diff.changesSummary());
-            Monitor.LOGGER.debug(Monitor.FORMAT, this.id, diff);
-            Monitor.OBJECTS.put(this.id, current);
-            this.javers.commit("historian", current);
+        final Commit commit = this.javers.commit("historian", current);
+        final List<Change> changes = commit.getChanges();
+        if (!changes.isEmpty()) {
+            Monitor.LOGGER.debug(Monitor.FORMAT, this.id, changes);
         }
     }
 
