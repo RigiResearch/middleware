@@ -46,6 +46,9 @@
       <details key="documentation" value="&lt;p>A typed property."/>
     </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="required" unique="false"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"
+        defaultValueLiteral="false"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="type" eType="#//DataType"
         containment="true" resolveProxies="false"/>
   </eClassifiers>
@@ -67,12 +70,7 @@
     <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
       <details key="documentation" value="&lt;p>A Unix-like cron expression."/>
     </eAnnotations>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
-        defaultValueLiteral="* * * * *">
-      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
-        <details key="documentation" value="Every minute."/>
-      </eAnnotations>
-    </eStructuralFeatures>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="DataType">
     <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
@@ -110,7 +108,7 @@
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EEnum" name="PropertyLocation">
     <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
-      <details key="documentation" value="&lt;p>The location of a located property. This enum is based on the OpenAPI&#xA;specification (cf. ParameterLocation). However, as the monitoring paths are&#xA;only of type GET, the BODY and FORM_DATA constants are not used."/>
+      <details key="documentation" value="&lt;p>The location of a located property. This enum is based on the OpenAPI&#xA;specification (cf. ParameterLocation). However, as the monitoring paths are&#xA;only of type GET, the BODY constant is not used."/>
     </eAnnotations>
     <eLiterals name="BODY" literal="body"/>
     <eLiterals name="FORM_DATA" value="1" literal="formData"/>

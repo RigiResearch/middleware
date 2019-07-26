@@ -46,6 +46,7 @@
     </genClasses>
     <genClasses ecoreClass="Monitoring.ecore#//Property">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Property/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Property/required"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Property/type"/>
     </genClasses>
     <genClasses ecoreClass="Monitoring.ecore#//LocatedProperty">
