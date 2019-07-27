@@ -1,8 +1,11 @@
 package com.rigiresearch.middleware.historian.graph;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
@@ -57,6 +60,22 @@ public final class Graph implements Serializable {
     }
 
     /**
+     * Finds dependents of a given node.
+     * @param node The graph node
+     * @return A set of dependent nodes
+     */
+    public Set<Graph.Node> dependencies(final Graph.Node node) {
+        return this.nodes.stream()
+            .filter(temp -> {
+                return temp.parameters.stream()
+                    .filter(param -> param instanceof Graph.Input)
+                    .map(Graph.Input.class::cast)
+                    .anyMatch(input -> node.equals(input.getSource()));
+            })
+            .collect(Collectors.toSet());
+    }
+
+    /**
      * The set of nodes.
      * @return A set
      */
@@ -68,7 +87,8 @@ public final class Graph implements Serializable {
      * A graph node.
      */
     @XmlType(namespace = Graph.NAMESPACE)
-    public static final class Node implements Serializable, Comparable {
+    public static final class Node
+        implements Serializable, Comparable<Graph.Node> {
 
         /**
          * A serial version UID.
@@ -76,11 +96,24 @@ public final class Graph implements Serializable {
         private static final long serialVersionUID = -3483678145906372051L;
 
         /**
+         * Object to recognize whether a node is based on a template.
+         */
+        private static final Graph.Node TEMPLATE_PILL =
+            new Graph.Node("", null, Collections.emptySet());
+
+        /**
          * A unique name within the graph.
          */
         @XmlID
         @XmlAttribute(required = true)
         private String name;
+
+        /**
+         * A node on which this node is based.
+         */
+        @XmlIDREF
+        @XmlAttribute
+        private Graph.Node template;
 
         /**
          * Parameters to this node.
@@ -103,17 +136,54 @@ public final class Graph implements Serializable {
          * Empty constructor.
          */
         public Node() {
-            this("", new TreeSet<>());
+            this("", Graph.Node.TEMPLATE_PILL, new TreeSet<>());
         }
 
         /**
-         * Default constructor.
+         * Secondary constructor.
          * @param name A unique name within the graph
          * @param parameters Parameters to this node
          */
         public Node(final String name, final Set<Graph.Parameter> parameters) {
+            this(name, Graph.Node.TEMPLATE_PILL, parameters);
+        }
+
+        /**
+         * Primary constructor.
+         * @param name A unique name within the graph
+         * @param template A node on which this node is based
+         * @param parameters Parameters to this node
+         */
+        public Node(final String name, final Graph.Node template,
+            final Set<Graph.Parameter> parameters) {
             this.name = name;
+            this.template = template;
             this.parameters = new TreeSet<>(parameters);
+        }
+
+        /**
+         * Setups the template pill before marshall.
+         * @param marshaller The XML marshaller
+         */
+        @SuppressWarnings({
+            "PMD.NullAssignment",
+            "PMD.UnusedFormalParameter"
+        })
+        private void beforeMarshal(final Marshaller marshaller) {
+            if (this.template == Node.TEMPLATE_PILL) {
+                this.template = null;
+            }
+        }
+
+        /**
+         * Setups the template pill after marshal.
+         * @param marshaller The XML marshaller
+         */
+        @SuppressWarnings("PMD.UnusedFormalParameter")
+        private void afterMarshal(final Marshaller marshaller) {
+            if (this.template == null) {
+                this.template = Graph.Node.TEMPLATE_PILL;
+            }
         }
 
         /**
@@ -123,13 +193,8 @@ public final class Graph implements Serializable {
          *  other object
          */
         @Override
-        public int compareTo(final Object other) {
-            int value = 0;
-            if (other instanceof Graph.Node) {
-                final Graph.Node node = (Graph.Node) other;
-                value = this.getName().compareTo(node.getName());
-            }
-            return value;
+        public int compareTo(final Graph.Node other) {
+            return this.name.compareTo(other.name);
         }
 
         /**
@@ -138,6 +203,22 @@ public final class Graph implements Serializable {
          */
         public String getName() {
             return this.name;
+        }
+
+        /**
+         * A node on which this node is based.
+         * @return The template node or null
+         */
+        public Graph.Node getTemplate() {
+            return this.template;
+        }
+
+        /**
+         * Whether this node is based on a template.
+         * @return Whether this node is based on a template.
+         */
+        public boolean isTemplateBased() {
+            return this.template != Graph.Node.TEMPLATE_PILL;
         }
 
         /**
@@ -154,7 +235,8 @@ public final class Graph implements Serializable {
      * A node parameter.
      */
     @XmlTransient
-    public abstract static class Parameter implements Serializable, Comparable {
+    public abstract static class Parameter
+        implements Serializable, Comparable<Graph.Parameter> {
 
         /**
          * A serial version UID.
@@ -190,13 +272,8 @@ public final class Graph implements Serializable {
          *  other object
          */
         @Override
-        public int compareTo(final Object other) {
-            int value = 0;
-            if (other instanceof Graph.Parameter) {
-                final Graph.Parameter parameter = (Graph.Parameter) other;
-                value = this.getName().compareTo(parameter.getName());
-            }
-            return value;
+        public int compareTo(final Graph.Parameter other) {
+            return this.name.compareTo(other.name);
         }
 
         /**
@@ -225,8 +302,13 @@ public final class Graph implements Serializable {
         private static final long serialVersionUID = -7875573841695028057L;
 
         /**
-         * The value associated with this input. It is either a primitive value or
-         * a reference to another node's output.
+         * Object to recognize whether an input has a source.
+         */
+        private static final Graph.Node SOURCE_PILL = new Graph.Node();
+
+        /**
+         * The value associated with this input. It is either a primitive value
+         * or a reference to another node's output.
          */
         @XmlAttribute(required = true)
         private String value;
@@ -242,7 +324,7 @@ public final class Graph implements Serializable {
          * Empty constructor.
          */
         public Input() {
-            this("", "", new Graph.Node());
+            this("", "", Graph.Input.SOURCE_PILL);
         }
 
         /**
@@ -251,7 +333,7 @@ public final class Graph implements Serializable {
          * @param value The value associated with this input (a primitive value)
          */
         public Input(final String name, final String value) {
-            this(name, value, new Graph.Node());
+            this(name, value, Graph.Input.SOURCE_PILL);
         }
 
         /**
@@ -265,6 +347,39 @@ public final class Graph implements Serializable {
             super(name);
             this.value = value;
             this.source = source;
+        }
+
+        /**
+         * Setups the source pill before marshall.
+         * @param marshaller The XML marshaller
+         */
+        @SuppressWarnings({
+            "PMD.NullAssignment",
+            "PMD.UnusedFormalParameter"
+        })
+        private void beforeMarshal(final Marshaller marshaller) {
+            if (this.source == Graph.Input.SOURCE_PILL) {
+                this.source = null;
+            }
+        }
+
+        /**
+         * Setups the source pill after marshal.
+         * @param marshaller The XML marshaller
+         */
+        @SuppressWarnings("PMD.UnusedFormalParameter")
+        private void afterMarshal(final Marshaller marshaller) {
+            if (this.source == null) {
+                this.source = Graph.Input.SOURCE_PILL;
+            }
+        }
+
+        /**
+         * Whether this input is based on a source.
+         * @return Whether this node is based on a source.
+         */
+        public boolean hasSource() {
+            return this.source != Graph.Input.SOURCE_PILL;
         }
 
         /**

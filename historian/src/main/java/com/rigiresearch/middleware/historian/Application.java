@@ -1,9 +1,10 @@
 package com.rigiresearch.middleware.historian;
 
 import com.rigiresearch.middleware.historian.graph.Graph;
+import com.rigiresearch.middleware.historian.graph.GraphParser;
+import com.rigiresearch.middleware.historian.templates.GraphTemplate;
 import com.rigiresearch.middleware.historian.templates.MonitoringTemplate;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
-import com.rigiresearch.middleware.metamodels.monitoring.LocatedProperty;
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
 import com.rigiresearch.middleware.metamodels.monitoring.Root;
 import edu.uoc.som.openapi.OpenAPIPackage;
@@ -12,12 +13,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +27,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since 0.1.0
  */
+@Accessors(fluent = true)
 @RequiredArgsConstructor
 public final class Application {
 
@@ -65,6 +65,7 @@ public final class Application {
     /**
      * The path to a directory where the monitoring code will be generated.
      */
+    @Getter
     private final String target;
 
     /**
@@ -79,7 +80,11 @@ public final class Application {
             );
         }
         try {
-            new Application(args[0], args[1]).start();
+            final Application application = new Application(args[0], args[1]);
+            application.generateFiles(
+                application.model(),
+                new File(application.target())
+            );
         } catch (final FileNotFoundException exception) {
             Application.LOGGER.error(exception.getMessage(), exception);
             System.exit(Application.ERROR_NTE);
@@ -96,22 +101,17 @@ public final class Application {
     }
 
     /**
-     * Generates a gradle project containing the monitoring code for a
-     * particular API specification.
-     * @throws FileNotFoundException If the spec file does not exist
+     * Transforms the OpenAPI specification into a monitoring model.
+     * @return The model instance
      * @throws UnsupportedEncodingException If the encoding is not supported
      * @throws IOException If there is an error with the jar file or saving the
      *  resource
-     * @throws JAXBException If there is an exception during the graph
-     *  marshalling
      */
-    private void start() throws FileNotFoundException,
-        UnsupportedEncodingException, IOException, JAXBException {
+    private Root model() throws UnsupportedEncodingException, IOException {
         final edu.uoc.som.openapi.Root root = new OpenAPIImporter()
             .createOpenAPIModelFromJson(new File(this.spec));
-        final File directory = new File(this.target);
         final String output = "OUT";
-        final Root model = (Root) new AtlTransformation.Builder()
+        return (Root) new AtlTransformation.Builder()
             .withMetamodel(MonitoringPackage.eINSTANCE)
             .withMetamodel(OpenAPIPackage.eINSTANCE)
             .withModel(AtlTransformation.ModelType.INPUT, "IN", root)
@@ -123,39 +123,25 @@ public final class Application {
             .getResource()
             .getContents()
             .get(0);
-        new MonitoringTemplate().generateFiles(model, directory);
-        this.generateGraph(model, new File(directory, "configuration.xml"));
     }
 
     /**
-     * Generates a monitoring DAG and exports the corresponding XML.
+     * Generates a gradle project containing the monitoring code for a
+     * particular API specification.
      * @param model The monitoring model
-     * @param file The target file
+     * @param directory The target directory
      * @throws JAXBException If there is an exception during the graph
      *  marshalling
+     * @throws IOException If there is an error with the jar file or saving the
+     *  resource
      */
-    private void generateGraph(final Root model, final File file)
-        throws JAXBException {
-        final Set<Graph.Node> nodes = model.getMonitors()
-            .stream()
-            .map(monitor -> {
-                final Set<Graph.Parameter> parameters = monitor.getPath()
-                    .getParameters()
-                    .stream()
-                    // TODO add option to generate all inputs
-                    .filter(LocatedProperty::isRequired)
-                    .map(property -> new Graph.Input(property.getName(), ""))
-                    .collect(Collectors.toSet());
-                return new Graph.Node(
-                    monitor.getPath().getId(),
-                    parameters
-                );
-            })
-            .collect(Collectors.toSet());
-        final Graph graph = new Graph(nodes);
-        final JAXBContext context = JAXBContext.newInstance(Graph.class);
-        final Marshaller marshaller = context.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        marshaller.marshal(graph, file);
+    private void generateFiles(final Root model, final File directory)
+        throws JAXBException, IOException {
+        final GraphParser parser = new GraphParser();
+        final Graph graph = parser.instance(model);
+        parser.write(graph, new File(directory, "configuration.xml"));
+        new MonitoringTemplate().generateFiles(model, directory);
+        new GraphTemplate().generateFile(graph, directory);
     }
+
 }
