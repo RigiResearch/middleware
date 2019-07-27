@@ -366,11 +366,12 @@ final class MonitoringTemplate {
         «val className = monitor.path.id.asClassName»
         package «MonitoringTemplate.PACKAGE»;
 
+        import com.fasterxml.jackson.annotation.JsonIgnore;
         import javax.annotation.Generated;
-
         import lombok.Data;
         import lombok.NoArgsConstructor;
         import lombok.AllArgsConstructor;
+        import org.javers.core.metamodel.annotation.Id;
 
         /**
          * Response object for path '<em><b>«monitor.path.id»</b></em>'.
@@ -380,6 +381,10 @@ final class MonitoringTemplate {
         @NoArgsConstructor
         @Generated(value = "Historian", date = "«new Date()»")
         public final class «className» {
+
+            @Id
+            @JsonIgnore
+            private String _monitor_id;
 
             «monitor.asJavaMembers(className)»
 

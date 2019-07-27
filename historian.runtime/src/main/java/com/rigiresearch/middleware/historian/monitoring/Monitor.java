@@ -3,6 +3,7 @@ package com.rigiresearch.middleware.historian.monitoring;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,6 +168,21 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             this.clazz = Class.forName(this.config.getString(fqn));
         }
         final Object current = this.mapper.readValue(content, this.clazz);
+        // Set the attribute id
+        try {
+            final Field field = this.clazz.getDeclaredField("_monitor_id");
+            field.setAccessible(true);
+            field.set(current, this.id);
+        } catch (final IllegalAccessException | NoSuchFieldException exception) {
+            Monitor.LOGGER.error(
+                String.format(
+                    Monitor.FORMAT,
+                    this.id,
+                    exception.getMessage()
+                ),
+                exception
+            );
+        }
         final Map<String, String> properties = new HashMap<>(1);
         properties.put("monitor", this.id);
         final Commit commit = this.javers.commit("historian", current, properties);
