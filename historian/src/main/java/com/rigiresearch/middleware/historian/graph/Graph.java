@@ -1,11 +1,10 @@
 package com.rigiresearch.middleware.historian.graph;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlID;
 import javax.xml.bind.annotation.XmlIDREF;
@@ -19,7 +18,10 @@ import javax.xml.bind.annotation.XmlType;
  * @version $Id$
  * @since 0.1.0
  */
-@XmlRootElement(namespace = Graph.NAMESPACE)
+@XmlRootElement(
+    name = "monitors",
+    namespace = Graph.NAMESPACE
+)
 public final class Graph implements Serializable {
 
     /**
@@ -36,32 +38,22 @@ public final class Graph implements Serializable {
     /**
      * The set of nodes.
      */
-    @XmlElementWrapper(name = "nodes")
-    @XmlElement(name = "node")
+    @XmlElement(name = "monitor")
     private Set<Graph.Node> nodes;
-
-    /**
-     * The set of edges.
-     */
-    @XmlElementWrapper(name = "edges")
-    @XmlElement(name = "edge")
-    private Set<Graph.Edge> edges;
 
     /**
      * Empty constructor.
      */
     public Graph() {
-        this(new HashSet<>(0), new HashSet<>(0));
+        this(new TreeSet<>());
     }
 
     /**
      * Default constructor.
      * @param nodes The set of nodes
-     * @param edges The set of edges
      */
-    public Graph(final Set<Graph.Node> nodes, final Set<Graph.Edge> edges) {
-        this.nodes = nodes;
-        this.edges = edges;
+    public Graph(final Set<Graph.Node> nodes) {
+        this.nodes = new TreeSet<>(nodes);
     }
 
     /**
@@ -73,18 +65,10 @@ public final class Graph implements Serializable {
     }
 
     /**
-     * A set of edges.
-     * @return The set of edges
-     */
-    public Set<Graph.Edge> getEdges() {
-        return this.edges;
-    }
-
-    /**
      * A graph node.
      */
     @XmlType(namespace = Graph.NAMESPACE)
-    public static final class Node implements Serializable {
+    public static final class Node implements Serializable, Comparable {
 
         /**
          * A serial version UID.
@@ -95,10 +79,7 @@ public final class Graph implements Serializable {
          * A unique name within the graph.
          */
         @XmlID
-        @XmlAttribute(
-            name = "id",
-            required = true
-        )
+        @XmlAttribute(required = true)
         private String name;
 
         /**
@@ -122,7 +103,7 @@ public final class Graph implements Serializable {
          * Empty constructor.
          */
         public Node() {
-            this("", new HashSet<>(0));
+            this("", new TreeSet<>());
         }
 
         /**
@@ -132,7 +113,23 @@ public final class Graph implements Serializable {
          */
         public Node(final String name, final Set<Graph.Parameter> parameters) {
             this.name = name;
-            this.parameters = parameters;
+            this.parameters = new TreeSet<>(parameters);
+        }
+
+        /**
+         * Compares this object to another.
+         * @param other The other object
+         * @return Whether this object should be placed before or after the
+         *  other object
+         */
+        @Override
+        public int compareTo(final Object other) {
+            int value = 0;
+            if (other instanceof Graph.Node) {
+                final Graph.Node node = (Graph.Node) other;
+                value = this.getName().compareTo(node.getName());
+            }
+            return value;
         }
 
         /**
@@ -157,7 +154,7 @@ public final class Graph implements Serializable {
      * A node parameter.
      */
     @XmlTransient
-    public abstract static class Parameter implements Serializable {
+    public abstract static class Parameter implements Serializable, Comparable {
 
         /**
          * A serial version UID.
@@ -187,6 +184,22 @@ public final class Graph implements Serializable {
         }
 
         /**
+         * Compares this object to another.
+         * @param other The other object
+         * @return Whether this object should be placed before or after the
+         *  other object
+         */
+        @Override
+        public int compareTo(final Object other) {
+            int value = 0;
+            if (other instanceof Graph.Parameter) {
+                final Graph.Parameter parameter = (Graph.Parameter) other;
+                value = this.getName().compareTo(parameter.getName());
+            }
+            return value;
+        }
+
+        /**
          * A unique name within the set of parameters.
          * @return The name of this parameter
          */
@@ -201,7 +214,8 @@ public final class Graph implements Serializable {
      */
     @XmlType(
         name = "input",
-        namespace = Graph.NAMESPACE
+        namespace = Graph.NAMESPACE,
+        propOrder = {"name", "value", "source"}
     )
     public static final class Input extends Graph.Parameter {
 
@@ -211,18 +225,62 @@ public final class Graph implements Serializable {
         private static final long serialVersionUID = -7875573841695028057L;
 
         /**
+         * The value associated with this input. It is either a primitive value or
+         * a reference to another node's output.
+         */
+        @XmlAttribute(required = true)
+        private String value;
+
+        /**
+         * The containing node of the referenced output.
+         */
+        @XmlIDREF
+        @XmlAttribute
+        private Graph.Node source;
+
+        /**
          * Empty constructor.
          */
         public Input() {
-            this("");
+            this("", "", new Graph.Node());
         }
 
         /**
-         * Default constructor.
+         * Secondary constructor.
          * @param name The name of this input
+         * @param value The value associated with this input (a primitive value)
          */
-        public Input(final String name) {
+        public Input(final String name, final String value) {
+            this(name, value, new Graph.Node());
+        }
+
+        /**
+         * Primary constructor.
+         * @param name The name of this input
+         * @param value A reference to another node's output
+         * @param source The containing node of the referenced output
+         */
+        public Input(final String name, final String value,
+            final Graph.Node source) {
             super(name);
+            this.value = value;
+            this.source = source;
+        }
+
+        /**
+         * A value.
+         * @return The value associated with this input.
+         */
+        public String getValue() {
+            return this.value;
+        }
+
+        /**
+         * A node.
+         * @return The containing node of the referenced output
+         */
+        public Graph.Node getSource() {
+            return this.source;
         }
 
     }
@@ -271,103 +329,6 @@ public final class Graph implements Serializable {
          */
         public String getSelector() {
             return this.selector;
-        }
-
-    }
-
-    /**
-     * An edge between two nodes.
-     */
-    @XmlType(namespace = Graph.NAMESPACE)
-    @SuppressWarnings("PMD.DataClass")
-    public static final class Edge implements Serializable {
-
-        /**
-         * A serial version UID.
-         */
-        private static final long serialVersionUID = 7206583134109784056L;
-
-        /**
-         * A source node.
-         */
-        @XmlIDREF
-        @XmlAttribute(required = true)
-        private Graph.Node source;
-
-        /**
-         * An input from the source node.
-         */
-        @XmlIDREF
-        @XmlAttribute(required = true)
-        private Graph.Input input;
-
-        /**
-         * A target node.
-         */
-        @XmlIDREF
-        @XmlAttribute(required = true)
-        private Graph.Node target;
-
-        /**
-         * An output from the target node.
-         */
-        @XmlIDREF
-        @XmlAttribute(required = true)
-        private Graph.Output output;
-
-        /**
-         * Empty constructor.
-         */
-        public Edge() {
-            // Nothing to do here
-        }
-
-        /**
-         * Default constructor.
-         * @param source A source node
-         * @param input An input from the source node
-         * @param target A target node
-         * @param output An output from the target node
-         */
-        @SuppressWarnings("checkstyle:ParameterNumber")
-        public Edge(final Graph.Node source, final Graph.Input input,
-            final Graph.Node target, final Graph.Output output) {
-            this.source = source;
-            this.input = input;
-            this.target = target;
-            this.output = output;
-        }
-
-        /**
-         * A source node.
-         * @return The source
-         */
-        public Graph.Node getSource() {
-            return this.source;
-        }
-
-        /**
-         * An input from the source node.
-         * @return The input
-         */
-        public Graph.Input getInput() {
-            return this.input;
-        }
-
-        /**
-         * A target node.
-         * @return The target
-         */
-        public Graph.Node getTarget() {
-            return this.target;
-        }
-
-        /**
-         * An output from the target node.
-         * @return The output
-         */
-        public Graph.Output getOutput() {
-            return this.output;
         }
 
     }
