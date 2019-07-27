@@ -397,7 +397,8 @@ final class MonitoringTemplate {
         monitor.schema.properties.forEach[ property |
             if (property.type.hasInnerClass) {
                 val result = property.asInnerClasses(className)
-                val typeName = '''«result.typeName»«IF result.fromArray»[]«ENDIF»'''
+                val typeName = if (!result.fromArray) result.typeName
+                    else '''java.util.List<«result.typeName»>'''
                 fields.add(property.asJavaField(typeName))
                 classes.addAll(result.classes)
             } else {
@@ -506,7 +507,9 @@ final class MonitoringTemplate {
                             ««« Recursive call: is this attribute an Object or Array?
                             «val innerResult = this.asInnerClasses(className, property.name, property.type, false)»
                             «val dummy = classes.addAll(innerResult.classes)»
-                            «property.asJavaField('''«innerResult.typeName»«IF innerResult.fromArray»[]«ENDIF»''')»
+                            «val _typeName = if (!innerResult.fromArray) innerResult.typeName
+                                else '''java.util.List<«innerResult.typeName»>'''»
+                            «property.asJavaField(_typeName)»
                         «ENDFOR»
 
                     }
