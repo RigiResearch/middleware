@@ -44,7 +44,7 @@ dependencies {
 jaxb {
   schemaGen {
     graph {
-      outputDir = file("model-gen")
+      outputDir = file("schema")
       inputDir = file("src/main/java")
       includes = ["com/rigiresearch/middleware/historian/graph/**/*.java"]
       namespaceconfigs = ["http://www.rigiresearch.com/middleware/historian/graph/1.0.0" : "graph.xsd"]
