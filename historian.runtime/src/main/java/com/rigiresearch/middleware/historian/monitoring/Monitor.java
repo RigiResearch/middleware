@@ -3,7 +3,9 @@ package com.rigiresearch.middleware.historian.monitoring;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -165,7 +167,9 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
             this.clazz = Class.forName(this.config.getString(fqn));
         }
         final Object current = this.mapper.readValue(content, this.clazz);
-        final Commit commit = this.javers.commit("historian", current);
+        final Map<String, String> properties = new HashMap<>(1);
+        properties.put("monitor", this.id);
+        final Commit commit = this.javers.commit("historian", current, properties);
         final List<Change> changes = commit.getChanges();
         if (!changes.isEmpty()) {
             Monitor.LOGGER.debug(Monitor.FORMAT, this.id, changes);
