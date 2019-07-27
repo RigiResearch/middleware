@@ -27,6 +27,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.javers.core.Javers;
 import org.javers.core.JaversBuilder;
+import org.javers.core.diff.ListCompareAlgorithm;
 import org.javers.repository.mongo.MongoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,6 +107,7 @@ public final class MonitoringConfiguration {
      */
     private Javers buildJavers() {
         final JaversBuilder builder = JaversBuilder.javers();
+        builder.withListCompareAlgorithm(ListCompareAlgorithm.LEVENSHTEIN_DISTANCE);
         final String host = "mongo.host";
         final String database = "mongo.database";
         if (this.config.containsKey(host) && this.config.containsKey(database)) {
