@@ -3,6 +3,7 @@ package com.rigiresearch.middleware.historian;
 import com.rigiresearch.middleware.historian.graph.Graph;
 import com.rigiresearch.middleware.historian.templates.MonitoringTemplate;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
+import com.rigiresearch.middleware.metamodels.monitoring.LocatedProperty;
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
 import com.rigiresearch.middleware.metamodels.monitoring.Root;
 import edu.uoc.som.openapi.OpenAPIPackage;
@@ -11,6 +12,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -133,9 +136,23 @@ public final class Application {
      */
     private void generateGraph(final Root model, final File file)
         throws JAXBException {
-        // TODO instantiate the graph
-        model.getMonitors();
-        final Graph graph = new Graph();
+        final Set<Graph.Node> nodes = model.getMonitors()
+            .stream()
+            .map(monitor -> {
+                final Set<Graph.Parameter> parameters = monitor.getPath()
+                    .getParameters()
+                    .stream()
+                    // TODO add option to generate all inputs
+                    .filter(LocatedProperty::isRequired)
+                    .map(property -> new Graph.Input(property.getName(), ""))
+                    .collect(Collectors.toSet());
+                return new Graph.Node(
+                    monitor.getPath().getId(),
+                    parameters
+                );
+            })
+            .collect(Collectors.toSet());
+        final Graph graph = new Graph(nodes);
         final JAXBContext context = JAXBContext.newInstance(Graph.class);
         final Marshaller marshaller = context.createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
