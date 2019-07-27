@@ -18,6 +18,8 @@ applicationDefaultJvmArgs = ["-Dcolor"]
 repositories {
   jcenter()
   mavenLocal()
+  // vmware's xpath for json
+  maven { url "https://jitpack.io" }
 }
 
 dependencies {
