@@ -1,7 +1,6 @@
 plugins {
   id "application"
   id "org.xtext.xtend"
-  id "com.intershop.gradle.jaxb" version "3.0.4"
 }
 
 mainClassName = "com.rigiresearch.middleware.historian.Application"
@@ -21,6 +20,7 @@ repositories {
 dependencies {
   // Model and code generation
   implementation project(":metamodels")
+  implementation project(":metamodels:graph")
   implementation project(":metamodels:monitoring")
   implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
   implementation name: "edu.uoc.som.openapi.io-1.0.3.201804111106"
@@ -40,19 +40,6 @@ dependencies {
   runtime "org.apache.logging.log4j:log4j-core:2.12.0"
   runtime "org.apache.logging.log4j:log4j-jcl:2.12.0"
 }
-
-jaxb {
-  schemaGen {
-    graph {
-      outputDir = file("schema")
-      inputDir = file("src/main/java")
-      includes = ["com/rigiresearch/middleware/historian/graph/**/*.java"]
-      excludes = ["**/GraphParser.java"]
-      namespaceconfigs = ["http://www.rigiresearch.com/middleware/historian/graph/1.0.0" : "graph.xsd"]
-    }
-  }
-}
-compileJava.dependsOn jaxbSchemaGenGraph
 
 xtend {
   generator {

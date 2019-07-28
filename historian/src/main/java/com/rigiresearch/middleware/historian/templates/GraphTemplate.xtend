@@ -1,6 +1,6 @@
 package com.rigiresearch.middleware.historian.templates
 
-import com.rigiresearch.middleware.historian.graph.Graph
+import com.rigiresearch.middleware.graph.Graph
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths

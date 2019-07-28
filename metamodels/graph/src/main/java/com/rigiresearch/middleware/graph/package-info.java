@@ -8,7 +8,7 @@
     namespace = Graph.NAMESPACE,
     elementFormDefault = XmlNsForm.QUALIFIED
 )
-package com.rigiresearch.middleware.historian.graph;
+package com.rigiresearch.middleware.graph;
 
 import javax.xml.bind.annotation.XmlNsForm;
 import javax.xml.bind.annotation.XmlSchema;

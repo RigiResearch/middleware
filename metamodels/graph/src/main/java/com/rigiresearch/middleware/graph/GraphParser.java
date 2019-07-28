@@ -1,10 +1,6 @@
-package com.rigiresearch.middleware.historian.graph;
+package com.rigiresearch.middleware.graph;
 
-import com.rigiresearch.middleware.metamodels.monitoring.LocatedProperty;
-import com.rigiresearch.middleware.metamodels.monitoring.Root;
 import java.io.File;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -29,32 +25,6 @@ public final class GraphParser {
         return (Graph) JAXBContext.newInstance(Graph.class)
             .createUnmarshaller()
             .unmarshal(file);
-    }
-
-    /**
-     * Transforms a monitoring model into a graph.
-     * @param model The monitoring model
-     * @return The graph instance
-     */
-    public Graph instance(final Root model) {
-        return new Graph(
-            model.getMonitors()
-                .stream()
-                .map(monitor -> {
-                    final Set<Graph.Parameter> parameters = monitor.getPath()
-                        .getParameters()
-                        .stream()
-                        // TODO add option to generate all inputs
-                        .filter(LocatedProperty::isRequired)
-                        .map(property -> new Graph.Input(property.getName(), ""))
-                        .collect(Collectors.toSet());
-                    return new Graph.Node(
-                        monitor.getPath().getId(),
-                        parameters
-                    );
-                })
-                .collect(Collectors.toSet())
-        );
     }
 
     /**

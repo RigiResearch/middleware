@@ -1,8 +1,9 @@
 rootProject.name = "middleware"
 
 include "metamodels"
+include "metamodels:graph"
 include "metamodels:hcl"
 include "metamodels:monitoring"
 include "notations:hcl.interpreter"
 include "historian"
-include 'historian.runtime'
+include "historian.runtime"

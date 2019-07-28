@@ -1,18 +1,20 @@
 package com.rigiresearch.middleware.historian;
 
-import com.rigiresearch.middleware.historian.graph.Graph;
-import com.rigiresearch.middleware.historian.graph.GraphParser;
+import com.rigiresearch.middleware.graph.Graph;
+import com.rigiresearch.middleware.graph.GraphParser;
 import com.rigiresearch.middleware.historian.templates.GraphTemplate;
 import com.rigiresearch.middleware.historian.templates.MonitoringTemplate;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
+import com.rigiresearch.middleware.metamodels.monitoring.LocatedProperty;
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage;
 import com.rigiresearch.middleware.metamodels.monitoring.Root;
 import edu.uoc.som.openapi.OpenAPIPackage;
 import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.xml.bind.JAXBException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 @Accessors(fluent = true)
 @RequiredArgsConstructor
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public final class Application {
 
     /**
@@ -36,26 +39,6 @@ public final class Application {
      */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(Application.class);
-
-    /**
-     * Error code for file-not-found exception.
-     */
-    private static final int ERROR_NTE = 1;
-
-    /**
-     * Error code for unsupported-encoding exception.
-     */
-    private static final int ERROR_EE = 2;
-
-    /**
-     * Error code for input/output exception.
-     */
-    private static final int ERROR_IO = 3;
-
-    /**
-     * Error code for JAXB exception.
-     */
-    private static final int ERROR_JAXB = 4;
 
     /**
      * The path to an OpenAPI spec.
@@ -81,22 +64,9 @@ public final class Application {
         }
         try {
             final Application application = new Application(args[0], args[1]);
-            application.generateFiles(
-                application.model(),
-                new File(application.target())
-            );
-        } catch (final FileNotFoundException exception) {
+            application.generateFiles(application.model());
+        } catch (final IOException | JAXBException exception) {
             Application.LOGGER.error(exception.getMessage(), exception);
-            System.exit(Application.ERROR_NTE);
-        } catch (final UnsupportedEncodingException exception) {
-            Application.LOGGER.error(exception.getMessage(), exception);
-            System.exit(Application.ERROR_EE);
-        } catch (final IOException exception) {
-            Application.LOGGER.error(exception.getMessage(), exception);
-            System.exit(Application.ERROR_IO);
-        } catch (final JAXBException exception) {
-            Application.LOGGER.error(exception.getMessage(), exception);
-            System.exit(Application.ERROR_JAXB);
         }
     }
 
@@ -129,19 +99,45 @@ public final class Application {
      * Generates a gradle project containing the monitoring code for a
      * particular API specification.
      * @param model The monitoring model
-     * @param directory The target directory
      * @throws JAXBException If there is an exception during the graph
      *  marshalling
      * @throws IOException If there is an error with the jar file or saving the
      *  resource
      */
-    private void generateFiles(final Root model, final File directory)
+    private void generateFiles(final Root model)
         throws JAXBException, IOException {
+        final File directory = new File(this.target);
         final GraphParser parser = new GraphParser();
-        final Graph graph = parser.instance(model);
+        final Graph graph = this.monitoringGraph(model);
         parser.write(graph, new File(directory, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);
         new GraphTemplate().generateFile(graph, directory);
+    }
+
+    /**
+     * Transforms a monitoring model into a graph.
+     * @param model The monitoring model
+     * @return The graph instance
+     */
+    private Graph monitoringGraph(final Root model) {
+        return new Graph(
+            model.getMonitors()
+                .stream()
+                .map(monitor -> {
+                    final Set<Graph.Parameter> parameters = monitor.getPath()
+                        .getParameters()
+                        .stream()
+                        // TODO add option to generate all inputs
+                        .filter(LocatedProperty::isRequired)
+                        .map(property -> new Graph.Input(property.getName(), ""))
+                        .collect(Collectors.toSet());
+                    return new Graph.Node(
+                        monitor.getPath().getId(),
+                        parameters
+                    );
+                })
+                .collect(Collectors.toSet())
+        );
     }
 
 }

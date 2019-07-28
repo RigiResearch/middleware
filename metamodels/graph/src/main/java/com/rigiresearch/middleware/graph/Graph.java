@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.graph;
+package com.rigiresearch.middleware.graph;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -31,7 +31,7 @@ public final class Graph implements Serializable {
      * The XML namespace.
      */
     static final String NAMESPACE =
-        "http://www.rigiresearch.com/middleware/historian/graph/1.0.0";
+        "http://www.rigiresearch.com/middleware/graph/1.0.0";
 
     /**
      * A serial version UID.
