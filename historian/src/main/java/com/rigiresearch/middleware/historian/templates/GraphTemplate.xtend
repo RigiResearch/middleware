@@ -57,7 +57,7 @@ final class GraphTemplate {
         val withDependencies = graph.nodes.reject [
             templateBased.toList.indexOf(it) > -1 ||
                 withoutDependencies.toList.indexOf(it) > -1
-        ].filter[!it.parameters.filter(Graph.Input).filter[it.hasSource].empty]
+        ].filter[!it.getParameters(true).filter(Graph.Input).filter[it.hasSource].empty]
         '''
         digraph {
             edge [fontname="Helvetica Neue", arrowhead="dot", style="dotted"];
@@ -70,7 +70,7 @@ final class GraphTemplate {
                 edge [arrowhead="normal", style="normal"]
                 node [fillcolor="white"];
                 «FOR node : withDependencies»
-                    «FOR input : node.parameters.filter(Graph.Input)»
+                    «FOR input : node.getParameters(true).filter(Graph.Input)»
                         «node.name» -> «input.source.name» [label=«input.value»];
                     «ENDFOR»
                 «ENDFOR»

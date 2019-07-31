@@ -2,8 +2,11 @@ package com.rigiresearch.middleware.graph;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -223,10 +226,44 @@ public final class Graph implements Serializable {
 
         /**
          * A set of parameters.
+         * @param merge Whether to merge the parameters for template-based nodes
          * @return The set of parameters
          */
-        public Set<Graph.Parameter> getParameters() {
-            return this.parameters;
+        public Set<Graph.Parameter> getParameters(final boolean merge) {
+            Set<Graph.Parameter> set = new HashSet<>(this.parameters.size());
+            if (merge && this.isTemplateBased()) {
+                // Get the inherited parameters
+                final Set<Graph.Parameter> inherited =
+                    this.template.getParameters(true);
+                final Map<String, Graph.Input> inputs = inherited
+                    .stream()
+                    .filter(Graph.Input.class::isInstance)
+                    .map(Graph.Input.class::cast)
+                    .collect(
+                        Collectors.toMap(Graph.Input::getName, Function.identity())
+                    );
+                final Map<String, Graph.Output> outputs = inherited
+                    .stream()
+                    .filter(Graph.Output.class::isInstance)
+                    .map(Graph.Output.class::cast)
+                    .collect(
+                        Collectors.toMap(Graph.Output::getName, Function.identity())
+                    );
+                // Add/replace the parameters based on this node's own parameters
+                this.parameters.stream()
+                    .filter(Graph.Input.class::isInstance)
+                    .map(Graph.Input.class::cast)
+                    .forEach(input -> inputs.put(input.getName(), input));
+                this.parameters.stream()
+                    .filter(Graph.Output.class::isInstance)
+                    .map(Graph.Output.class::cast)
+                    .forEach(output -> outputs.put(output.getName(), output));
+                set.addAll(inputs.values());
+                set.addAll(outputs.values());
+            } else {
+                set = this.parameters;
+            }
+            return set;
         }
 
     }
