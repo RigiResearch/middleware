@@ -53,10 +53,10 @@ final class GraphTemplate {
      */
     def asDotSpecification(Graph graph) {
         val templateBased = graph.nodes.filter[it.templateBased]
-        val withoutDependencies = graph.nodes.filter[graph.dependencies(it).empty]
+        val withoutDependents = graph.nodes.filter[graph.dependents(it).empty]
         val withDependencies = graph.nodes.reject [
             templateBased.toList.indexOf(it) > -1 ||
-                withoutDependencies.toList.indexOf(it) > -1
+                withoutDependents.toList.indexOf(it) > -1
         ].filter[!it.getParameters(true).filter(Graph.Input).filter[it.hasSource].empty]
         '''
         digraph {
@@ -76,9 +76,9 @@ final class GraphTemplate {
                 «ENDFOR»
 
             «ENDIF»
-            «IF !withoutDependencies.empty»
+            «IF !withoutDependents.empty»
                 node [fillcolor="gray94", style="rounded, filled"];
-                «FOR node : withoutDependencies»
+                «FOR node : withoutDependents»
                     «node.name»;
                 «ENDFOR»
             «ENDIF»

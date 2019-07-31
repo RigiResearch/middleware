@@ -63,18 +63,31 @@ public final class Graph implements Serializable {
     }
 
     /**
-     * Finds dependents of a given node.
+     * Finds dependent nodes of a given node.
+     * @param node The graph node
+     * @return A set of dependent nodes
+     */
+    public Set<Graph.Node> dependents(final Graph.Node node) {
+        return this.nodes.stream()
+            .filter(temp ->
+                temp.getParameters(true).stream()
+                    .filter(Graph.Input.class::isInstance)
+                    .map(Graph.Input.class::cast)
+                    .anyMatch(input -> node.equals(input.getSource()))
+            )
+            .collect(Collectors.toSet());
+    }
+
+    /**
+     * Finds the dependencies of a given node.
      * @param node The graph node
      * @return A set of dependent nodes
      */
     public Set<Graph.Node> dependencies(final Graph.Node node) {
-        return this.nodes.stream()
-            .filter(temp -> {
-                return temp.parameters.stream()
-                    .filter(param -> param instanceof Graph.Input)
-                    .map(Graph.Input.class::cast)
-                    .anyMatch(input -> node.equals(input.getSource()));
-            })
+        return node.getParameters(true).stream()
+            .filter(Graph.Input.class::isInstance)
+            .map(Graph.Input.class::cast)
+            .map(Graph.Input::getSource)
             .collect(Collectors.toSet());
     }
 
