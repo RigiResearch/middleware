@@ -67,59 +67,114 @@ helper context openapi!ArrayContext def: getDataType(): monitoring!DataType =
 
 rule Root {
 	from
-		r: openapi!Root
+		i: openapi!Root
 	to
-		mr: monitoring!Root (
-			host <- r.api.host,
-			basePath <- r.api.basePath,
-			https <- r.api.schemes -> select(s | s = #https).notEmpty(),
-			monitors <- r.api.paths
+		o: monitoring!Root (
+			host <- i.api.host,
+			basePath <- i.api.basePath,
+			https <- i.api.schemes -> select(s | s = #https).notEmpty(),
+			authMethods <- i.api.securityDefinitions -> collect(d | thisModule.resolveTemp(d, 'o')),
+			authRequirements <- i.api.securityRequirements -> collect(s | thisModule.resolveTemp(s, 'o')),
+			monitors <- i.api.paths
 				-> select(p | not p.get.oclIsUndefined())
 				-> select(p | not p.get.responses
 					-> select(p | p.code = '200')
 					-> collect(p | p.schema).isEmpty())
-				-> collect(p | thisModule._getMonitor(p))
+				-> collect(p | thisModule.resolveTemp(p, 'o'))
 		)
 }
 
--- Lazy rules
-
-lazy rule _getMonitor {
+rule AuthRequirement {
 	from
-		op: openapi!Path
+		i: openapi!SecurityRequirement
 	to
-		mm: monitoring!Monitor (
-			path <- mp,
+		o: monitoring!AuthRequirement (
+			scopes <- i.securityScopes -> collect(s | s.name),
+			method <- thisModule.resolveTemp(i.securitySchema, 'o')
+		)
+}
+
+rule BasicSecuritySchema {
+	from
+		i: openapi!SecuritySchema (i.type = #basic)
+	to
+		o: monitoring!BasicAuth (
+			id <- i.referenceName
+		)
+}
+
+rule ApiKeySecuritySchema {
+	from
+		i: openapi!SecuritySchema (i.type = #apiKey)
+	to
+		o: monitoring!ApiKeyAuth (
+			id <- i.referenceName,
+			property <- p
+		),
+		p: monitoring!LocatedProperty (
+			name <- i.name,
+			required <- true,
+			type <- t,
+			location <- i.location
+		),
+		t: monitoring!DataType (
+			type <- #string
+		)
+}
+
+rule Oauth2SecuritySchema {
+	from
+		i: openapi!SecuritySchema (i.type = #oauth2)
+	to
+		o: monitoring!Oauth2Auth (
+			id <- i.referenceName,
+			flow <- i.flow,
+			authorizationUrl <- i.authorizationUrl,
+			tokenUrl <- i.tokenUrl,
+			scopes <- i.scopes -> select(s | s.name)
+		)
+}
+
+rule Monitor {
+	from
+		i: openapi!Path (not i.get.oclIsUndefined())
+	to
+		o: monitoring!Monitor (
+			path <- p,
 			schema <- thisModule._getSchema(
-				op.get.responses
+				i.get.responses
 					-> select(r | r.code = '200')
 					-> collect(r | r.schema)
 					-> first()
-				),
-			rate <- me
+			),
+			rate <- e
 		),
-		mp: monitoring!Path (
-			id <- op.get.operationId,
-			url <- op.relativePath,
-			parameters <- op.get.parameters
-				-> collect(p | thisModule._getParameter(p))
+		p: monitoring!Path (
+			id <- i.get.operationId,
+			url <- i.relativePath,
+			parameters <- i.get.parameters
+				-> collect(z | thisModule.resolveTemp(z, 'o')),
+			authRequirements <- i.get.securityRequirements
+				-> collect(s | thisModule.resolveTemp(s, 'o'))
 		),
-		me: monitoring!CronExpression (
+		e: monitoring!CronExpression (
 			-- Use the default expression value
 		)
 }
 
-lazy rule _getParameter {
+rule Parameter {
 	from
-		op: openapi!Parameter
+		i: openapi!Parameter
 	to
-		mp: monitoring!LocatedProperty (
-			name <- op.name,
-			type <- op -> getDataType(),
-			location <- op.location,
-			required <- not op.required.oclIsUndefined() and op.required
+		o: monitoring!LocatedProperty (
+			name <- i.name,
+			type <- i -> getDataType(),
+			location <- i.location,
+			required <- not i.required.oclIsUndefined() and i.required
 		)
 }
+
+-- Lazy rules
 
 lazy rule _getSchema {
 	from

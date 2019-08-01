@@ -28,11 +28,36 @@
       <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//PropertyLocation/QUERY"/>
       <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//PropertyLocation/UNSPECIFIED"/>
     </genEnums>
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="Monitoring.ecore#//Oauth2Flow">
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Oauth2Flow/ACCESS_CODE"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Oauth2Flow/APPLICATION"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Oauth2Flow/IMPLICIT"/>
+      <genEnumLiterals ecoreEnumLiteral="Monitoring.ecore#//Oauth2Flow/PASSWORD"/>
+    </genEnums>
     <genClasses ecoreClass="Monitoring.ecore#//Root">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Root/host"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Root/basePath"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Root/https"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Root/authMethods"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Root/authRequirements"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Root/monitors"/>
+    </genClasses>
+    <genClasses image="false" ecoreClass="Monitoring.ecore#//AuthMethod">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//AuthMethod/id"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//ApiKeyAuth">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//ApiKeyAuth/property"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//BasicAuth"/>
+    <genClasses ecoreClass="Monitoring.ecore#//Oauth2Auth">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Oauth2Auth/authorizationUrl"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Oauth2Auth/flow"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Oauth2Auth/scopes"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Oauth2Auth/tokenUrl"/>
+    </genClasses>
+    <genClasses ecoreClass="Monitoring.ecore#//AuthRequirement">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//AuthRequirement/scopes"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Monitoring.ecore#//AuthRequirement/method"/>
     </genClasses>
     <genClasses ecoreClass="Monitoring.ecore#//Monitor">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Monitor/path"/>
@@ -43,6 +68,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Path/id"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Path/url"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Path/parameters"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Monitoring.ecore#//Path/authRequirements"/>
     </genClasses>
     <genClasses ecoreClass="Monitoring.ecore#//Property">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Monitoring.ecore#//Property/name"/>

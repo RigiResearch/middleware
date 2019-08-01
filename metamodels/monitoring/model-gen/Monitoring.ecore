@@ -17,8 +17,51 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="basePath" unique="false"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="https" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="authMethods" upperBound="-1"
+        eType="#//AuthMethod" containment="true" resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="authRequirements" upperBound="-1"
+        eType="#//AuthRequirement" containment="true" resolveProxies="false"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="monitors" upperBound="-1"
         eType="#//Monitor" containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AuthMethod" abstract="true">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>API Authentication method."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"
+        iD="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ApiKeyAuth" eSuperTypes="#//AuthMethod">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>API authentication based on an API key."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="property" eType="#//LocatedProperty"
+        containment="true" resolveProxies="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BasicAuth" eSuperTypes="#//AuthMethod">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>API authentication based on a base64 encoded string containing a username&#xA;and password in the form username:password. The encoded string must be&#xA;included in the request header as &lt;code>Authorization&lt;/code>, preceded by the&#xA;word Basic. For example: Authorization: Basic X, where X is the encoded&#xA;value."/>
+    </eAnnotations>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Oauth2Auth" eSuperTypes="#//AuthMethod">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>API authentication based on Oauth2."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="authorizationUrl" unique="false"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="flow" unique="false" eType="#//Oauth2Flow"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="scopes" unique="false"
+        upperBound="-1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="tokenUrl" unique="false"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AuthRequirement">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>API authentication requires."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="scopes" unique="false"
+        upperBound="-1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="method" eType="#//AuthMethod"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Monitor">
     <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
@@ -40,6 +83,8 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="url" unique="false" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="parameters" upperBound="-1"
         eType="#//LocatedProperty" containment="true" resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="authRequirements" upperBound="-1"
+        eType="#//AuthRequirement" containment="true" resolveProxies="false"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Property">
     <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
@@ -116,5 +161,14 @@
     <eLiterals name="PATH" value="3" literal="path"/>
     <eLiterals name="QUERY" value="4" literal="query"/>
     <eLiterals name="UNSPECIFIED" value="5" literal="unspecified"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Oauth2Flow">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="&lt;p>Oauth2 flow types according to the OpenAPI v2 specification."/>
+    </eAnnotations>
+    <eLiterals name="ACCESS_CODE" literal="accessCode"/>
+    <eLiterals name="APPLICATION" value="1" literal="application"/>
+    <eLiterals name="IMPLICIT" value="2" literal="implicit"/>
+    <eLiterals name="PASSWORD" value="3" literal="password"/>
   </eClassifiers>
 </ecore:EPackage>

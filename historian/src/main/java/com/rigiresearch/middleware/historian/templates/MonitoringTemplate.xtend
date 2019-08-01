@@ -1,10 +1,16 @@
 package com.rigiresearch.middleware.historian.templates
 
+import com.rigiresearch.middleware.metamodels.monitoring.ApiKeyAuth
 import com.rigiresearch.middleware.metamodels.monitoring.Array
+import com.rigiresearch.middleware.metamodels.monitoring.BasicAuth
 import com.rigiresearch.middleware.metamodels.monitoring.DataType
 import com.rigiresearch.middleware.metamodels.monitoring.Monitor
+import com.rigiresearch.middleware.metamodels.monitoring.MonitoringFactory
+import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage
+import com.rigiresearch.middleware.metamodels.monitoring.Oauth2Auth
 import com.rigiresearch.middleware.metamodels.monitoring.Path
 import com.rigiresearch.middleware.metamodels.monitoring.Property
+import com.rigiresearch.middleware.metamodels.monitoring.PropertyLocation
 import com.rigiresearch.middleware.metamodels.monitoring.Root
 import com.rigiresearch.middleware.metamodels.monitoring.Schema
 import com.rigiresearch.middleware.metamodels.monitoring.Type
@@ -19,11 +25,8 @@ import java.util.List
 import java.util.Map
 import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.io.FileHandler
-import org.eclipse.xtend.lib.annotations.Data
-import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage
 import org.eclipse.emf.ecore.EcorePackage
-import com.rigiresearch.middleware.metamodels.monitoring.MonitoringFactory
-import com.rigiresearch.middleware.metamodels.monitoring.PropertyLocation
+import org.eclipse.xtend.lib.annotations.Data
 
 /**
  * Generate classes from the monitoring model. More specifically, from the
@@ -133,7 +136,7 @@ final class MonitoringTemplate {
         )
     }
 
-    /**
+/**
      * Creates a properties file based on the paths and their parameters.
      * @param config A configuration object
      * @param root The root model element
@@ -163,26 +166,13 @@ final class MonitoringTemplate {
         config.layout.setBlancLinesBefore("base", 1)
         config.layout.setComment("base", "The base URL")
 
-        // FIXME Manually add vmware's session id while vmware/vmware-openapi-generator/#44 remains open
-        EcorePackage.eINSTANCE.eClass()
-        MonitoringPackage.eINSTANCE.eClass()
-
         for (m : root.monitors) {
-
-            // FIXME Manually add vmware's session id while vmware/vmware-openapi-generator/#44 remains open
-            val type = MonitoringFactory.eINSTANCE.createDataType
-            type.type = Type.STRING
-            val parameter = MonitoringFactory.eINSTANCE.createLocatedProperty
-            parameter.name = "vmware-api-session-id"
-            parameter.location = PropertyLocation.HEADER
-            parameter.required = true
-            parameter.type = type
-            m.path.parameters.add(parameter)
-
+            val parameters = m.authParameters
             if (!m.path.parameters.empty) {
-                config.setProperty('''«m.path.id».inputs''', m.path.parameters.map[p|p.name].join(", ").toString)
+                parameters += m.path.parameters
+                config.setProperty('''«m.path.id».inputs''', parameters.map[p|p.name].join(", ").toString)
                 config.layout.setBlancLinesBefore('''«m.path.id».inputs''', 1)
-                for (p : m.path.parameters) {
+                for (p : parameters) {
                     if (p.required) {
                         config.setProperty('''«m.path.id».inputs.«p.name».required''', true)
                     }
@@ -205,6 +195,48 @@ final class MonitoringTemplate {
             )
         }
         return config
+    }
+
+    /**
+     * Creates the necessary parameters based on authentication requirements
+     * for the given monitor.
+     * @param monitor The monitor
+     * @return A list of parameters
+     */
+    def authParameters(Monitor monitor) {
+        val parameters = newArrayList
+        val root = monitor.eContainer as Root
+        val requirements = if(!monitor.path.authRequirements.empty)
+                monitor.path.authRequirements
+            else
+                root.authRequirements
+        for (requirement : requirements) {
+            //
+            val method = requirement.method
+            switch (method) {
+                ApiKeyAuth: {
+                    parameters += method.property
+                }
+                BasicAuth: {
+                    EcorePackage.eINSTANCE.eClass
+                    MonitoringPackage.eINSTANCE.eClass
+                    val property = MonitoringFactory.eINSTANCE.
+                        createLocatedProperty
+                    val type = MonitoringFactory.eINSTANCE.createDataType
+                    type.type = Type.STRING
+                    property.name = "Authorization"
+                    property.location = PropertyLocation.HEADER
+                    property.required = true
+                    property.type = type
+                    parameters += property
+                }
+                Oauth2Auth: {
+                    // TODO Add support for oauth2 authentication
+                    throw new UnsupportedOperationException("Not implemented yet")
+                }
+            }
+        }
+        return parameters
     }
 
     /**
@@ -315,22 +347,25 @@ final class MonitoringTemplate {
         # parent monitor. Dependent monitors must not be listed in the variable
         # "monitors".''')
 
-        for (m : root.monitors.filter[!it.path.parameters.empty]) {
-            val required = m.path.parameters.filter[it.required]
-            val comments = <String>newArrayList('''Monitor "«m.path.id»"''')
-            for (p : m.path.parameters.filter[!it.required]) {
-                comments.add('''«m.path.id».inputs.«p.name».value=''')
-            }
-            if (!required.empty) {
-                for (p : required) {
-                    config.setProperty('''«m.path.id».inputs.«p.name».value''', "")
+        for (m : root.monitors) {
+            val parameters = m.authParameters + m.path.parameters
+            if(!parameters.empty) {
+                val required = parameters.filter[it.required]
+                val comments = <String>newArrayList('''Monitor "«m.path.id»"''')
+                for (p : parameters.filter[!it.required]) {
+                    comments.add('''«m.path.id».inputs.«p.name».value=''')
                 }
-                val firstKey = '''«m.path.id».inputs.«required.get(0).name».value'''
-                config.layout.setComment(firstKey, comments.join("\n"))
-                config.layout.setBlancLinesBefore(firstKey, 1)
-            } else {
-                comments.add(0, "")
-                header.addAll(comments)
+                if(!required.empty) {
+                    for (p : required) {
+                        config.setProperty('''«m.path.id».inputs.«p.name».value''', "")
+                    }
+                    val firstKey = '''«m.path.id».inputs.«required.get(0).name».value'''
+                    config.layout.setComment(firstKey, comments.join("\n"))
+                    config.layout.setBlancLinesBefore(firstKey, 1)
+                } else {
+                    comments.add(0, "")
+                    header.addAll(comments)
+                }
             }
         }
         config.layout.headerComment = header.join("\n")

@@ -29,7 +29,51 @@ class Root {
     String host
     String basePath
     boolean https
+    contains AuthMethod[] authMethods
+    contains AuthRequirement[] authRequirements
     contains Monitor[] monitors
+}
+
+/*
+ * <p>API Authentication method.
+ */
+abstract class AuthMethod {
+    id String ^id
+}
+
+/*
+ * <p>API authentication based on an API key.
+ */
+class ApiKeyAuth extends AuthMethod {
+    contains LocatedProperty property
+}
+
+/*
+ * <p>API authentication based on a base64 encoded string containing a username
+ * and password in the form username:password. The encoded string must be
+ * included in the request header as <code>Authorization</code>, preceded by the
+ * word Basic. For example: Authorization: Basic X, where X is the encoded
+ * value.
+ */
+class BasicAuth extends AuthMethod {
+}
+
+/*
+ * <p>API authentication based on Oauth2.
+ */
+class Oauth2Auth extends AuthMethod {
+    String authorizationUrl
+    Oauth2Flow flow
+    String[] scopes
+    String tokenUrl
+}
+
+/*
+ * <p>API authentication requires.
+ */
+class AuthRequirement {
+    String[] scopes
+    refers AuthMethod method
 }
 
 /*
@@ -49,6 +93,7 @@ class Path {
     id String ^id
     String url
     contains LocatedProperty[] parameters
+    contains AuthRequirement[] authRequirements
 }
 
 /*
@@ -130,4 +175,14 @@ enum PropertyLocation {
     PATH as "path" = 3,
     QUERY as "query" = 4,
     UNSPECIFIED as "unspecified" = 5
+}
+
+/*
+ * <p>Oauth2 flow types according to the OpenAPI v2 specification.
+ */
+enum Oauth2Flow {
+    ACCESS_CODE as "accessCode" = 0,
+    APPLICATION as "application" = 1,
+    IMPLICIT as "implicit" = 2,
+    PASSWORD as "password" = 3
 }
