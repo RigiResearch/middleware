@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <monitors xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
   <monitor name="getVcenterVm">
-    <input name="vm" value="vm" source="listVcenterVm"/>
+    <input name="vm" source="listVcenterVm">vm</input>
   </monitor>
   <monitor name="listVcenterDatacenter">
     <output name="datacenter" selector="//datacenter" multivalued="true"/>
@@ -14,10 +14,10 @@
   </monitor>
   <!-- Inventory of VMs per datacenter -->
   <monitor name="listVcenterVmFilteredByDatacenter" template="listVcenterVm">
-    <input name="filter.datacenters" value="datacenter" source="listVcenterDatacenter" />
+    <input name="filter.datacenters" source="listVcenterDatacenter">datacenter</input>
   </monitor>
   <!-- Inventory of VMs per host -->
   <monitor name="listVcenterVmFilteredByHost" template="listVcenterVm">
-    <input name="filter.hosts" value="host" source="listVcenterHost" />
+    <input name="filter.hosts" source="listVcenterHost">host</input>
   </monitor>
 </monitors>

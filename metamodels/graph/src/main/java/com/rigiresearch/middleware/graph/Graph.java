@@ -18,6 +18,8 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.eclipse.persistence.oxm.annotations.XmlPath;
 
 /**
  * A DAG with input/output dependencies.
@@ -414,7 +416,8 @@ public class Graph<T extends Graph.Node> implements Serializable {
          * The value associated with this input. It is either a primitive value
          * or a reference to another node's output.
          */
-        @XmlAttribute(required = true)
+        @XmlPath(".")
+        @XmlJavaTypeAdapter(InputValueAdapter.class)
         private String value;
 
         /**
