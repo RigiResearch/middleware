@@ -13,6 +13,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import lombok.ToString;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 
 /**
  * A graph node augmented with monitoring data.
@@ -47,6 +48,13 @@ public final class Monitor extends Graph.Node {
      * Input values.
      */
     private final Map<String, Object> values;
+
+    /**
+     * Empty constructor.
+     */
+    public Monitor() {
+        this(new Graph.Node(), new PropertiesConfiguration());
+    }
 
     /**
      * Default constructor.
