@@ -1,23 +1,14 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
-import java.util.function.Supplier;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
+import lombok.Value;
 
 /**
  * A request parameter.
- * TODO Add attribute "required" to verify miss-configurations.
- * @see Location
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
-@Accessors(fluent = true)
-@EqualsAndHashCode
-@Getter
-@ToString
+@Value
 public final class Input {
 
     /**
@@ -26,48 +17,19 @@ public final class Input {
     private final String name;
 
     /**
-     * The value.
+     * The value supplier.
      */
-    private final Supplier<String> value;
+    private final String value;
+
+    /**
+     * Whether this input is required.
+     */
+    private final boolean required;
 
     /**
      * The location.
      */
-    private final Input.Location location;
-
-    /**
-     * Secondary constructor.
-     * @param name The parameter name
-     * @param location The parameter location
-     */
-    public Input(final String name, final Input.Location location) {
-        this(name, () -> "", location);
-    }
-
-    /**
-     * Default constructor.
-     * @param name The parameter name
-     * @param value The parameter value
-     * @param location The parameter location
-     */
-    public Input(final String name, final Supplier<String> value,
-        final Input.Location location) {
-        this.name = name;
-        this.value = value;
-        this.location = location;
-    }
-
-    /**
-     * Duplicates this object.
-     * @return A clone
-     */
-    Input duplicate() {
-        return new Input(
-            this.name,
-            this.value,
-            this.location
-        );
-    }
+    private final Location location;
 
     /**
      * Location of a request parameter.
@@ -104,3 +66,4 @@ public final class Input {
         QUERY
     }
 }
+

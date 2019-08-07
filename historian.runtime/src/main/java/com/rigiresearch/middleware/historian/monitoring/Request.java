@@ -1,24 +1,19 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -26,13 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A simple HTTP request.
+ * A data collector.
  * @author Miguel Jimenez (miguel@leslumier.es)
  * @version $Id$
  * @since 0.1.0
  */
-@Accessors(fluent = true)
-@Getter
 @RequiredArgsConstructor
 public final class Request {
 
@@ -43,87 +36,87 @@ public final class Request {
         LoggerFactory.getLogger(Request.class);
 
     /**
-     * The URL this monitor queries.
+     * The default buffer size.
      */
-    private final URL url;
+    private static final int BUFFER_SIZE = 1024;
 
     /**
-     * A list of input parameters for the API requests.
+     * HTTP 200 status code.
+     */
+    private static final int OK_CODE = 200;
+
+    /**
+     * The request inputs.
      */
     private final List<Input> inputs;
 
     /**
-     * A credentials provider (optional).
+     * The url from which this collector collects the data.
      */
-    private final CredentialsProvider provider;
+    private final URL url;
 
     /**
-     * Makes a request to the specified URL with the corresponding parameters
-     * set.
-     * @return The request's response
-     * @throws IOException If there is a problem with the connection
+     * Collects data from the associated resource.
+     * TODO Support basic authentication for the login monitor.
+     * @return The HTTP response
+     * @throws IOException If there is an issue executing the HTTP request
      */
     public CloseableHttpResponse response() throws IOException {
-        final URI uri = this.uri();
+        final URI uri = this.uri(this.url);
         final CloseableHttpClient client = HttpClients.createDefault();
         final CloseableHttpResponse response;
-        if (this.provider == null) {
-            final HttpUriRequest request = new HttpGet(uri);
-            this.parameters(Input.Location.HEADER)
-                .forEach(p -> request.addHeader(p.name(), p.value().get()));
-            response = client.execute(request);
-        } else {
-            Request.LOGGER.debug(
-                "Credentials provider found for path '{}'", uri.getPath()
-            );
-            final HttpRequest request = new HttpPost(uri);
-            this.parameters(Input.Location.HEADER)
-                .forEach(p -> request.addHeader(p.name(), p.value().get()));
-            final HttpClientContext context = HttpClientContext.create();
-            context.setCredentialsProvider(this.provider);
-            final HttpHost host =
-                new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-            response = client.execute(host, request, context);
-        }
+        final HttpUriRequest request = new HttpGet(uri);
+        this.parameters(Input.Location.HEADER)
+            .forEach(p -> request.addHeader(p.getName(), p.getValue()));
+        response = client.execute(request);
         return response;
     }
 
     /**
-     * Filters out the inputs based on the given parameter locations.
-     * @param criteria The filtering criteria
-     * @return A stream of parameters
+     * Collects the data from the associated URL.
+     * @return The collected content
+     * @throws IOException If there is a request execution error
+     * @throws UnexpectedResponseCodeException If the response code is different than 200
      */
-    private Stream<Input> parameters(final Input.Location... criteria) {
-        return this.inputs.stream()
-            .filter(p -> Arrays.asList(criteria).contains(p.location()));
+    public String data() throws IOException, UnexpectedResponseCodeException {
+        final CloseableHttpResponse response = this.response();
+        if (response.getStatusLine().getStatusCode() != Request.OK_CODE) {
+            throw new UnexpectedResponseCodeException(
+                "Unexpected response code '%s' from URL '%s'.",
+                response.getStatusLine().getStatusCode(),
+                this.url
+            );
+        }
+        return this.asString(response.getEntity().getContent());
     }
 
     /**
      * Builds the target URI replacing the parameters where corresponds.
+     * @param initial The initial URL
      * @return A URI with the corresponding parameters set
      */
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-    private URI uri() {
-        final List<String> flatpath = Arrays.asList(this.url.getPath());
+    private URI uri(final URL initial) {
+        final List<String> flatpath = Arrays.asList(initial.getPath());
         this.parameters(Input.Location.PATH)
             .forEach(input -> {
                 flatpath.set(
                     0,
                     flatpath.get(0).replaceAll(
-                        String.format("\\{%s\\}", input.name()),
-                        input.value().get()
+                        String.format("\\{%s\\}", input.getName()),
+                        input.getValue()
                     )
                 );
             });
         final URIBuilder builder = new URIBuilder()
-            .setScheme(this.url.getProtocol())
-            .setHost(this.url.getHost())
+            .setScheme(initial.getProtocol())
+            .setHost(initial.getHost())
             .setPath(flatpath.get(0));
         this.parameters(
             Input.Location.QUERY,
             Input.Location.FORM_DATA
         ).forEach(param -> {
-            builder.setParameter(param.name(), param.value().get());
+            builder.setParameter(param.getName(), param.getValue());
         });
         try {
             return builder.build();
@@ -134,17 +127,30 @@ public final class Request {
     }
 
     /**
-     * Duplicates this object.
-     * @return A clone of this object
+     * Filters out the inputs based on the given parameter locations.
+     * @param criteria The filtering criteria
+     * @return A stream of parameters
      */
-    Request duplicate() {
-        return new Request(
-            this.url,
-            this.inputs.stream()
-                .map(Input::duplicate)
-                .collect(Collectors.toList()),
-            this.provider
-        );
+    private Stream<Input> parameters(final Input.Location... criteria) {
+        return this.inputs.stream()
+            .filter(i -> Arrays.asList(criteria).contains(i.getLocation()));
+    }
+
+    /**
+     * Returns the string representation of the given stream.
+     * @param stream The input stream
+     * @return A UTF-8 string
+     * @throws IOException if something bad happens!
+     */
+    private static String asString(final InputStream stream) throws IOException {
+        final ByteArrayOutputStream result = new ByteArrayOutputStream();
+        final byte[] buffer = new byte[Request.BUFFER_SIZE];
+        int length = stream.read(buffer);
+        while (length != -1) {
+            result.write(buffer, 0, length);
+            length = stream.read(buffer);
+        }
+        return result.toString(StandardCharsets.UTF_8.toString());
     }
 
 }

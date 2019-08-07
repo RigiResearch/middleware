@@ -1,59 +1,37 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.sauronsoftware.cron4j.Scheduler;
+import com.rigiresearch.middleware.graph.Graph;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
+import java.util.Objects;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.experimental.Accessors;
+import lombok.ToString;
 import org.apache.commons.configuration2.Configuration;
-import org.javers.core.Javers;
-import org.javers.core.commit.Commit;
-import org.javers.core.diff.Change;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * A polling monitor to collect resources from a REST API.
+ * A graph node augmented with monitoring data.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
-@Accessors(fluent = true)
-@RequiredArgsConstructor
-public final class Monitor implements Runnable, Callable<Void>, Cloneable {
+@ToString(of = {"identifier"})
+public final class Monitor extends Graph.Node {
 
     /**
-     * The logger.
+     * Serial version UID.
      */
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(Monitor.class);
+    private static final long serialVersionUID = -704880779306199040L;
 
     /**
-     * Format string for logging data.
+     * A unique identifier for this monitor.
      */
-    private static final String FORMAT = "[{}] {}";
-
-    /**
-     * A unique id.
-     */
-    @Getter
-    private final String id;
-
-    /**
-     * The corresponding path's id.
-     */
-    @Getter
-    private final String name;
+    private String identifier;
 
     /**
      * The configuration properties.
@@ -61,262 +39,207 @@ public final class Monitor implements Runnable, Callable<Void>, Cloneable {
     private final Configuration config;
 
     /**
-     * The task scheduler.
+     * Input values from the context of this monitor.
      */
-    private final Scheduler scheduler;
+    private final Map<String, Object> context;
 
     /**
-     * The Javers instance to use.
+     * Input values.
      */
-    private final Javers javers;
+    private final Map<String, Object> values;
 
     /**
-     * A data collector.
+     * Default constructor.
+     * @param node The node on which this monitor is based.
+     * @param config The configuration properties
      */
-    @Getter
-    private final Collector collector;
-
-    /**
-     * The dependent monitors.
-     */
-    private final List<Monitor.DependentMonitor> dependent;
-
-    /**
-     * An executor service.
-     */
-    private final ExecutorService executor;
-
-    /**
-     * A JSON mapper.
-     * TODO Add support for class mapping from XML.
-     */
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    /**
-     * The class associated with this monitor.
-     */
-    private Class<?> clazz = Object.class;
-
-    /**
-     * The identifier of the scheduled task.
-     */
-    private String identifier = "";
-
-    /**
-     * Schedules the periodic requests.
-     */
-    @Override
-    public void run() {
-        final String expression = this.config.getString(
-            String.format("%s.expression", this.name)
-        );
-        Monitor.LOGGER.debug("Scheduling monitor '{}'", this.name);
-        this.identifier = this.scheduler.schedule(expression, this::collect);
+    public Monitor(final Graph.Node node, final Configuration config) {
+        super(node.getName(), node.getTemplate(), node.getParameters(false));
+        this.identifier = node.getName();
+        this.config = config;
+        this.context = new HashMap<>(0);
+        this.values = this.getParameters(true).stream()
+            .filter(Graph.Input.class::isInstance)
+            .map(Graph.Input.class::cast)
+            .filter(Graph.Input::hasConcreteValue)
+            .collect(Collectors.toMap(Graph.Input::getName, Graph.Input::getValue));
     }
 
     /**
-     * Schedules the periodic requests. See {@link #run()}.
-     * @return Null
+     * A unique identifier for this monitor.
+     * @return A unique identifier for this monitor
      */
-    @Override
-    public Void call() {
-        this.run();
-        return null;
+    public String getIdentifier() {
+        return this.identifier;
     }
 
     /**
-     * Removes future requests from the scheduler. <b>Note</b> that this method
-     * does not interrupt ongoing requests.
+     * Updates this monitor's identifier.
+     * @param format A format string
+     * @param args Components to the identifier
      */
-    public void stop() {
-        this.scheduler.deschedule(this.identifier);
+    public void setIdentifier(final String format, final String... args) {
+        this.identifier = String.format(format, args);
     }
 
     /**
-     * Collect the data.
-     * @return The collected data
+     * Input values.
+     * @return The input values
      */
-    private String collect() {
-        final boolean process = this.config.getBoolean(
-            String.format("%s.response.process", this.name),
-            true
-        );
-        String content = "";
-        try {
-            content = this.collector.collect();
-            if (process) {
-                this.process(content);
-            }
-            this.dependentCollect(content);
-        } catch (final IOException | ClassNotFoundException
-            | UnexpectedResponseCode exception) {
-            Monitor.LOGGER.error(Monitor.FORMAT, this.id, exception.getMessage());
-        }
-        return content;
+    public Map<String, Object> getValues() {
+        return this.values;
     }
 
     /**
-     * Processes the collected content.
-     * @param content The collected content
-     * @throws ClassNotFoundException If the mapping class is not found
-     * @throws IOException If there is a problem mapping the content
+     * Sets or updates an input value.
+     * @param name The name of the input
+     * @param value The value to set
+     * @return The previous value of the input or null
      */
-    private void process(final String content)
-        throws ClassNotFoundException, IOException {
-        final String fqn = String.format("%s.response.class", this.name);
-        if (this.clazz.equals(Object.class)) {
-            this.clazz = Class.forName(this.config.getString(fqn));
-        }
-        final Object current = this.mapper.readValue(content, this.clazz);
-        // Set the attribute id
-        try {
-            final Field field = this.clazz.getDeclaredField("_monitor_id");
-            field.setAccessible(true);
-            field.set(current, this.id);
-        } catch (final IllegalAccessException | NoSuchFieldException exception) {
-            Monitor.LOGGER.error(
-                String.format(
-                    Monitor.FORMAT,
-                    this.id,
-                    exception.getMessage()
-                ),
-                exception
-            );
-        }
-        final Map<String, String> properties = new HashMap<>(1);
-        properties.put("monitor", this.id);
-        final Commit commit = this.javers.commit("historian", current, properties);
-        final List<Change> changes = commit.getChanges();
-        if (!changes.isEmpty()) {
-            Monitor.LOGGER.debug(Monitor.FORMAT, this.id, changes);
-        }
+    public Object setValue(final String name, final Object value) {
+        return this.values.put(name, value);
     }
 
     /**
-     * Collects data from dependent monitors.
-     * @param content The content collected by this monitor
-     * @throws IOException If something bad happens extracting the data
+     * Input values from the context of this monitor.
+     * @return The input values from the context of this monitor
      */
-    private void dependentCollect(final String content) throws IOException {
-        for (final Monitor.DependentMonitor child : this.dependent) {
-            final String variable = this.config.getString(
-                String.format(
-                    "%s.children.%s.input",
-                    this.name,
-                    child.monitor()
-                        .collector()
-                        .path()
-                )
-            );
-            final String selector = this.config.getString(
-                String.format(
-                    "%s.inputs.%s.selector",
-                    child.monitor()
-                        .collector()
-                        .path(),
-                    variable
-                )
-            );
-            final Optional<Input> opin = child.monitor().collector()
-                .request()
-                .inputs()
+    public Map<String, Object> getContextValues() {
+        return this.values;
+    }
+
+    /**
+     * Sets or updates a context value.
+     * @param name The name of the value
+     * @param value The value to set
+     * @return The previous value of the context value or null
+     */
+    public Object setContextValue(final String name, final Object value) {
+        return this.context.put(name, value);
+    }
+
+    /**
+     * Returns a combined map of input values from the configuration and context
+     * of this monitor.
+     * @return A map containing string values
+     */
+    public Map<String, String> allValues() {
+        final Map<String, String> result =
+            new HashMap<>(this.values.size() + this.context.size());
+        result.putAll(
+            this.values.entrySet()
                 .stream()
-                .filter(in -> in.name().equals(variable))
-                .findFirst();
-            if (opin.isPresent()) {
-                final Input input = opin.get();
-                final int index = child.monitor()
-                    .collector()
-                    .request()
-                    .inputs()
-                    .indexOf(input);
-                new XpathValue(selector, content)
-                    .values()
-                    .stream()
-                    .map(value -> {
-                        final Monitor clone = child.monitor()
-                            .duplicate(
-                                String.format(
-                                    "%s-%s",
-                                    child.monitor().name(),
-                                    value
-                                )
-                            );
-                        final Input copy =
-                            new Input(input.name(), () -> value, input.location());
-                        clone.collector()
-                            .request()
-                            .inputs()
-                            .set(index, copy);
-                        return clone;
-                    })
-                    .forEach(clone -> {
-                        this.executor.submit(clone::collect);
-                    });
-            } else {
-                Monitor.LOGGER.error(
-                    "Missing property '{}'. Dependent monitor won't collect any data.",
-                    variable
-                );
-            }
-        }
+                .map(Monitor::toValueString)
+                .collect(Monitor.toMap())
+        );
+        result.putAll(
+            this.context.entrySet()
+                .stream()
+                .map(Monitor::toValueString)
+                .collect(Monitor.toMap())
+        );
+        return result;
     }
 
     /**
-     * Clones this monitor, setting a special (unique) name.
-     * @param identifier A unique name based on the value extracted with the dependent
-     *  monitor's selector.
-     * @return The cloned monitor
+     * The inputs associated with this monitor.
+     * @return A list of {@link Input}s
      */
-    @SuppressWarnings("checkstyle:HiddenField")
-    public Monitor duplicate(final String identifier) {
-        return new Monitor(
-            identifier,
-            this.name,
-            this.config,
-            this.scheduler,
-            this.javers,
-            this.collector.duplicate(),
-            this.dependent.stream()
-                .map(monitor -> monitor.clone(identifier))
-                .collect(Collectors.toList()),
-            this.executor
+    private List<Input> inputs() {
+        String name = this.getName();
+        if (this.isTemplateBased()) {
+            name = this.getTemplate().getName();
+        }
+        final String key = String.format("%s.inputs", name);
+        final String[] names = this.config.getStringArray(key);
+        final List<Input> list = new ArrayList<>(names.length);
+        final Map<String, String> map = this.allValues();
+        for (final String str : names) {
+            final String required =
+                String.format("%s.inputs.%s.required", name, str);
+            final String location =
+                String.format("%s.inputs.%s.location", name, str);
+            list.add(
+                new Input(
+                    str,
+                    map.get(str),
+                    this.config.getBoolean(required, false),
+                    Input.Location.valueOf(this.config.getString(location))
+                )
+            );
+        }
+        return list;
+    }
+
+    /**
+     * Collects content from the associated URL.
+     * @return The collected content
+     * @throws IOException If the URL is invalid or there is a problem
+     *  collecting the data
+     * @throws UnexpectedResponseCodeException See {@link Request#data()}
+     */
+    public String collect() throws IOException, UnexpectedResponseCodeException {
+        String name = this.getName();
+        if (this.isTemplateBased()) {
+            name = this.getTemplate().getName();
+        }
+        final URL url = new URL(
+            this.config.getString(String.format("%s.url", name))
+        );
+        return new Request(this.inputs(), url).data();
+    }
+
+    /**
+     * A map collector for map entries.
+     * From https://stackoverflow.com/a/52989113
+     * @param <K> The type of the key
+     * @param <V> The type of the value
+     * @return A setup stream collector
+     */
+    private static <K, V> Collector<? super Map.Entry<K, V>, ?, Map<K, V>> toMap() {
+        return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    /**
+     * Creates a new entry with the string value of the argument.
+     * @param entry The original entry
+     * @return A new entry
+     */
+    private static Map.Entry<String, String> toValueString(
+        final Map.Entry<String, Object> entry) {
+        return new AbstractMap.SimpleEntry<>(
+            entry.getKey(),
+            entry.getValue().toString()
         );
     }
 
     /**
-     * A dependent monitor.
-     * @author Miguel Jimenez (miguel@uvic.ca)
-     * @version $Id$
-     * @since 0.1.0
+     * Determines whether this and another object are equivalent based on
+     * their names/identifier.
+     * @param object The other object
+     * @return Whether the two objects are equivalent
      */
-    @Accessors(fluent = true)
-    @Value
-    public static final class DependentMonitor {
-
-        /**
-         * An Xpath selector for extracting the particular input values.
-         */
-        private final String selector;
-
-        /**
-         * The dependent monitor.
-         */
-        private final Monitor monitor;
-
-        /**
-         * Clones this dependent monitor, setting a special (unique) name.
-         * @param id A unique name based on the value extracted with the
-         *  selector.
-         * @return The cloned monitor
-         */
-        Monitor.DependentMonitor clone(final String id) {
-            return new Monitor.DependentMonitor(
-                this.selector,
-                this.monitor.duplicate(id)
-            );
+    @Override
+    public boolean equals(final Object object) {
+        boolean equivalent = false;
+        if (object instanceof Monitor) {
+            final Monitor monitor = (Monitor) object;
+            equivalent = this.identifier.equals(monitor.identifier)
+                && this.getName().equals(monitor.getName());
+        } else if (object instanceof Graph.Node) {
+            final Graph.Node node = (Graph.Node) object;
+            equivalent = this.getName().equals(node.getName());
         }
+        return equivalent;
+    }
 
+    /**
+     * Generates a hash code for the identifier.
+     * @return The hash code
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.identifier);
     }
 
 }

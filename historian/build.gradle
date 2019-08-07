@@ -4,7 +4,6 @@ plugins {
 }
 
 mainClassName = "com.rigiresearch.middleware.historian.Application"
-applicationDefaultJvmArgs = ["-Dcolor"]
 
 repositories {
   flatDir dirs: "lib"

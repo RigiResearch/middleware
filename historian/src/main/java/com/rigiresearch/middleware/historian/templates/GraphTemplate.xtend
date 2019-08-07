@@ -24,9 +24,9 @@ final class GraphTemplate {
      * @param target
      * @return The Path object
      */
-    def generateFile(Graph graph, File target) {
+    def generateFile(Graph<Graph.Node> graph, File target) {
         val file = new File(target, "configuration.dot")
-        file.mkdirs
+        target.mkdirs
         file.write(graph.asDotSpecification)
     }
 
@@ -51,7 +51,7 @@ final class GraphTemplate {
      * @param graph The graph
      * @return  The DOT specification
      */
-    def asDotSpecification(Graph graph) {
+    def asDotSpecification(Graph<Graph.Node> graph) {
         val templateBased = graph.nodes.filter[it.templateBased]
         val withoutDependents = graph.nodes.filter[graph.dependents(it).empty]
         val withDependencies = graph.nodes.reject [

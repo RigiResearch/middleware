@@ -108,7 +108,7 @@ public final class Application {
         throws JAXBException, IOException {
         final File directory = new File(this.target);
         final GraphParser parser = new GraphParser();
-        final Graph graph = this.monitoringGraph(model);
+        final Graph<Graph.Node> graph = this.monitoringGraph(model);
         parser.write(graph, new File(directory, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);
         new GraphTemplate().generateFile(graph, directory);
@@ -119,8 +119,8 @@ public final class Application {
      * @param model The monitoring model
      * @return The graph instance
      */
-    private Graph monitoringGraph(final Root model) {
-        return new Graph(
+    private Graph<Graph.Node> monitoringGraph(final Root model) {
+        return new Graph<Graph.Node>(
             model.getMonitors()
                 .stream()
                 .map(monitor -> {

@@ -13,7 +13,6 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 mainClassName = "com.rigiresearch.middleware.historian.monitoring.Application"
-applicationDefaultJvmArgs = ["-Dcolor"]
 
 repositories {
   jcenter()

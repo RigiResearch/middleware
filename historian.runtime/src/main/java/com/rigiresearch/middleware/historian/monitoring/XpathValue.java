@@ -4,7 +4,7 @@ import com.vmware.xpath.json.DistinctTextValueJsonXpathVisitor;
 import com.vmware.xpath.json.JsonXpath;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A value extracted from a string based on a Xpath selector. This
+ * A value extracted from a string based on an Xpath selector. This
  * implementation currently supports JSON content.
  * TODO Add support for XML content.
  * @author Miguel Jimenez (miguel@uvic.ca)
@@ -34,9 +34,9 @@ public final class XpathValue {
     private static final String ERROR_FORMAT = "Empty result for selector '%s'";
 
     /**
-     * The Xpath selector.
+     * A JSON mapper.
      */
-    private final String selector;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * The content.
@@ -44,17 +44,17 @@ public final class XpathValue {
     private final String content;
 
     /**
-     * A JSON mapper.
+     * The Xpath selector.
      */
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final String selector;
 
     /**
-     * Finds a single value selected by the given Xpath selector.
+     * Finds a single value selected by the associated Xpath selector.
      * @return A string value from the input content
-     * @throws IOException If something bad happens while finding the value
+     * @throws IOException If something bad happens while selecting the value
      */
     public String value() throws IOException {
-        final JsonNode node = this.mapper.readTree(this.content);
+        final JsonNode node = XpathValue.MAPPER.readTree(this.content);
         if (!JsonXpath.exists(node, this.selector)) {
             XpathValue.LOGGER.error(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
@@ -65,16 +65,16 @@ public final class XpathValue {
     }
 
     /**
-     * Finds the values selected by the given Xpath selector.
+     * Finds the values selected by the associated Xpath selector.
      * @return A list of matching values
-     * @throws IOException If something bad happens while finding the values
+     * @throws IOException If something bad happens while selecting the values
      */
-    public List<String> values() throws IOException {
-        final JsonNode node = this.mapper.readTree(this.content);
+    public Collection<String> values() throws IOException {
+        final JsonNode node = XpathValue.MAPPER.readTree(this.content);
         final DistinctTextValueJsonXpathVisitor visitor =
             new DistinctTextValueJsonXpathVisitor(this.selector);
         JsonXpath.findAndUpdateMultiple(node, this.selector, visitor);
-        final List<String> elements = new ArrayList<>(visitor.getDistinctSet());
+        final Collection<String> elements = new ArrayList<>(visitor.getDistinctSet());
         if (elements.isEmpty()) {
             XpathValue.LOGGER.error(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)

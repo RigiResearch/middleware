@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<monitors xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
+  <monitor name="listVcenterVm">
+    <output name="vm" selector="//vm" multivalued="true"/>
+  </monitor>
+  <monitor name="listVcenterResourcePool">
+    <output name="resource_pool" selector="//resource_pool" multivalued="true"/>
+  </monitor>
+</monitors>

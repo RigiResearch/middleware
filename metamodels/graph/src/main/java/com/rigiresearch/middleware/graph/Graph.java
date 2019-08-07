@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -20,15 +21,17 @@ import javax.xml.bind.annotation.XmlType;
 
 /**
  * A DAG with input/output dependencies.
+ * TODO Add support for configuration options (e.g., authentication attributes).
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
+ * @param <T> The type of node
  */
 @XmlRootElement(
     name = "monitors",
     namespace = Graph.NAMESPACE
 )
-public final class Graph implements Serializable {
+public class Graph<T extends Graph.Node> implements Serializable {
 
     /**
      * The XML namespace.
@@ -45,7 +48,7 @@ public final class Graph implements Serializable {
      * The set of nodes.
      */
     @XmlElement(name = "monitor")
-    private Set<Graph.Node> nodes;
+    private Set<T> nodes;
 
     /**
      * Empty constructor.
@@ -58,7 +61,7 @@ public final class Graph implements Serializable {
      * Default constructor.
      * @param nodes The set of nodes
      */
-    public Graph(final Set<Graph.Node> nodes) {
+    public Graph(final Set<T> nodes) {
         this.nodes = new TreeSet<>(nodes);
     }
 
@@ -67,7 +70,7 @@ public final class Graph implements Serializable {
      * @param node The graph node
      * @return A set of dependent nodes
      */
-    public Set<Graph.Node> dependents(final Graph.Node node) {
+    public Set<T> dependents(final T node) {
         return this.nodes.stream()
             .filter(temp ->
                 temp.getParameters(true).stream()
@@ -79,23 +82,10 @@ public final class Graph implements Serializable {
     }
 
     /**
-     * Finds the dependencies of a given node.
-     * @param node The graph node
-     * @return A set of dependent nodes
-     */
-    public Set<Graph.Node> dependencies(final Graph.Node node) {
-        return node.getParameters(true).stream()
-            .filter(Graph.Input.class::isInstance)
-            .map(Graph.Input.class::cast)
-            .map(Graph.Input::getSource)
-            .collect(Collectors.toSet());
-    }
-
-    /**
      * The set of nodes.
      * @return A set
      */
-    public Set<Graph.Node> getNodes() {
+    public Set<T> getNodes() {
         return this.nodes;
     }
 
@@ -103,8 +93,7 @@ public final class Graph implements Serializable {
      * A graph node.
      */
     @XmlType(namespace = Graph.NAMESPACE)
-    public static final class Node
-        implements Serializable, Comparable<Graph.Node> {
+    public static class Node implements Serializable, Comparable<Graph.Node> {
 
         /**
          * A serial version UID.
@@ -114,8 +103,8 @@ public final class Graph implements Serializable {
         /**
          * Object to recognize whether a node is based on a template.
          */
-        private static final Graph.Node TEMPLATE_PILL =
-            new Graph.Node("", null, Collections.emptySet());
+        private static final Node TEMPLATE_PILL =
+            new Node("", null, Collections.emptySet());
 
         /**
          * A unique name within the graph.
@@ -129,7 +118,7 @@ public final class Graph implements Serializable {
          */
         @XmlIDREF
         @XmlAttribute
-        private Graph.Node template;
+        private Node template;
 
         /**
          * Parameters to this node.
@@ -178,6 +167,18 @@ public final class Graph implements Serializable {
         }
 
         /**
+         * Finds the dependencies of this node.
+         * @return A set of dependent nodes
+         */
+        public Set<Graph.Node> dependencies() {
+            return this.getParameters(true).stream()
+                .filter(Graph.Input.class::isInstance)
+                .map(Graph.Input.class::cast)
+                .map(Graph.Input::getSource)
+                .collect(Collectors.toSet());
+        }
+
+        /**
          * Setups the template pill before marshall.
          * @param marshaller The XML marshaller
          */
@@ -211,6 +212,31 @@ public final class Graph implements Serializable {
         @Override
         public int compareTo(final Graph.Node other) {
             return this.name.compareTo(other.name);
+        }
+
+        /**
+         * Determines whether this and another object are equivalent based on
+         * their names.
+         * @param object The other object
+         * @return Whether the two objects are equivalent
+         */
+        @Override
+        public boolean equals(final Object object) {
+            boolean equivalent = false;
+            if (object instanceof Graph.Node) {
+                final Graph.Node node = (Graph.Node) object;
+                equivalent = this.name.equals(node.name);
+            }
+            return equivalent;
+        }
+
+        /**
+         * Generates a hash code for the name, template and parameters.
+         * @return The hash code
+         */
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.name, this.template, this.parameters);
         }
 
         /**
@@ -327,6 +353,31 @@ public final class Graph implements Serializable {
         }
 
         /**
+         * Determines whether this and another object are equivalent based on
+         * their names.
+         * @param object The other object
+         * @return Whether the two objects are equivalent
+         */
+        @Override
+        public boolean equals(final Object object) {
+            boolean equivalent = false;
+            if (object instanceof Graph.Parameter) {
+                final Graph.Parameter parameter = (Graph.Parameter) object;
+                equivalent = this.name.equals(parameter.name);
+            }
+            return equivalent;
+        }
+
+        /**
+         * Generates a hash code for the name.
+         * @return The hash code
+         */
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.name);
+        }
+
+        /**
          * A unique name within the set of parameters.
          * @return The name of this parameter
          */
@@ -344,7 +395,7 @@ public final class Graph implements Serializable {
         namespace = Graph.NAMESPACE,
         propOrder = {"name", "value", "source"}
     )
-    public static final class Input extends Graph.Parameter {
+    public static class Input extends Graph.Parameter {
 
         /**
          * A serial version UID.
@@ -433,6 +484,14 @@ public final class Graph implements Serializable {
         }
 
         /**
+         * Whether this input is NOT based on a source.
+         * @return Whether this node is NOT based on a source.
+         */
+        public boolean hasConcreteValue() {
+            return this.source == Graph.Input.SOURCE_PILL;
+        }
+
+        /**
          * A value.
          * @return The value associated with this input.
          */
@@ -458,7 +517,7 @@ public final class Graph implements Serializable {
         namespace = Graph.NAMESPACE,
         propOrder = {"name", "selector"}
     )
-    public static final class Output extends Graph.Parameter {
+    public static class Output extends Graph.Parameter {
 
         /**
          * A serial version UID.
@@ -472,20 +531,64 @@ public final class Graph implements Serializable {
         private String selector;
 
         /**
+         * Whether the Xpath selector locates many values.
+         */
+        @XmlAttribute
+        private Boolean multivalued;
+
+        /**
          * Empty constructor.
          */
         public Output() {
-            this("", "");
+            this("", "", false);
+        }
+
+        /**
+         * Secondary constructor. It assumes that the selector is not
+         * multivalued.
+         * @param name The name of this input
+         * @param selector The Xpath selector
+         */
+        public Output(final String name, final String selector) {
+            this(name, selector, false);
         }
 
         /**
          * Default constructor.
          * @param name The name of this input
          * @param selector The Xpath selector
+         * @param multivalued Whether the Xpath selector locates many values.
          */
-        public Output(final String name, final String selector) {
+        public Output(final String name, final String selector,
+            final boolean multivalued) {
             super(name);
             this.selector = selector;
+            this.multivalued = multivalued;
+        }
+
+        /**
+         * Setups the multivalued attribute before marshall.
+         * @param marshaller The XML marshaller
+         */
+        @SuppressWarnings({
+            "PMD.NullAssignment",
+            "PMD.UnusedFormalParameter"
+        })
+        private void beforeMarshal(final Marshaller marshaller) {
+            if (!this.multivalued) {
+                this.multivalued = null;
+            }
+        }
+
+        /**
+         * Setups the multivalued attribute after marshal.
+         * @param marshaller The XML marshaller
+         */
+        @SuppressWarnings("PMD.UnusedFormalParameter")
+        private void afterMarshal(final Marshaller marshaller) {
+            if (this.multivalued == null) {
+                this.multivalued = Boolean.FALSE;
+            }
         }
 
         /**
@@ -494,6 +597,14 @@ public final class Graph implements Serializable {
          */
         public String getSelector() {
             return this.selector;
+        }
+
+        /**
+         * Whether the Xpath selector locates many values.
+         * @return Whether the Xpath selector locates many values.
+         */
+        public Boolean isMultivalued() {
+            return this.multivalued;
         }
 
     }

@@ -1,0 +1,402 @@
+{
+  "listVcenterHost": {
+    "value": [
+      {
+        "connection_state": "CONNECTED",
+        "host": "host-1",
+        "name": "host1.domain.com",
+        "power_state": "POWERED_ON"
+      },
+      {
+        "connection_state": "CONNECTED",
+        "host": "host-2",
+        "name": "host2.domain.com",
+        "power_state": "POWERED_ON"
+      }
+    ]
+  },
+  "host": [
+    {
+      "value": [
+        {
+          "cpu_count": 2,
+          "memory_size_MiB": 2048,
+          "name": "test-vm-1",
+          "power_state": "POWERED_ON",
+          "vm": "vm-1"
+        },
+        {
+          "cpu_count": 4,
+          "memory_size_MiB": 8192,
+          "name": "test-vm-2",
+          "power_state": "POWERED_ON",
+          "vm": "vm-2"
+        }
+      ]
+    },
+    {
+      "value": [
+        {
+          "cpu_count": 2,
+          "memory_size_MiB": 2048,
+          "name": "test-vm-1",
+          "power_state": "POWERED_ON",
+          "vm": "vm-1"
+        },
+        {
+          "cpu_count": 4,
+          "memory_size_MiB": 8192,
+          "name": "test-vm-2",
+          "power_state": "POWERED_ON",
+          "vm": "vm-2"
+        }
+      ]
+    }
+  ],
+  "listVcenterVm": {
+    "value": [
+      {
+        "cpu_count": 2,
+        "memory_size_MiB": 2048,
+        "name": "test-vm-1",
+        "power_state": "POWERED_ON",
+        "vm": "vm-1"
+      },
+      {
+        "cpu_count": 4,
+        "memory_size_MiB": 8192,
+        "name": "test-vm-2",
+        "power_state": "POWERED_ON",
+        "vm": "vm-2"
+      }
+    ]
+  },
+  "vm": [
+    {
+      "value": {
+        "boot": {
+          "delay": 0,
+          "enter_setup_mode": false,
+          "retry": false,
+          "retry_delay": 10000,
+          "type": "BIOS"
+        },
+        "boot_devices": [],
+        "cdroms": [
+          {
+            "key": "3002",
+            "value": {
+              "allow_guest_control": true,
+              "backing": {
+                "device_access_type": "EMULATION",
+                "type": "CLIENT_DEVICE"
+              },
+              "ide": {
+                "master": true,
+                "primary": false
+              },
+              "label": "CD/DVD drive 1",
+              "start_connected": false,
+              "state": "NOT_CONNECTED",
+              "type": "IDE"
+            }
+          }
+        ],
+        "cpu": {
+          "cores_per_socket": 1,
+          "count": 16,
+          "hot_add_enabled": false,
+          "hot_remove_enabled": false
+        },
+        "disks": [
+          {
+            "key": "2001",
+            "value": {
+              "backing": {
+                "type": "VMDK_FILE",
+                "vmdk_file": "[ICOVCPC-RSX6-001] streams-3100-worker-3/streams-3100-worker-3_1.vmdk"
+              },
+              "capacity": 85899345920,
+              "label": "Hard disk 2",
+              "scsi": {
+                "bus": 0,
+                "unit": 1
+              },
+              "type": "SCSI"
+            }
+          },
+          {
+            "key": "2000",
+            "value": {
+              "backing": {
+                "type": "VMDK_FILE",
+                "vmdk_file": "[ICOVCPC-RSX6-001] streams-3100-worker-3/streams-3100-worker-3_2.vmdk"
+              },
+              "capacity": 139586437120,
+              "label": "Hard disk 1",
+              "scsi": {
+                "bus": 0,
+                "unit": 0
+              },
+              "type": "SCSI"
+            }
+          }
+        ],
+        "floppies": [
+          {
+            "key": "8000",
+            "value": {
+              "allow_guest_control": true,
+              "backing": {
+                "type": "CLIENT_DEVICE"
+              },
+              "label": "Floppy drive 1",
+              "start_connected": false,
+              "state": "NOT_CONNECTED"
+            }
+          }
+        ],
+        "guest_OS": "UBUNTU_64",
+        "hardware": {
+          "upgrade_policy": "NEVER",
+          "upgrade_status": "NONE",
+          "version": "VMX_08"
+        },
+        "memory": {
+          "hot_add_enabled": false,
+          "size_MiB": 32768
+        },
+        "name": "test-vm-1",
+        "nics": [
+          {
+            "key": "4000",
+            "value": {
+              "allow_guest_control": true,
+              "backing": {
+                "network": "network-1906",
+                "network_name": "VIS241",
+                "type": "STANDARD_PORTGROUP"
+              },
+              "label": "Network adapter 1",
+              "mac_address": "00:50:56:9b:20:82",
+              "mac_type": "ASSIGNED",
+              "pci_slot_number": 160,
+              "start_connected": true,
+              "state": "CONNECTED",
+              "type": "VMXNET3",
+              "upt_compatibility_enabled": true,
+              "wake_on_lan_enabled": true
+            }
+          }
+        ],
+        "parallel_ports": [],
+        "power_state": "POWERED_ON",
+        "sata_adapters": [],
+        "scsi_adapters": [
+          {
+            "key": "1000",
+            "value": {
+              "label": "SCSI controller 0",
+              "pci_slot_number": 16,
+              "scsi": {
+                "bus": 0,
+                "unit": 7
+              },
+              "sharing": "NONE",
+              "type": "LSILOGIC"
+            }
+          }
+        ],
+        "serial_ports": []
+      }
+    },
+    {
+      "value": {
+        "boot": {
+          "delay": 0,
+          "enter_setup_mode": false,
+          "retry": false,
+          "retry_delay": 10000,
+          "type": "BIOS"
+        },
+        "boot_devices": [],
+        "cdroms": [
+          {
+            "key": "3002",
+            "value": {
+              "allow_guest_control": true,
+              "backing": {
+                "device_access_type": "EMULATION",
+                "type": "CLIENT_DEVICE"
+              },
+              "ide": {
+                "master": true,
+                "primary": false
+              },
+              "label": "CD/DVD drive 1",
+              "start_connected": false,
+              "state": "NOT_CONNECTED",
+              "type": "IDE"
+            }
+          }
+        ],
+        "cpu": {
+          "cores_per_socket": 1,
+          "count": 16,
+          "hot_add_enabled": false,
+          "hot_remove_enabled": false
+        },
+        "disks": [
+          {
+            "key": "2001",
+            "value": {
+              "backing": {
+                "type": "VMDK_FILE",
+                "vmdk_file": "[ICOVCPC-RSX6-001] streams-3100-worker-3/streams-3100-worker-3_1.vmdk"
+              },
+              "capacity": 85899345920,
+              "label": "Hard disk 2",
+              "scsi": {
+                "bus": 0,
+                "unit": 1
+              },
+              "type": "SCSI"
+            }
+          },
+          {
+            "key": "2000",
+            "value": {
+              "backing": {
+                "type": "VMDK_FILE",
+                "vmdk_file": "[ICOVCPC-RSX6-001] streams-3100-worker-3/streams-3100-worker-3_2.vmdk"
+              },
+              "capacity": 139586437120,
+              "label": "Hard disk 1",
+              "scsi": {
+                "bus": 0,
+                "unit": 0
+              },
+              "type": "SCSI"
+            }
+          }
+        ],
+        "floppies": [
+          {
+            "key": "8000",
+            "value": {
+              "allow_guest_control": true,
+              "backing": {
+                "type": "CLIENT_DEVICE"
+              },
+              "label": "Floppy drive 1",
+              "start_connected": false,
+              "state": "NOT_CONNECTED"
+            }
+          }
+        ],
+        "guest_OS": "UBUNTU_64",
+        "hardware": {
+          "upgrade_policy": "NEVER",
+          "upgrade_status": "NONE",
+          "version": "VMX_08"
+        },
+        "memory": {
+          "hot_add_enabled": false,
+          "size_MiB": 32768
+        },
+        "name": "test-vm-1",
+        "nics": [
+          {
+            "key": "4000",
+            "value": {
+              "allow_guest_control": true,
+              "backing": {
+                "network": "network-1906",
+                "network_name": "VIS241",
+                "type": "STANDARD_PORTGROUP"
+              },
+              "label": "Network adapter 1",
+              "mac_address": "00:50:56:9b:20:82",
+              "mac_type": "ASSIGNED",
+              "pci_slot_number": 160,
+              "start_connected": true,
+              "state": "CONNECTED",
+              "type": "VMXNET3",
+              "upt_compatibility_enabled": true,
+              "wake_on_lan_enabled": true
+            }
+          }
+        ],
+        "parallel_ports": [],
+        "power_state": "POWERED_ON",
+        "sata_adapters": [],
+        "scsi_adapters": [
+          {
+            "key": "1000",
+            "value": {
+              "label": "SCSI controller 0",
+              "pci_slot_number": 16,
+              "scsi": {
+                "bus": 0,
+                "unit": 7
+              },
+              "sharing": "NONE",
+              "type": "LSILOGIC"
+            }
+          }
+        ],
+        "serial_ports": []
+      }
+    }
+  ],
+  "listVcenterDatacenter": {
+    "value": [
+      {
+        "datacenter": "datacenter-1",
+        "name": "DC1"
+      },
+      {
+        "datacenter": "datacenter-2",
+        "name": "DC2"
+      }
+    ]
+  },
+  "datacenter": [
+    {
+      "value": [
+        {
+          "cpu_count": 2,
+          "memory_size_MiB": 2048,
+          "name": "test-vm-1",
+          "power_state": "POWERED_ON",
+          "vm": "vm-1"
+        },
+        {
+          "cpu_count": 4,
+          "memory_size_MiB": 8192,
+          "name": "test-vm-2",
+          "power_state": "POWERED_ON",
+          "vm": "vm-2"
+        }
+      ]
+    },
+    {
+      "value": [
+        {
+          "cpu_count": 2,
+          "memory_size_MiB": 2048,
+          "name": "test-vm-1",
+          "power_state": "POWERED_ON",
+          "vm": "vm-1"
+        },
+        {
+          "cpu_count": 4,
+          "memory_size_MiB": 8192,
+          "name": "test-vm-2",
+          "power_state": "POWERED_ON",
+          "vm": "vm-2"
+        }
+      ]
+    }
+  ]
+}

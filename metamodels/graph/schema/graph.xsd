@@ -3,13 +3,13 @@
 
   <xs:element name="monitors" type="tns:graph"/>
 
-  <xs:complexType name="graph" final="extension restriction">
+  <xs:complexType name="graph">
     <xs:sequence>
       <xs:element name="monitor" type="tns:node" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="node" final="extension restriction">
+  <xs:complexType name="node">
     <xs:sequence>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="input" type="tns:input"/>
@@ -20,17 +20,18 @@
     <xs:attribute name="template" type="xs:IDREF"/>
   </xs:complexType>
 
-  <xs:complexType name="input" final="extension restriction">
+  <xs:complexType name="input">
     <xs:sequence/>
     <xs:attribute name="name" type="xs:ID" use="required"/>
     <xs:attribute name="value" type="xs:string" use="required"/>
     <xs:attribute name="source" type="xs:IDREF"/>
   </xs:complexType>
 
-  <xs:complexType name="output" final="extension restriction">
+  <xs:complexType name="output">
     <xs:sequence/>
     <xs:attribute name="name" type="xs:ID" use="required"/>
     <xs:attribute name="selector" type="xs:string" use="required"/>
+    <xs:attribute name="multivalued" type="xs:boolean"/>
   </xs:complexType>
 </xs:schema>
 

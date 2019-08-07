@@ -21,8 +21,8 @@ public final class GraphParser {
      * @return The unmarshalled graph
      * @throws JAXBException If there is an error unmarshalling the graph
      */
-    public Graph instance(final File file) throws JAXBException {
-        return (Graph) JAXBContext.newInstance(Graph.class)
+    public Graph<Graph.Node> instance(final File file) throws JAXBException {
+        return (Graph<Graph.Node>) JAXBContext.newInstance(Graph.class)
             .createUnmarshaller()
             .unmarshal(file);
     }
@@ -33,7 +33,8 @@ public final class GraphParser {
      * @param file The target file
      * @throws JAXBException If there is an error marshalling the graph
      */
-    public void write(final Graph graph, final File file) throws JAXBException {
+    public void write(final Graph<Graph.Node> graph, final File file)
+        throws JAXBException {
         final Marshaller marshaller = JAXBContext.newInstance(Graph.class)
             .createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);

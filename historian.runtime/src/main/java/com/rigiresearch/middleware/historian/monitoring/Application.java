@@ -1,9 +1,5 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
-import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * The main class.
  * @author Miguel Jimenez (miguel@uvic.ca)
@@ -11,12 +7,6 @@ import org.slf4j.LoggerFactory;
  * @since 0.1.0
  */
 public final class Application {
-
-    /**
-     * The logger.
-     */
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(Application.class);
 
     /**
      * Default constructor.
@@ -29,17 +19,6 @@ public final class Application {
      * @param args The program arguments
      */
     public static void main(final String... args) {
-        final MonitoringConfiguration config = new MonitoringConfiguration();
-        try {
-            config.setupMonitors();
-            config.startMonitoring();
-        } catch (final IOException | UnexpectedResponseCode exception) {
-            Application.LOGGER.error(exception.getMessage(), exception);
-        } catch (final InterruptedException exception) {
-            Application.LOGGER.error("Error starting the monitors", exception);
-        } finally {
-            Runtime.getRuntime()
-                .addShutdownHook(new Thread(config::stopMonitoring));
-        }
+        // TODO Complete the main method
     }
 }
