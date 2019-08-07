@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xs:schema elementFormDefault="qualified" version="1.0" targetNamespace="http://www.rigiresearch.com/middleware/graph/1.0.0" xmlns:tns="http://www.rigiresearch.com/middleware/graph/1.0.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-  <xs:element name="monitors" type="tns:graph"/>
+  <xs:element name="graph" type="tns:graph"/>
 
   <xs:complexType name="graph">
     <xs:sequence>
-      <xs:element name="monitor" type="tns:node" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="node" type="tns:node" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 

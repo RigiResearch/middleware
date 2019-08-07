@@ -107,7 +107,8 @@ public final class Application {
     private void generateFiles(final Root model)
         throws JAXBException, IOException {
         final File directory = new File(this.target);
-        final GraphParser parser = new GraphParser();
+        final GraphParser parser = new GraphParser()
+            .withBindings("bindings.xml");
         final Graph<Graph.Node> graph = this.monitoringGraph(model);
         parser.write(graph, new File(directory, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);

@@ -6,6 +6,10 @@ plugins {
 
 apply plugin: "maven"
 
+dependencies {
+  implementation "org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.4"
+}
+
 jaxb {
   schemaGen {
     graph {

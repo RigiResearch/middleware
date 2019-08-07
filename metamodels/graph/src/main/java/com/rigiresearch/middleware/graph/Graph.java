@@ -28,7 +28,7 @@ import javax.xml.bind.annotation.XmlType;
  * @param <T> The type of node
  */
 @XmlRootElement(
-    name = "monitors",
+    name = "graph",
     namespace = Graph.NAMESPACE
 )
 public class Graph<T extends Graph.Node> implements Serializable {
@@ -36,7 +36,7 @@ public class Graph<T extends Graph.Node> implements Serializable {
     /**
      * The XML namespace.
      */
-    static final String NAMESPACE =
+    public static final String NAMESPACE =
         "http://www.rigiresearch.com/middleware/graph/1.0.0";
 
     /**
@@ -47,7 +47,7 @@ public class Graph<T extends Graph.Node> implements Serializable {
     /**
      * The set of nodes.
      */
-    @XmlElement(name = "monitor")
+    @XmlElement(name = "node")
     private Set<T> nodes;
 
     /**
@@ -92,7 +92,10 @@ public class Graph<T extends Graph.Node> implements Serializable {
     /**
      * A graph node.
      */
-    @XmlType(namespace = Graph.NAMESPACE)
+    @XmlType(
+        name = "node",
+        namespace = Graph.NAMESPACE
+    )
     public static class Node implements Serializable, Comparable<Graph.Node> {
 
         /**
@@ -103,8 +106,8 @@ public class Graph<T extends Graph.Node> implements Serializable {
         /**
          * Object to recognize whether a node is based on a template.
          */
-        private static final Node TEMPLATE_PILL =
-            new Node("", null, Collections.emptySet());
+        private static final Graph.Node TEMPLATE_PILL =
+            new Graph.Node("", null, Collections.emptySet());
 
         /**
          * A unique name within the graph.
@@ -118,7 +121,7 @@ public class Graph<T extends Graph.Node> implements Serializable {
          */
         @XmlIDREF
         @XmlAttribute
-        private Node template;
+        private Graph.Node template;
 
         /**
          * Parameters to this node.

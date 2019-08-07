@@ -63,6 +63,7 @@ public final class AlgorithmTest {
             ).getConfiguration();
         final ForkAndCollectAlgorithm algorithm = new ForkAndCollectAlgorithm(
             new GraphParser()
+                .withBindings("bindings.xml")
                 .instance(
                     new File(
                         Thread.currentThread()

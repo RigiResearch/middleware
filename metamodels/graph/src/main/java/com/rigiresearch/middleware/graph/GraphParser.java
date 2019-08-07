@@ -1,10 +1,16 @@
 package com.rigiresearch.middleware.graph;
 
 import java.io.File;
-import javax.xml.bind.JAXBContext;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import lombok.NoArgsConstructor;
+import org.eclipse.persistence.jaxb.JAXBContext;
+import org.eclipse.persistence.jaxb.JAXBContextProperties;
 
 /**
  * A {@link Graph} parser.
@@ -12,8 +18,38 @@ import lombok.NoArgsConstructor;
  * @version $Id$
  * @since 0.1.0
  */
-@NoArgsConstructor
 public final class GraphParser {
+
+    /**
+     * A Jaxb properties map.
+     */
+    private final Map<String, Object> properties;
+
+    /**
+     * Default constructor.
+     */
+    public GraphParser() {
+        this.properties = new HashMap<>(0);
+    }
+
+    /**
+     * Configures the binding option.
+     * @param filenames The bindings resource names
+     * @return This parser (for chaining)
+     */
+    public GraphParser withBindings(final String... filenames) {
+        final List<InputStream> streams = new ArrayList<>(filenames.length);
+        Arrays.stream(filenames)
+            .forEach(
+                filename -> streams.add(
+                    Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResourceAsStream(filename)
+                )
+            );
+        this.properties.put(JAXBContextProperties.OXM_METADATA_SOURCE, streams);
+        return this;
+    }
 
     /**
      * Unmarshalls a graph instance.
@@ -21,8 +57,10 @@ public final class GraphParser {
      * @return The unmarshalled graph
      * @throws JAXBException If there is an error unmarshalling the graph
      */
-    public Graph<Graph.Node> instance(final File file) throws JAXBException {
-        return (Graph<Graph.Node>) JAXBContext.newInstance(Graph.class)
+    public Graph<Graph.Node> instance(final File file)
+        throws JAXBException {
+        final Class<?>[] classes = {Graph.class};
+        return (Graph<Graph.Node>) JAXBContext.newInstance(classes, this.properties)
             .createUnmarshaller()
             .unmarshal(file);
     }
@@ -33,9 +71,10 @@ public final class GraphParser {
      * @param file The target file
      * @throws JAXBException If there is an error marshalling the graph
      */
-    public void write(final Graph<Graph.Node> graph, final File file)
+    public void write(final Graph<? extends Graph.Node> graph, final File file)
         throws JAXBException {
-        final Marshaller marshaller = JAXBContext.newInstance(Graph.class)
+        final Class<?>[] classes = {graph.getClass()};
+        final Marshaller marshaller = JAXBContext.newInstance(classes, this.properties)
             .createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
         marshaller.marshal(graph, file);
