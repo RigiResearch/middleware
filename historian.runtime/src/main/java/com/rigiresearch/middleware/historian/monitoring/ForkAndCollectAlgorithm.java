@@ -112,9 +112,7 @@ public final class ForkAndCollectAlgorithm {
                     continue;
                 }
                 final JsonNode data = this.data(next);
-                final String name = values.iterator()
-                    .next()
-                    .getKey();
+                final String name = next.iterator().next().getName();
                 this.add(result, name, data);
             }
         }

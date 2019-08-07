@@ -15,7 +15,57 @@
       }
     ]
   },
-  "host": [
+  "listVcenterVmFilteredByHost": [
+    {
+      "value": [
+        {
+          "cpu_count": 2,
+          "memory_size_MiB": 2048,
+          "name": "test-vm-1",
+          "power_state": "POWERED_ON",
+          "vm": "vm-1"
+        },
+        {
+          "cpu_count": 4,
+          "memory_size_MiB": 8192,
+          "name": "test-vm-2",
+          "power_state": "POWERED_ON",
+          "vm": "vm-2"
+        }
+      ]
+    },
+    {
+      "value": [
+        {
+          "cpu_count": 2,
+          "memory_size_MiB": 2048,
+          "name": "test-vm-1",
+          "power_state": "POWERED_ON",
+          "vm": "vm-1"
+        },
+        {
+          "cpu_count": 4,
+          "memory_size_MiB": 8192,
+          "name": "test-vm-2",
+          "power_state": "POWERED_ON",
+          "vm": "vm-2"
+        }
+      ]
+    }
+  ],
+  "listVcenterDatacenter": {
+    "value": [
+      {
+        "datacenter": "datacenter-1",
+        "name": "DC1"
+      },
+      {
+        "datacenter": "datacenter-2",
+        "name": "DC2"
+      }
+    ]
+  },
+  "listVcenterVmFilteredByDatacenter": [
     {
       "value": [
         {
@@ -71,7 +121,7 @@
       }
     ]
   },
-  "vm": [
+  "getVcenterVm": [
     {
       "value": {
         "boot": {
@@ -347,56 +397,6 @@
         ],
         "serial_ports": []
       }
-    }
-  ],
-  "listVcenterDatacenter": {
-    "value": [
-      {
-        "datacenter": "datacenter-1",
-        "name": "DC1"
-      },
-      {
-        "datacenter": "datacenter-2",
-        "name": "DC2"
-      }
-    ]
-  },
-  "datacenter": [
-    {
-      "value": [
-        {
-          "cpu_count": 2,
-          "memory_size_MiB": 2048,
-          "name": "test-vm-1",
-          "power_state": "POWERED_ON",
-          "vm": "vm-1"
-        },
-        {
-          "cpu_count": 4,
-          "memory_size_MiB": 8192,
-          "name": "test-vm-2",
-          "power_state": "POWERED_ON",
-          "vm": "vm-2"
-        }
-      ]
-    },
-    {
-      "value": [
-        {
-          "cpu_count": 2,
-          "memory_size_MiB": 2048,
-          "name": "test-vm-1",
-          "power_state": "POWERED_ON",
-          "vm": "vm-1"
-        },
-        {
-          "cpu_count": 4,
-          "memory_size_MiB": 8192,
-          "name": "test-vm-2",
-          "power_state": "POWERED_ON",
-          "vm": "vm-2"
-        }
-      ]
     }
   ]
 }
