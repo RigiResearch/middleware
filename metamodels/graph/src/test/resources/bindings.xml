@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xml-bindings xmlns="http://www.eclipse.org/eclipselink/xsds/persistence/oxm"
+  package-name="com.rigiresearch.middleware.graph">
+  <java-types>
+    <java-type name="Graph">
+      <xml-root-element name="elements" />
+      <java-attributes>
+        <xml-element java-attribute="nodes" name="element" />
+      </java-attributes>
+    </java-type>
+  </java-types>
+</xml-bindings>
