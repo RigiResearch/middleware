@@ -2,6 +2,9 @@ package com.rigiresearch.middleware.historian;
 
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.GraphParser;
+import com.rigiresearch.middleware.graph.Input;
+import com.rigiresearch.middleware.graph.Node;
+import com.rigiresearch.middleware.graph.Parameter;
 import com.rigiresearch.middleware.historian.templates.GraphTemplate;
 import com.rigiresearch.middleware.historian.templates.MonitoringTemplate;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
@@ -109,7 +112,7 @@ public final class Application {
         final File directory = new File(this.target);
         final GraphParser parser = new GraphParser()
             .withBindings("bindings.xml");
-        final Graph<Graph.Node> graph = this.monitoringGraph(model);
+        final Graph<Node> graph = this.monitoringGraph(model);
         parser.write(graph, new File(directory, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);
         new GraphTemplate().generateFile(graph, directory);
@@ -120,19 +123,19 @@ public final class Application {
      * @param model The monitoring model
      * @return The graph instance
      */
-    private Graph<Graph.Node> monitoringGraph(final Root model) {
-        return new Graph<Graph.Node>(
+    private Graph<Node> monitoringGraph(final Root model) {
+        return new Graph<Node>(
             model.getMonitors()
                 .stream()
                 .map(monitor -> {
-                    final Set<Graph.Parameter> parameters = monitor.getPath()
+                    final Set<Parameter> parameters = monitor.getPath()
                         .getParameters()
                         .stream()
                         // TODO add option to generate all inputs
                         .filter(LocatedProperty::isRequired)
-                        .map(property -> new Graph.Input(property.getName(), ""))
+                        .map(property -> new Input(property.getName(), ""))
                         .collect(Collectors.toSet());
-                    return new Graph.Node(
+                    return new Node(
                         monitor.getPath().getId(),
                         parameters
                     );

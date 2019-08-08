@@ -1,6 +1,8 @@
 package com.rigiresearch.middleware.historian.templates
 
 import com.rigiresearch.middleware.graph.Graph
+import com.rigiresearch.middleware.graph.Input
+import com.rigiresearch.middleware.graph.Node
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -24,7 +26,7 @@ final class GraphTemplate {
      * @param target
      * @return The Path object
      */
-    def generateFile(Graph<Graph.Node> graph, File target) {
+    def generateFile(Graph<Node> graph, File target) {
         val file = new File(target, "configuration.dot")
         target.mkdirs
         file.write(graph.asDotSpecification)
@@ -51,13 +53,13 @@ final class GraphTemplate {
      * @param graph The graph
      * @return  The DOT specification
      */
-    def asDotSpecification(Graph<Graph.Node> graph) {
+    def asDotSpecification(Graph<Node> graph) {
         val templateBased = graph.nodes.filter[it.templateBased]
         val withoutDependents = graph.nodes.filter[graph.dependents(it).empty]
         val withDependencies = graph.nodes.reject [
             templateBased.toList.indexOf(it) > -1 ||
                 withoutDependents.toList.indexOf(it) > -1
-        ].filter[!it.getParameters(true).filter(Graph.Input).filter[it.hasSource].empty]
+        ].filter[!it.getParameters(true).filter(Input).filter[it.hasSource].empty]
         '''
         digraph {
             edge [fontname="Helvetica Neue", arrowhead="dot", style="dotted"];
@@ -70,7 +72,7 @@ final class GraphTemplate {
                 edge [arrowhead="normal", style="normal"]
                 node [fillcolor="white"];
                 «FOR node : withDependencies»
-                    «FOR input : node.getParameters(true).filter(Graph.Input)»
+                    «FOR input : node.getParameters(true).filter(Input)»
                         «node.name» -> «input.source.name» [label=«input.value»];
                     «ENDFOR»
                 «ENDFOR»

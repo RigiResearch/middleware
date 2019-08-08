@@ -1,6 +1,6 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
-import com.rigiresearch.middleware.graph.Graph;
+import com.rigiresearch.middleware.graph.Node;
 import java.io.IOException;
 import java.net.URL;
 import java.util.AbstractMap;
@@ -22,7 +22,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
  * @since 0.1.0
  */
 @ToString(of = {"identifier"})
-public final class Monitor extends Graph.Node {
+public final class Monitor extends Node {
 
     /**
      * Serial version UID.
@@ -53,7 +53,7 @@ public final class Monitor extends Graph.Node {
      * Empty constructor.
      */
     public Monitor() {
-        this(new Graph.Node(), new PropertiesConfiguration());
+        this(new Node(), new PropertiesConfiguration());
     }
 
     /**
@@ -61,16 +61,21 @@ public final class Monitor extends Graph.Node {
      * @param node The node on which this monitor is based.
      * @param config The configuration properties
      */
-    public Monitor(final Graph.Node node, final Configuration config) {
+    public Monitor(final Node node, final Configuration config) {
         super(node.getName(), node.getTemplate(), node.getParameters(false));
         this.identifier = node.getName();
         this.config = config;
         this.context = new HashMap<>(0);
         this.values = this.getParameters(true).stream()
-            .filter(Graph.Input.class::isInstance)
-            .map(Graph.Input.class::cast)
-            .filter(Graph.Input::hasConcreteValue)
-            .collect(Collectors.toMap(Graph.Input::getName, Graph.Input::getValue));
+            .filter(com.rigiresearch.middleware.graph.Input.class::isInstance)
+            .map(com.rigiresearch.middleware.graph.Input.class::cast)
+            .filter(com.rigiresearch.middleware.graph.Input::hasConcreteValue)
+            .collect(
+                Collectors.toMap(
+                    com.rigiresearch.middleware.graph.Input::getName,
+                    com.rigiresearch.middleware.graph.Input::getValue
+                )
+            );
     }
 
     /**
@@ -234,8 +239,8 @@ public final class Monitor extends Graph.Node {
             final Monitor monitor = (Monitor) object;
             equivalent = this.identifier.equals(monitor.identifier)
                 && this.getName().equals(monitor.getName());
-        } else if (object instanceof Graph.Node) {
-            final Graph.Node node = (Graph.Node) object;
+        } else if (object instanceof Node) {
+            final Node node = (Node) object;
             equivalent = this.getName().equals(node.getName());
         }
         return equivalent;

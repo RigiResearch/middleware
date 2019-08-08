@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rigiresearch.middleware.graph.Graph;
+import com.rigiresearch.middleware.graph.Node;
+import com.rigiresearch.middleware.graph.Output;
+import com.rigiresearch.middleware.graph.Parameter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,7 +49,7 @@ public final class ForkAndCollectAlgorithm {
      * @param graph The dependency graph
      * @param config The configuration properties
      */
-    public ForkAndCollectAlgorithm(final Graph<Graph.Node> graph,
+    public ForkAndCollectAlgorithm(final Graph<Node> graph,
         final Configuration config) {
         this.config = config;
         this.graph = new Graph<>(
@@ -170,9 +173,9 @@ public final class ForkAndCollectAlgorithm {
         final Monitor branch, final String content) throws IOException {
         final Collection<ResultSet<String, String>> collections =
             new ArrayList<>(0);
-        for (final Graph.Parameter parameter : branch.getParameters(true)) {
-            if (parameter instanceof Graph.Output) {
-                final Graph.Output output = (Graph.Output) parameter;
+        for (final Parameter parameter : branch.getParameters(true)) {
+            if (parameter instanceof Output) {
+                final Output output = (Output) parameter;
                 final XpathValue value = new XpathValue(content, output.getSelector());
                 if (output.isMultivalued()) {
                     final Collection<String> values = value.values();

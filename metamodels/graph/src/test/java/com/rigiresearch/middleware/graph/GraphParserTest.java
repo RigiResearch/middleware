@@ -31,7 +31,7 @@ final class GraphParserTest {
 
     @Test
     void testEmptyGraph() throws JAXBException {
-        final Graph<Graph.Node> graph = new Graph<>();
+        final Graph<Node> graph = new Graph<>();
         Assertions.assertEquals(
             new GraphParser()
                 .instance(
@@ -46,7 +46,7 @@ final class GraphParserTest {
 
     @Test
     void testEmptyGraphWithFile() throws Exception {
-        final Graph<Graph.Node> graph = new Graph<>();
+        final Graph<Node> graph = new Graph<>();
         final Path tmp = Files.createTempFile("graph", ".xml");
         Files.write(
             tmp,
@@ -64,9 +64,9 @@ final class GraphParserTest {
 
     @Test
     void testSimpleGraphWithBindings() throws JAXBException {
-        final Set<Graph.Node> nodes = new TreeSet<>();
-        nodes.add(new Graph.Node("test", Collections.emptySet()));
-        final Graph<Graph.Node> graph = new Graph<>(nodes);
+        final Set<Node> nodes = new TreeSet<>();
+        nodes.add(new Node("test", Collections.emptySet()));
+        final Graph<Node> graph = new Graph<>(nodes);
         Assertions.assertEquals(
             new GraphParser()
                 .withBindings("bindings.xml")
@@ -83,15 +83,15 @@ final class GraphParserTest {
 
     @Test
     void testComplexGraph() throws JAXBException {
-        final Graph.Node simple = new Graph.Node("simple", Collections.emptySet());
-        final Set<Graph.Parameter> parameters = new TreeSet<>();
-        parameters.add(new Graph.Input("input", "value"));
-        parameters.add(new Graph.Output("output", "value"));
-        final Graph.Node complex = new Graph.Node("complex", parameters);
-        final Set<Graph.Node> nodes = new TreeSet<>();
+        final Node simple = new Node("simple", Collections.emptySet());
+        final Set<Parameter> parameters = new TreeSet<>();
+        parameters.add(new Input("input", "value"));
+        parameters.add(new Output("output", "value"));
+        final Node complex = new Node("complex", parameters);
+        final Set<Node> nodes = new TreeSet<>();
         nodes.add(simple);
         nodes.add(complex);
-        final Graph<Graph.Node> graph = new Graph<>(nodes);
+        final Graph<Node> graph = new Graph<>(nodes);
         Assertions.assertEquals(
             new GraphParser()
                 .instance(

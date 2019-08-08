@@ -1,7 +1,6 @@
 plugins {
   id "java-library"
   id "maven"
-  id "com.intershop.gradle.jaxb" version "3.0.4"
 }
 
 apply plugin: "maven"
@@ -9,16 +8,3 @@ apply plugin: "maven"
 dependencies {
   implementation "org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.4"
 }
-
-jaxb {
-  schemaGen {
-    graph {
-      outputDir = file("schema")
-      inputDir = file("src/main/java")
-      includes = ["com/rigiresearch/middleware/graph/**/*.java"]
-      excludes = ["**/GraphParser.java"]
-      namespaceconfigs = ["http://www.rigiresearch.com/middleware/graph/1.0.0" : "graph.xsd"]
-    }
-  }
-}
-build.dependsOn jaxbSchemaGenGraph
