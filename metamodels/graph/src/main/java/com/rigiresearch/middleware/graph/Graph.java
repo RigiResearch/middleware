@@ -73,6 +73,11 @@ public class Graph<T extends Graph.Node> implements Serializable {
      * @return A set of dependent nodes
      */
     public Set<T> dependents(final T node) {
+        if (!this.nodes.contains(node)) {
+            throw new IllegalArgumentException(
+                String.format("Node %s was not found in this graph", node)
+            );
+        }
         return this.nodes.stream()
             .filter(temp ->
                 temp.getParameters(true).stream()
@@ -81,6 +86,35 @@ public class Graph<T extends Graph.Node> implements Serializable {
                     .anyMatch(input -> node.equals(input.getSource()))
             )
             .collect(Collectors.toSet());
+    }
+
+    /**
+     * Whether the given object is equivalent to this graph.
+     * @param object Another object
+     * @return True if the object is instance of this class and their nodes are
+     *  equivalent.
+     */
+    @Override
+    public boolean equals(final Object object) {
+        final boolean equivalent;
+        if (this == object) {
+            equivalent = true;
+        } else if (object instanceof Graph) {
+            final Graph<?> graph = (Graph<?>) object;
+            equivalent = this.getNodes().equals(graph.getNodes());
+        } else {
+            equivalent = false;
+        }
+        return equivalent;
+    }
+
+    /**
+     * The hash code of this graph.
+     * @return A hash
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.getNodes());
     }
 
     /**

@@ -2,6 +2,7 @@ package com.rigiresearch.middleware.graph;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.transform.stream.StreamSource;
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.jaxb.JAXBContextProperties;
 
@@ -57,12 +59,28 @@ public final class GraphParser {
      * @return The unmarshalled graph
      * @throws JAXBException If there is an error unmarshalling the graph
      */
+    @SuppressWarnings("unchecked")
     public Graph<Graph.Node> instance(final File file)
         throws JAXBException {
         final Class<?>[] classes = {Graph.class};
         return (Graph<Graph.Node>) JAXBContext.newInstance(classes, this.properties)
             .createUnmarshaller()
             .unmarshal(file);
+    }
+
+    /**
+     * Unmarshalls a graph instance.
+     * @param xml The XML content from which the graph is unmarshalled
+     * @return The unmarshalled graph
+     * @throws JAXBException If there is an error unmarshalling the graph
+     */
+    @SuppressWarnings("unchecked")
+    public Graph<Graph.Node> instance(final String xml)
+        throws JAXBException {
+        final Class<?>[] classes = {Graph.class};
+        return (Graph<Graph.Node>) JAXBContext.newInstance(classes, this.properties)
+            .createUnmarshaller()
+            .unmarshal(new StreamSource(new StringReader(xml)));
     }
 
     /**
