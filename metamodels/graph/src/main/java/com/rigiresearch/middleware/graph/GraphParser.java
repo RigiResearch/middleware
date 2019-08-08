@@ -25,7 +25,7 @@ public final class GraphParser {
     /**
      * The classes to include in the Jaxb context.
      */
-    private static final Class<?>[] CLASSES = {Graph.class, Node.class};
+    private static final Class<?>[] CLASS = {Graph.class};
 
     /**
      * A Jaxb properties map.
@@ -68,7 +68,7 @@ public final class GraphParser {
     public Graph<Node> instance(final File file)
         throws JAXBException {
         return (Graph<Node>) JAXBContext.newInstance(
-            GraphParser.CLASSES,
+            GraphParser.CLASS,
             this.properties
         ).createUnmarshaller()
             .unmarshal(file);
@@ -84,7 +84,7 @@ public final class GraphParser {
     public Graph<Node> instance(final String xml)
         throws JAXBException {
         return (Graph<Node>) JAXBContext.newInstance(
-            GraphParser.CLASSES,
+            GraphParser.CLASS,
             this.properties
         ).createUnmarshaller()
             .unmarshal(new StreamSource(new StringReader(xml)));
@@ -99,7 +99,7 @@ public final class GraphParser {
     public void write(final Graph<? extends Node> graph, final File file)
         throws JAXBException {
         final Marshaller marshaller = JAXBContext.newInstance(
-            GraphParser.CLASSES,
+            GraphParser.CLASS,
             this.properties
         ).createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);

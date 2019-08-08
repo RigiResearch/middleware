@@ -62,7 +62,12 @@ public final class Monitor extends Node {
      * @param config The configuration properties
      */
     public Monitor(final Node node, final Configuration config) {
-        super(node.getName(), node.getTemplate(), node.getParameters(false));
+        super(
+            node.getName(),
+            node.getTemplate(),
+            node.getParameters(false),
+            node.getMetadata()
+        );
         this.identifier = node.getName();
         this.config = config;
         this.context = new HashMap<>(0);

@@ -5,26 +5,38 @@
          <xsd:element name="node" type="ns0:node" minOccurs="0" maxOccurs="unbounded"/>
       </xsd:sequence>
    </xsd:complexType>
-   <xsd:complexType name="input">
-      <xsd:sequence/>
-      <xsd:attribute name="name" type="xsd:ID" use="required"/>
-      <xsd:attribute name="source" type="xsd:IDREF"/>
-   </xsd:complexType>
    <xsd:complexType name="node">
       <xsd:sequence>
          <xsd:choice maxOccurs="unbounded">
             <xsd:element name="input" type="ns0:input" minOccurs="0"/>
             <xsd:element name="output" type="ns0:output" minOccurs="0"/>
          </xsd:choice>
+         <xsd:element name="metadata" minOccurs="0">
+            <xsd:complexType>
+               <xsd:sequence>
+                  <xsd:element name="property" type="ns0:property" minOccurs="0" maxOccurs="unbounded"/>
+               </xsd:sequence>
+            </xsd:complexType>
+         </xsd:element>
       </xsd:sequence>
       <xsd:attribute name="name" type="xsd:ID" use="required"/>
       <xsd:attribute name="template" type="xsd:IDREF"/>
+   </xsd:complexType>
+   <xsd:complexType name="input">
+      <xsd:sequence/>
+      <xsd:attribute name="name" type="xsd:ID" use="required"/>
+      <xsd:attribute name="source" type="xsd:IDREF"/>
    </xsd:complexType>
    <xsd:complexType name="output">
       <xsd:sequence/>
       <xsd:attribute name="name" type="xsd:ID" use="required"/>
       <xsd:attribute name="selector" type="xsd:string" use="required"/>
       <xsd:attribute name="multivalued" type="xsd:boolean"/>
+   </xsd:complexType>
+   <xsd:complexType name="property">
+      <xsd:sequence/>
+      <xsd:attribute name="name" type="xsd:ID"/>
+      <xsd:attribute name="value" type="xsd:string"/>
    </xsd:complexType>
    <xsd:element name="graph" type="ns0:graph"/>
    <xsd:simpleType name="adaptedValue">

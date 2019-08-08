@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class GraphTest {
 
     @Test
@@ -41,12 +42,16 @@ final class GraphTest {
         final Set<Parameter> fparams = new TreeSet<>();
         final Output output = new Output("output1", "value");
         fparams.add(output);
-        final Node first = new Node("first", Collections.emptySet());
+        final Node first = new Node(
+            "first",
+            Collections.emptySet(),
+            Collections.emptySet()
+        );
         // Second node
         final Set<Parameter> sparams = new TreeSet<>();
         final Input input = new Input("input1", output.getName(), first);
         sparams.add(input);
-        final Node second = new Node("second", sparams);
+        final Node second = new Node("second", sparams, Collections.emptySet());
         final Set<Node> nodes = new TreeSet<>();
         nodes.add(first);
         nodes.add(second);
@@ -77,14 +82,42 @@ final class GraphTest {
     }
 
     @Test
+    void testMetadata() {
+        final Node first =
+            new Node("first", Collections.emptySet(), Collections.emptySet());
+        final Set<Property> metadata = new TreeSet<>();
+        metadata.add(new Property("key", "value"));
+        final Node second =
+            new Node("second", Collections.emptySet(), metadata);
+        final Set<Node> nodes = new TreeSet<>();
+        nodes.add(first);
+        nodes.add(second);
+        final Graph<Node> graph = new Graph<>(nodes);
+        Assertions.assertEquals(
+            Collections.emptySet(),
+            graph.getNodes()
+                .stream()
+                .filter(tmp -> tmp.equals(first))
+                .findAny()
+                .get()
+                .getMetadata(),
+            "The metadata should be empty"
+        );
+        Assertions.assertEquals(
+            1,
+            graph.getNodes()
+                .stream()
+                .filter(tmp -> tmp.equals(second))
+                .findAny()
+                .get()
+                .getMetadata()
+                .size(),
+            "The metadata should contain one element"
+        );
+    }
+
+    @Test
     void testSchemaGeneration() throws Exception {
-        final Class<?>[] classes = {
-            Graph.class,
-            Node.class,
-            Parameter.class,
-            Input.class,
-            Output.class,
-        };
         final Path path = Paths.get("schema/graph.xsd");
         final SchemaOutputResolver resolver = new SchemaOutputResolver() {
             @Override
@@ -95,7 +128,7 @@ final class GraphTest {
                 return result;
             }
         };
-        JAXBContext.newInstance(classes)
+        JAXBContext.newInstance(Graph.class)
             .generateSchema(resolver);
     }
 

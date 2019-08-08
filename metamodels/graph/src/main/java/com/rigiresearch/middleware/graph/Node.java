@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlID;
 import javax.xml.bind.annotation.XmlIDREF;
@@ -19,7 +20,6 @@ import javax.xml.bind.annotation.XmlType;
 
 /**
  * A graph node.
- * TODO Add support for configuration options (e.g., authentication attributes).
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
@@ -39,7 +39,7 @@ public class Node implements Serializable, Comparable<Node> {
      * Object to recognize whether a node is based on a template.
      */
     private static final Node TEMPLATE_PILL =
-        new Node("", null, Collections.emptySet());
+        new Node("", null, Collections.emptySet(), Collections.emptySet());
 
     /**
      * A unique name within the graph.
@@ -73,19 +73,28 @@ public class Node implements Serializable, Comparable<Node> {
     private Set<Parameter> parameters;
 
     /**
+     * Metadata properties associated with this node.
+     */
+    @XmlElement(name = "property")
+    @XmlElementWrapper(name = "metadata")
+    private Set<Property> metadata;
+
+    /**
      * Empty constructor.
      */
     public Node() {
-        this("", Node.TEMPLATE_PILL, new TreeSet<>());
+        this("", Node.TEMPLATE_PILL, new TreeSet<>(), new TreeSet<>());
     }
 
     /**
      * Secondary constructor.
      * @param name A unique name within the graph
      * @param parameters Parameters to this node
+     * @param metadata Metadata properties associated with this node
      */
-    public Node(final String name, final Set<Parameter> parameters) {
-        this(name, Node.TEMPLATE_PILL, parameters);
+    public Node(final String name, final Set<Parameter> parameters,
+        final Set<Property> metadata) {
+        this(name, Node.TEMPLATE_PILL, parameters, metadata);
     }
 
     /**
@@ -93,12 +102,15 @@ public class Node implements Serializable, Comparable<Node> {
      * @param name A unique name within the graph
      * @param template A node on which this node is based
      * @param parameters Parameters to this node
+     * @param metadata Metadata properties associated with this node
      */
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public Node(final String name, final Node template,
-        final Set<Parameter> parameters) {
+        final Set<Parameter> parameters, final Set<Property> metadata) {
         this.name = name;
         this.template = template;
         this.parameters = new TreeSet<>(parameters);
+        this.metadata = new TreeSet<>(metadata);
     }
 
     /**
@@ -242,4 +254,11 @@ public class Node implements Serializable, Comparable<Node> {
         return set;
     }
 
+    /**
+     * Metadata properties associated with this node.
+     * @return A non-null set
+     */
+    public Set<Property> getMetadata() {
+        return this.metadata;
+    }
 }

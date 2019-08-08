@@ -65,7 +65,9 @@ final class GraphParserTest {
     @Test
     void testSimpleGraphWithBindings() throws JAXBException {
         final Set<Node> nodes = new TreeSet<>();
-        nodes.add(new Node("test", Collections.emptySet()));
+        nodes.add(
+            new Node("test", Collections.emptySet(), Collections.emptySet())
+        );
         final Graph<Node> graph = new Graph<>(nodes);
         Assertions.assertEquals(
             new GraphParser()
@@ -83,11 +85,19 @@ final class GraphParserTest {
 
     @Test
     void testComplexGraph() throws JAXBException {
-        final Node simple = new Node("simple", Collections.emptySet());
+        final Node simple = new Node(
+            "simple",
+            Collections.emptySet(),
+            Collections.emptySet()
+        );
         final Set<Parameter> parameters = new TreeSet<>();
         parameters.add(new Input("input", "value"));
         parameters.add(new Output("output", "value"));
-        final Node complex = new Node("complex", parameters);
+        final Node complex = new Node(
+            "complex",
+            parameters,
+            Collections.emptySet()
+        );
         final Set<Node> nodes = new TreeSet<>();
         nodes.add(simple);
         nodes.add(complex);

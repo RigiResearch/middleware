@@ -16,6 +16,7 @@ import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXBException;
@@ -137,7 +138,8 @@ public final class Application {
                         .collect(Collectors.toSet());
                     return new Node(
                         monitor.getPath().getId(),
-                        parameters
+                        parameters,
+                        Collections.emptySet()
                     );
                 })
                 .collect(Collectors.toSet())
