@@ -3,6 +3,7 @@ package com.rigiresearch.middleware.graph;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import javax.xml.bind.JAXBException;
@@ -85,10 +86,12 @@ final class GraphParserTest {
 
     @Test
     void testComplexGraph() throws JAXBException {
+        final Set<Property> metadata = new HashSet<>(1);
+        metadata.add(new Property("key", "value"));
         final Node simple = new Node(
             "simple",
             Collections.emptySet(),
-            Collections.emptySet()
+            metadata
         );
         final Set<Parameter> parameters = new TreeSet<>();
         parameters.add(new Input("input", "value"));
@@ -107,7 +110,11 @@ final class GraphParserTest {
                 .instance(
                     GraphParserTest.HEADER
                         + "<graph xmlns=\"" + Graph.NAMESPACE + "\">\n"
-                        + "    <node name=\"simple\"/>\n"
+                        + "    <node name=\"simple\">\n"
+                        + "        <metadata>\n"
+                        + "            <property name=\"key\" value=\"value\"/>\n"
+                        + "        </metadata>\n"
+                        + "    </node>\n"
                         + "    <node name=\"complex\">\n"
                         + "        <input name=\"input\">value</input>\n"
                         + "        <output name=\"output\" selector=\"value\"/>\n"
