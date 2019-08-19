@@ -162,7 +162,17 @@ public class Node implements Serializable, Comparable<Node> {
      */
     @Override
     public int compareTo(final Node other) {
-        return this.name.compareTo(other.name);
+        final int result;
+        final boolean equal = this.equals(other);
+        final int comparison = this.name.compareTo(other.name);
+        if (equal) {
+            result = 0;
+        } else if (comparison < 0 || comparison > 0) {
+            result = comparison;
+        } else {
+            result = 1;
+        }
+        return result;
     }
 
     /**
@@ -176,7 +186,10 @@ public class Node implements Serializable, Comparable<Node> {
         boolean equivalent = false;
         if (object instanceof Node) {
             final Node node = (Node) object;
-            equivalent = this.name.equals(node.name);
+            equivalent = this.name.equals(node.name)
+                && Objects.equals(this.template, node.template)
+                && this.parameters.equals(node.parameters)
+                && this.metadata.equals(node.metadata);
         }
         return equivalent;
     }
@@ -187,7 +200,12 @@ public class Node implements Serializable, Comparable<Node> {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(this.name, this.template, this.parameters);
+        return Objects.hash(
+            this.name,
+            this.template,
+            this.parameters,
+            this.metadata
+        );
     }
 
     /**
@@ -200,7 +218,7 @@ public class Node implements Serializable, Comparable<Node> {
 
     /**
      * A node on which this node is based.
-     * @return The template node or null
+     * @return The template node or the template pill
      */
     public Node getTemplate() {
         return this.template;

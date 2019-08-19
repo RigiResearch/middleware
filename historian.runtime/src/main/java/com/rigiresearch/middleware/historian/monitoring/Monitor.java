@@ -83,6 +83,18 @@ public final class Monitor extends Node {
             );
     }
 
+    @Override
+    public int compareTo(final Node node) {
+        final int result;
+        if (node instanceof Monitor) {
+            final Monitor monitor = (Monitor) node;
+            result = this.getIdentifier().compareTo(monitor.getIdentifier());
+        } else {
+            result = super.compareTo(node);
+        }
+        return result;
+    }
+
     /**
      * A unique identifier for this monitor.
      * @return A unique identifier for this monitor

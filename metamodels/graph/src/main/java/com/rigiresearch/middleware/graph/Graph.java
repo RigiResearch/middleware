@@ -1,6 +1,7 @@
 package com.rigiresearch.middleware.graph;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -19,7 +20,7 @@ import javax.xml.bind.annotation.XmlRootElement;
     name = "graph",
     namespace = Graph.NAMESPACE
 )
-public class Graph<T extends Node> implements Serializable {
+public class Graph<T extends Node> implements Serializable, Comparator<T> {
 
     /**
      * The XML namespace.
@@ -49,8 +50,10 @@ public class Graph<T extends Node> implements Serializable {
      * Default constructor.
      * @param nodes The set of nodes
      */
+    @SuppressWarnings("PMD.ConstructorOnlyInitializesOrCallOtherConstructors")
     public Graph(final Set<T> nodes) {
-        this.nodes = new TreeSet<>(nodes);
+        this.nodes = new TreeSet<>(this);
+        this.nodes.addAll(nodes);
     }
 
     /**
@@ -104,7 +107,17 @@ public class Graph<T extends Node> implements Serializable {
     }
 
     /**
-     * The set of nodes.
+     * Compares two nodes.
+     * @param first The first node
+     * @param second The second node
+     * @return The result of invoking {@link Node#compareTo(Node)}
+     */
+    @Override
+    public int compare(final T first, final T second) {
+        return first.compareTo(second);
+    }
+
+    /**
      * The set of nodes. This set can be used to add and remove nodes.
      * @return A set
      */
