@@ -209,6 +209,34 @@ public class Node implements Serializable, Comparable<Node> {
     }
 
     /**
+     * A string representation of this node.
+     * @return A non-null string
+     */
+    @Override
+    public String toString() {
+        return new StringBuilder()
+            .append(this.getClass().getSimpleName())
+            .append("(")
+            .append(this.name)
+            .append(", ")
+            .append("parameters: ")
+            .append(
+                this.parameters.stream()
+                    .map(Parameter::getName)
+                    .collect(Collectors.joining(", ", "[", "]"))
+            )
+            .append(", ")
+            .append("metadata: ")
+            .append(
+                this.metadata.stream()
+                    .map(Property::getName)
+                    .collect(Collectors.joining(", ", "[", "]"))
+            )
+            .append(")")
+            .toString();
+    }
+
+    /**
      * A unique name within the graph.
      * @return The name
      */

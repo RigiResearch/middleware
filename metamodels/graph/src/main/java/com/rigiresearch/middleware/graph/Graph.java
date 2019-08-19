@@ -118,6 +118,18 @@ public class Graph<T extends Node> implements Serializable, Comparator<T> {
     }
 
     /**
+     * A string representation of this graph.
+     * @return A non-null string
+     */
+    @Override
+    public String toString() {
+        return new StringBuilder()
+            .append(this.getClass().getSimpleName())
+            .append(this.getNodes())
+            .toString();
+    }
+
+    /**
      * The set of nodes. This set can be used to add and remove nodes.
      * @return A set
      */
