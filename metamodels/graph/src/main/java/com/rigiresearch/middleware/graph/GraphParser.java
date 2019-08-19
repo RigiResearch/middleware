@@ -61,13 +61,14 @@ public final class GraphParser {
     /**
      * Unmarshalls a graph instance.
      * @param file The XML file from which the graph is unmarshalled
+     * @param <T> The subtype of {@link Node}
      * @return The unmarshalled graph
      * @throws JAXBException If there is an error unmarshalling the graph
      */
     @SuppressWarnings("unchecked")
-    public Graph<Node> instance(final File file)
+    public <T extends Node> Graph<T> instance(final File file)
         throws JAXBException {
-        return (Graph<Node>) JAXBContext.newInstance(
+        return (Graph<T>) JAXBContext.newInstance(
             GraphParser.CLASS,
             this.properties
         ).createUnmarshaller()
@@ -77,13 +78,14 @@ public final class GraphParser {
     /**
      * Unmarshalls a graph instance.
      * @param xml The XML content from which the graph is unmarshalled
+     * @param <T> The subtype of {@link Node}
      * @return The unmarshalled graph
      * @throws JAXBException If there is an error unmarshalling the graph
      */
     @SuppressWarnings("unchecked")
-    public Graph<Node> instance(final String xml)
+    public <T extends Node> Graph<T> instance(final String xml)
         throws JAXBException {
-        return (Graph<Node>) JAXBContext.newInstance(
+        return (Graph<T>) JAXBContext.newInstance(
             GraphParser.CLASS,
             this.properties
         ).createUnmarshaller()
@@ -94,9 +96,10 @@ public final class GraphParser {
      * Marshalls a graph instance into an XML file.
      * @param graph The graph instance
      * @param file The target file
+     * @param <T> The subtype of {@link Node}
      * @throws JAXBException If there is an error marshalling the graph
      */
-    public void write(final Graph<? extends Node> graph, final File file)
+    public <T extends Node> void write(final Graph<T> graph, final File file)
         throws JAXBException {
         final Marshaller marshaller = JAXBContext.newInstance(
             GraphParser.CLASS,

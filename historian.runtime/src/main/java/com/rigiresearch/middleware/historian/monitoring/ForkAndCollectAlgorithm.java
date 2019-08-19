@@ -48,8 +48,9 @@ public final class ForkAndCollectAlgorithm {
      * Default constructor.
      * @param graph The dependency graph
      * @param config The configuration properties
+     * @param <T> The subtype of {@link Node}
      */
-    public ForkAndCollectAlgorithm(final Graph<Node> graph,
+    public <T extends Node> ForkAndCollectAlgorithm(final Graph<T> graph,
         final Configuration config) {
         this.config = config;
         this.graph = new Graph<>(
