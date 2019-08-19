@@ -159,6 +159,7 @@ public final class ForkAndCollectAlgorithm {
                     branches.add(tmp);
                 })
             );
+        this.graph.getNodes().addAll(branches);
         return branches;
     }
 

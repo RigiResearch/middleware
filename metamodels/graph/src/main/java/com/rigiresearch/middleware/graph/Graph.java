@@ -105,6 +105,7 @@ public class Graph<T extends Node> implements Serializable {
 
     /**
      * The set of nodes.
+     * The set of nodes. This set can be used to add and remove nodes.
      * @return A set
      */
     public Set<T> getNodes() {
