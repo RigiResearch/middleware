@@ -66,9 +66,9 @@ final class GraphParserTest {
     @Test
     void testSimpleGraphWithBindings() throws JAXBException {
         final Set<Node> nodes = new TreeSet<>();
-        nodes.add(
-            new Node("test", Collections.emptySet(), Collections.emptySet())
-        );
+        final Set<Property> metadata = new TreeSet<>();
+        metadata.add(new Property("key", "value"));
+        nodes.add(new Node("test", Collections.emptySet(), metadata));
         final Graph<Node> graph = new Graph<>(nodes);
         Assertions.assertEquals(
             new GraphParser()
@@ -76,7 +76,11 @@ final class GraphParserTest {
                 .instance(
                     GraphParserTest.HEADER
                         + "<elements xmlns=\"" + Graph.NAMESPACE + "\">\n"
-                        + "    <element name=\"test\"/>\n"
+                        + "    <element name=\"test\">\n"
+                        + "        <options>\n"
+                        + "            <option key=\"key\" value=\"value\"/>\n"
+                        + "        </options>\n"
+                        + "    </element>\n"
                         + "</elements>"
                 ),
             graph,

@@ -8,5 +8,17 @@
         <xml-element java-attribute="nodes" name="element" />
       </java-attributes>
     </java-type>
+    <java-type name="Node">
+      <java-attributes>
+        <xml-element java-attribute="metadata" name="option">
+          <xml-element-wrapper name="options" />
+        </xml-element>
+      </java-attributes>
+    </java-type>
+    <java-type name="Property">
+      <java-attributes>
+        <xml-attribute java-attribute="name" name="key"/>
+      </java-attributes>
+    </java-type>
   </java-types>
 </xml-bindings>
