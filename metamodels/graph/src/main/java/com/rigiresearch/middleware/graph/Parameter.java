@@ -80,6 +80,15 @@ public abstract class Parameter
     }
 
     /**
+     * A string representation of this parameter.
+     * @return A non-null string
+     */
+    @Override
+    public String toString() {
+        return this.name;
+    }
+
+    /**
      * A unique name within the set of parameters.
      * @return The name of this parameter
      */

@@ -2,6 +2,7 @@ package com.rigiresearch.middleware.graph;
 
 import java.io.Serializable;
 import java.util.Objects;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlID;
 import javax.xml.bind.annotation.XmlType;
@@ -51,6 +52,42 @@ public class Property implements Serializable, Comparable<Property> {
     public Property(final String name, final String value) {
         this.name = name;
         this.value = value;
+    }
+
+    /**
+     * Setups the name and value before marshall.
+     * @param marshaller The XML marshaller
+     */
+    @SuppressWarnings({
+        "PMD.NullAssignment",
+        "PMD.UnusedFormalParameter",
+        "PMD.UnusedPrivateMethod"
+    })
+    private void beforeMarshal(final Marshaller marshaller) {
+        if (this.name.isEmpty()) {
+            this.name = null;
+        }
+
+        if (this.value.isEmpty()) {
+            this.value = null;
+        }
+    }
+
+    /**
+     * Setups the name and value after marshal.
+     * @param marshaller The XML marshaller
+     */
+    @SuppressWarnings({
+        "PMD.UnusedFormalParameter",
+        "PMD.UnusedPrivateMethod"
+    })
+    private void afterMarshal(final Marshaller marshaller) {
+        if (this.name == null) {
+            this.name = "";
+        }
+        if (this.value == null) {
+            this.value = "";
+        }
     }
 
     /**

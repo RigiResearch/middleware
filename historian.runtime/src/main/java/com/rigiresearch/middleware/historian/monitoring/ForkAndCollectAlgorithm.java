@@ -8,6 +8,8 @@ import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.Node;
 import com.rigiresearch.middleware.graph.Output;
 import com.rigiresearch.middleware.graph.Parameter;
+import com.rigiresearch.middleware.historian.monitoring.graph.Augmentation;
+import com.rigiresearch.middleware.historian.monitoring.graph.Monitor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -97,6 +99,7 @@ public final class ForkAndCollectAlgorithm {
             // Collect step
             final String content = branch.collect();
             final JsonNode object = ForkAndCollectAlgorithm.MAPPER.readTree(content);
+            this.augment(object, branch);
             this.add(result, branch.getIdentifier(), object);
             this.released.add(branch);
             final Collection<ResultSet<String, String>> located =
@@ -241,6 +244,29 @@ public final class ForkAndCollectAlgorithm {
             }
         } else if (source instanceof ArrayNode) {
             ((ArrayNode) source).add(object);
+        }
+    }
+
+    /**
+     * Augments the given node with context values according to the monitor's
+     * metadata configuration.
+     * @param node The JSON node to augment
+     * @param monitor The monitor
+     */
+    private void augment(final JsonNode node, final Monitor monitor) {
+        final Collection<Augmentation> collection = monitor.getMetadata()
+            .stream()
+            .filter(Augmentation.class::isInstance)
+            .map(Augmentation.class::cast)
+            .collect(Collectors.toSet());
+        for (final Augmentation augmentation : collection) {
+            for (final String input : augmentation.getInputs()) {
+                final JsonNode object = ForkAndCollectAlgorithm.MAPPER.valueToTree(
+                    monitor.getContextValues()
+                        .get(input)
+                );
+                this.add(node, input, object);
+            }
         }
     }
 

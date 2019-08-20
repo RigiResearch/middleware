@@ -8,5 +8,19 @@
         <xml-element java-attribute="nodes" name="monitor" />
       </java-attributes>
     </java-type>
+    <java-type name="Node">
+      <java-attributes>
+        <xml-elements java-attribute="metadata">
+          <xml-element-wrapper name="mappings" />
+          <xml-element name="augmentation"
+            type="com.rigiresearch.middleware.historian.monitoring.graph.Augmentation"/>
+        </xml-elements>
+      </java-attributes>
+    </java-type>
+    <java-type name="Property">
+      <java-attributes>
+        <xml-attribute java-attribute="name" name="type"/>
+      </java-attributes>
+    </java-type>
   </java-types>
 </xml-bindings>

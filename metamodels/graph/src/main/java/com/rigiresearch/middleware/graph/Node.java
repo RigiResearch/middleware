@@ -220,18 +220,10 @@ public class Node implements Serializable, Comparable<Node> {
             .append(this.name)
             .append(", ")
             .append("parameters: ")
-            .append(
-                this.parameters.stream()
-                    .map(Parameter::getName)
-                    .collect(Collectors.joining(", ", "[", "]"))
-            )
+            .append(this.parameters.toString())
             .append(", ")
             .append("metadata: ")
-            .append(
-                this.metadata.stream()
-                    .map(Property::getName)
-                    .collect(Collectors.joining(", ", "[", "]"))
-            )
+            .append(this.metadata.toString())
             .append(")")
             .toString();
     }

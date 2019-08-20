@@ -123,6 +123,7 @@
   },
   "getVcenterVm": [
     {
+      "vm":"vm-1",
       "value": {
         "boot": {
           "delay": 0,
@@ -261,6 +262,7 @@
       }
     },
     {
+      "vm":"vm-2",
       "value": {
         "boot": {
           "delay": 0,

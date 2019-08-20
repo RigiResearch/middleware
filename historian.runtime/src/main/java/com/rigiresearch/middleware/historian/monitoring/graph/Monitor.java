@@ -1,6 +1,9 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.monitoring.graph;
 
 import com.rigiresearch.middleware.graph.Node;
+import com.rigiresearch.middleware.historian.monitoring.Input;
+import com.rigiresearch.middleware.historian.monitoring.Request;
+import com.rigiresearch.middleware.historian.monitoring.UnexpectedResponseCodeException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.AbstractMap;
@@ -21,7 +24,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
  * @version $Id$
  * @since 0.1.0
  */
-@ToString(of = {"identifier"})
+@ToString(of = {"identifier"}, callSuper = true)
 public final class Monitor extends Node {
 
     /**

@@ -2,6 +2,9 @@
 <monitors xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
   <monitor name="getVcenterVm">
     <input name="vm" source="listVcenterVm">vm</input>
+    <mappings>
+      <augmentation inputs="vm"/>
+    </mappings>
   </monitor>
   <monitor name="listVcenterDatacenter">
     <output name="datacenter" selector="//datacenter" multivalued="true"/>
