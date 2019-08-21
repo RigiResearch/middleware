@@ -8,19 +8,34 @@
   </monitor>
   <monitor name="listVcenterDatacenter">
     <output name="datacenter" selector="//datacenter" multivalued="true"/>
+    <mappings>
+      <transformation selector="//datacenter" multivalued="true"/>
+    </mappings>
   </monitor>
   <monitor name="listVcenterHost">
     <output name="host" selector="//host" multivalued="true"/>
+    <mappings>
+      <transformation selector="//host" multivalued="true"/>
+    </mappings>
   </monitor>
   <monitor name="listVcenterVm">
     <output name="vm" selector="//vm" multivalued="true"/>
+    <mappings>
+      <transformation selector="//vm" multivalued="true"/>
+    </mappings>
   </monitor>
   <!-- Inventory of VMs per datacenter -->
   <monitor name="listVcenterVmFilteredByDatacenter" template="listVcenterVm">
     <input name="filter.datacenters" source="listVcenterDatacenter">datacenter</input>
+    <mappings>
+      <transformation selector="//vm" multivalued="true" groupByInput="filter.datacenters"/>
+    </mappings>
   </monitor>
   <!-- Inventory of VMs per host -->
   <monitor name="listVcenterVmFilteredByHost" template="listVcenterVm">
     <input name="filter.hosts" source="listVcenterHost">host</input>
+    <mappings>
+      <transformation selector="//vm" multivalued="true" groupByInput="filter.hosts"/>
+    </mappings>
   </monitor>
 </monitors>

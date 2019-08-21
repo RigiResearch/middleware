@@ -14,6 +14,8 @@
           <xml-element-wrapper name="mappings" />
           <xml-element name="augmentation"
             type="com.rigiresearch.middleware.historian.monitoring.graph.Augmentation"/>
+          <xml-element name="transformation"
+            type="com.rigiresearch.middleware.historian.monitoring.graph.Transformation"/>
         </xml-elements>
       </java-attributes>
     </java-type>

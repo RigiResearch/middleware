@@ -5,16 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rigiresearch.middleware.graph.Graph;
+import com.rigiresearch.middleware.graph.Input;
 import com.rigiresearch.middleware.graph.Node;
 import com.rigiresearch.middleware.graph.Output;
 import com.rigiresearch.middleware.graph.Parameter;
 import com.rigiresearch.middleware.historian.monitoring.graph.Augmentation;
 import com.rigiresearch.middleware.historian.monitoring.graph.Monitor;
+import com.rigiresearch.middleware.historian.monitoring.graph.Transformation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.Configuration;
 
@@ -71,8 +75,10 @@ public final class ForkAndCollectAlgorithm {
      *  mapping it to Json objects
      * @throws UnexpectedResponseCodeException If a request resturns an
      *  unexpected response code
+     * @throws ConfigurationException See {@link #transform(JsonNode, Monitor)}
      */
-    public JsonNode data() throws IOException, UnexpectedResponseCodeException {
+    public JsonNode data() throws IOException, UnexpectedResponseCodeException,
+        ConfigurationException {
         // TODO Validate the graph. Look for cycles. Move to Graph?
         this.released.clear();
         // Initial fork step
@@ -91,16 +97,18 @@ public final class ForkAndCollectAlgorithm {
      *  mapping it to Json objects
      * @throws UnexpectedResponseCodeException If a request resturns an
      *  unexpected response code
+     * @throws ConfigurationException See {@link #transform(JsonNode, Monitor)}
      */
     private JsonNode data(final Collection<Monitor> branches)
-        throws IOException, UnexpectedResponseCodeException {
+        throws IOException, UnexpectedResponseCodeException, ConfigurationException {
         final JsonNode result = this.node(branches);
         for (final Monitor branch : branches) {
             // Collect step
             final String content = branch.collect();
             final JsonNode object = ForkAndCollectAlgorithm.MAPPER.readTree(content);
             this.augment(object, branch);
-            this.add(result, branch.getIdentifier(), object);
+            final JsonNode transformed = this.transform(object, branch);
+            this.add(result, branch.getIdentifier(), transformed);
             this.released.add(branch);
             final Collection<ResultSet<String, String>> located =
                 this.collectedValues(branch, content);
@@ -190,7 +198,7 @@ public final class ForkAndCollectAlgorithm {
                     collections.add(set);
                 } else {
                     collections.add(
-                        new ResultSet<>(output.getName(), value.value())
+                        new ResultSet<>(output.getName(), value.singleValue())
                     );
                 }
             }
@@ -268,6 +276,100 @@ public final class ForkAndCollectAlgorithm {
                 this.add(node, input, object);
             }
         }
+    }
+
+    /**
+     * Transforms the given node according to the monitor's metadata
+     * configuration. Specifically, it uses {@link Transformation} instances.
+     * @param node The JSON node to transforms
+     * @param monitor The monitor
+     * @return The transformed node
+     * @throws IOException If there is a problem parsing the node to String or
+     *  evaluating the transformation's selector
+     * @throws ConfigurationException If there is more than one transformation
+     *  mapping for the given monitor
+     */
+    @SuppressWarnings("checkstyle:NestedIfDepth")
+    private JsonNode transform(final JsonNode node, final Monitor monitor)
+        throws IOException, ConfigurationException {
+        final JsonNode transformed;
+        final List<Transformation> list = monitor.getMetadata()
+            .stream()
+            .filter(Transformation.class::isInstance)
+            .map(Transformation.class::cast)
+            .collect(Collectors.toList());
+        if (list.isEmpty()) {
+            transformed = node;
+        } else if (list.size() == 1) {
+            final Transformation transformation = list.get(0);
+            final XpathValue value = new XpathValue(
+                ForkAndCollectAlgorithm.MAPPER.writeValueAsString(node),
+                transformation.getSelector()
+            );
+            final JsonNode tmp;
+            if (transformation.getMultivalued() && transformation.shouldGroupByInput()) {
+                final Optional<Input> input = monitor.getParameters(true)
+                    .stream()
+                    .filter(Input.class::isInstance)
+                    .map(Input.class::cast)
+                    .filter(inp -> inp.getName().equals(transformation.getGroupByInput()))
+                    .findFirst();
+                if (input.isPresent()) {
+                    tmp = ForkAndCollectAlgorithm.MAPPER.readTree(
+                        String.format(
+                            "{\"%s\":%s}",
+                            monitor.allValues().get(input.get().getValue()),
+                            ForkAndCollectAlgorithm.equivalentNode(value.nodeArray())
+                        )
+                    );
+                } else {
+                    throw new ConfigurationException(
+                        "Input %s does not exist in monitor %s",
+                        transformation.getGroupByInput(),
+                        monitor.getName()
+                    );
+                }
+            } else if (transformation.getMultivalued()) {
+                tmp = ForkAndCollectAlgorithm.equivalentNode(value.nodeArray());
+            } else {
+                tmp = ForkAndCollectAlgorithm.equivalentNode(value.singleNode());
+            }
+            transformed = tmp;
+        } else {
+            throw new ConfigurationException(
+                "Only one transformation mapping is expected for monitor %s",
+                monitor.getIdentifier()
+            );
+        }
+        return transformed;
+    }
+
+    /**
+     * Transforms a Json node from Jackson version 1 to 2.
+     * @param original The v1 node
+     * @return The v2 node
+     * @throws IOException If there is a problem reading/writing the Json
+     *  strings
+     */
+    private static JsonNode equivalentNode(
+        final org.codehaus.jackson.JsonNode original) throws IOException {
+        final JsonNode transformed;
+        final org.codehaus.jackson.map.ObjectMapper mapper =
+            new org.codehaus.jackson.map.ObjectMapper();
+        if (original instanceof org.codehaus.jackson.node.ArrayNode) {
+            final ArrayNode array = ForkAndCollectAlgorithm.MAPPER.createArrayNode();
+            for (final org.codehaus.jackson.JsonNode tmp : original) {
+                final String json = mapper.writeValueAsString(tmp);
+                array.add(ForkAndCollectAlgorithm.MAPPER.readTree(json));
+            }
+            transformed = array;
+        } else  {
+            transformed = ForkAndCollectAlgorithm.MAPPER.readTree(
+                mapper.writeValueAsString(original)
+            );
+        }
+
+        return transformed;
     }
 
 }

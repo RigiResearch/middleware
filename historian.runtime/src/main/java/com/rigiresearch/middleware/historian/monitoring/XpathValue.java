@@ -1,13 +1,15 @@
 package com.rigiresearch.middleware.historian.monitoring;
 
-import com.vmware.xpath.json.DistinctTextValueJsonXpathVisitor;
+import com.rigiresearch.middleware.historian.monitoring.json.JsonNodeXpathVisitor;
 import com.vmware.xpath.json.JsonXpath;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.RequiredArgsConstructor;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,19 +51,44 @@ public final class XpathValue {
     private final String selector;
 
     /**
-     * Finds a single value selected by the associated Xpath selector.
-     * @return A string value from the input content
-     * @throws IOException If something bad happens while selecting the value
+     * Finds a single node selected by the associated Xpath selector.
+     * @return A non-null Json node selected from the input content
+     * @throws IOException If something bad happens while selecting the node
      */
-    public String value() throws IOException {
+    public JsonNode singleNode() throws IOException {
         final JsonNode node = XpathValue.MAPPER.readTree(this.content);
         if (!JsonXpath.exists(node, this.selector)) {
             XpathValue.LOGGER.error(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
             );
         }
-        return JsonXpath.find(node, this.selector)
-            .asText();
+        return JsonXpath.find(node, this.selector);
+    }
+
+    /**
+     * Finds a single value selected by the associated Xpath selector.
+     * @return A string value from the input content
+     * @throws IOException If something bad happens while selecting the value
+     */
+    public String singleValue() throws IOException {
+        return this.singleNode().asText();
+    }
+
+    /**
+     * Finds the Json nodes selected by the associated Xpath selector.
+     * @return A list of matching nodes
+     * @throws IOException If something bad happens while selecting the nodes
+     */
+    public ArrayNode nodeArray() throws IOException {
+        final JsonNode node = XpathValue.MAPPER.readTree(this.content);
+        final JsonNodeXpathVisitor visitor = new JsonNodeXpathVisitor();
+        JsonXpath.findAndUpdateMultiple(node, this.selector, visitor);
+        if (visitor.getResult().size() == 0) {
+            XpathValue.LOGGER.error(
+                String.format(XpathValue.ERROR_FORMAT, this.selector)
+            );
+        }
+        return visitor.getResult();
     }
 
     /**
@@ -70,17 +97,9 @@ public final class XpathValue {
      * @throws IOException If something bad happens while selecting the values
      */
     public Collection<String> values() throws IOException {
-        final JsonNode node = XpathValue.MAPPER.readTree(this.content);
-        final DistinctTextValueJsonXpathVisitor visitor =
-            new DistinctTextValueJsonXpathVisitor(this.selector);
-        JsonXpath.findAndUpdateMultiple(node, this.selector, visitor);
-        final Collection<String> elements = new ArrayList<>(visitor.getDistinctSet());
-        if (elements.isEmpty()) {
-            XpathValue.LOGGER.error(
-                String.format(XpathValue.ERROR_FORMAT, this.selector)
-            );
-        }
-        return elements;
+        return StreamSupport.stream(this.nodeArray().spliterator(), false)
+            .map(JsonNode::asText)
+            .collect(Collectors.toSet());
     }
 
 }

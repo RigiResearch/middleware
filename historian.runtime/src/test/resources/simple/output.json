@@ -1,126 +1,44 @@
 {
-  "listVcenterHost": {
-    "value": [
-      {
-        "connection_state": "CONNECTED",
-        "host": "host-1",
-        "name": "host1.domain.com",
-        "power_state": "POWERED_ON"
-      },
-      {
-        "connection_state": "CONNECTED",
-        "host": "host-2",
-        "name": "host2.domain.com",
-        "power_state": "POWERED_ON"
-      }
-    ]
-  },
+  "listVcenterHost": [
+    "host-1",
+    "host-2"
+  ],
   "listVcenterVmFilteredByHost": [
     {
-      "value": [
-        {
-          "cpu_count": 2,
-          "memory_size_MiB": 2048,
-          "name": "test-vm-1",
-          "power_state": "POWERED_ON",
-          "vm": "vm-1"
-        },
-        {
-          "cpu_count": 4,
-          "memory_size_MiB": 8192,
-          "name": "test-vm-2",
-          "power_state": "POWERED_ON",
-          "vm": "vm-2"
-        }
+      "host-1": [
+        "vm-1",
+        "vm-2"
       ]
     },
     {
-      "value": [
-        {
-          "cpu_count": 2,
-          "memory_size_MiB": 2048,
-          "name": "test-vm-1",
-          "power_state": "POWERED_ON",
-          "vm": "vm-1"
-        },
-        {
-          "cpu_count": 4,
-          "memory_size_MiB": 8192,
-          "name": "test-vm-2",
-          "power_state": "POWERED_ON",
-          "vm": "vm-2"
-        }
+      "host-2": [
+        "vm-1",
+        "vm-2"
       ]
     }
   ],
-  "listVcenterDatacenter": {
-    "value": [
-      {
-        "datacenter": "datacenter-1",
-        "name": "DC1"
-      },
-      {
-        "datacenter": "datacenter-2",
-        "name": "DC2"
-      }
-    ]
-  },
+  "listVcenterDatacenter": [
+    "datacenter-1",
+    "datacenter-2"
+  ],
   "listVcenterVmFilteredByDatacenter": [
     {
-      "value": [
-        {
-          "cpu_count": 2,
-          "memory_size_MiB": 2048,
-          "name": "test-vm-1",
-          "power_state": "POWERED_ON",
-          "vm": "vm-1"
-        },
-        {
-          "cpu_count": 4,
-          "memory_size_MiB": 8192,
-          "name": "test-vm-2",
-          "power_state": "POWERED_ON",
-          "vm": "vm-2"
-        }
+      "datacenter-1": [
+        "vm-1",
+        "vm-2"
       ]
     },
     {
-      "value": [
-        {
-          "cpu_count": 2,
-          "memory_size_MiB": 2048,
-          "name": "test-vm-1",
-          "power_state": "POWERED_ON",
-          "vm": "vm-1"
-        },
-        {
-          "cpu_count": 4,
-          "memory_size_MiB": 8192,
-          "name": "test-vm-2",
-          "power_state": "POWERED_ON",
-          "vm": "vm-2"
-        }
+      "datacenter-2": [
+        "vm-1",
+        "vm-2"
       ]
     }
   ],
-  "listVcenterVm": {
-    "value": [
-      {
-        "cpu_count": 2,
-        "memory_size_MiB": 2048,
-        "name": "test-vm-1",
-        "power_state": "POWERED_ON",
-        "vm": "vm-1"
-      },
-      {
-        "cpu_count": 4,
-        "memory_size_MiB": 8192,
-        "name": "test-vm-2",
-        "power_state": "POWERED_ON",
-        "vm": "vm-2"
-      }
-    ]
-  },
+  "listVcenterVm": [
+    "vm-1",
+    "vm-2"
+  ],
   "getVcenterVm": [
     {
       "vm":"vm-1",
