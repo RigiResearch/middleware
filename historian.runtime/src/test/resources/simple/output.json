@@ -3,38 +3,30 @@
     "host-1",
     "host-2"
   ],
-  "listVcenterVmFilteredByHost": [
-    {
-      "host-1": [
-        "vm-1",
-        "vm-2"
-      ]
-    },
-    {
-      "host-2": [
-        "vm-1",
-        "vm-2"
-      ]
-    }
-  ],
+  "listVcenterVmFilteredByHost": {
+    "host-1": [
+      "vm-1",
+      "vm-2"
+    ],
+    "host-2": [
+      "vm-1",
+      "vm-2"
+    ]
+  },
   "listVcenterDatacenter": [
     "datacenter-1",
     "datacenter-2"
   ],
-  "listVcenterVmFilteredByDatacenter": [
-    {
-      "datacenter-1": [
-        "vm-1",
-        "vm-2"
-      ]
-    },
-    {
-      "datacenter-2": [
-        "vm-1",
-        "vm-2"
-      ]
-    }
-  ],
+  "listVcenterVmFilteredByDatacenter": {
+    "datacenter-1": [
+      "vm-1",
+      "vm-2"
+    ],
+    "datacenter-2": [
+      "vm-1",
+      "vm-2"
+    ]
+  },
   "listVcenterVm": [
     "vm-1",
     "vm-2"

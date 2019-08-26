@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.Configuration;
@@ -28,6 +29,7 @@ import org.apache.commons.configuration2.Configuration;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("PMD.TooManyMethods")
 public final class ForkAndCollectAlgorithm {
 
     /**
@@ -105,10 +107,7 @@ public final class ForkAndCollectAlgorithm {
         for (final Monitor branch : branches) {
             // Collect step
             final String content = branch.collect();
-            final JsonNode object = ForkAndCollectAlgorithm.MAPPER.readTree(content);
-            this.augment(object, branch);
-            final JsonNode transformed = this.transform(object, branch);
-            this.add(result, branch.getIdentifier(), transformed);
+            this.applyMappingsAndAdd(branch, content, result);
             this.released.add(branch);
             final Collection<ResultSet<String, String>> located =
                 this.collectedValues(branch, content);
@@ -210,11 +209,14 @@ public final class ForkAndCollectAlgorithm {
      * Creates a Json node based on the current branches.
      * @param branches The current branches
      * @return An array if all the branches share the nanme, an object otherwise
+     * @throws ConfigurationException See {@link #transformation(Monitor)}
      */
-    private JsonNode node(final Collection<Monitor> branches) {
+    private JsonNode node(final Collection<Monitor> branches)
+        throws ConfigurationException {
         final JsonNode object;
         String name = null;
         boolean equal = !branches.isEmpty();
+        boolean grouped = false;
         final Iterator<Monitor> iterator = branches.iterator();
         while (iterator.hasNext()) {
             final Monitor tmp = iterator.next();
@@ -225,8 +227,12 @@ public final class ForkAndCollectAlgorithm {
                 equal = false;
                 break;
             }
+            // If all the branches come from the same monitor, they should share
+            // the same configuration. Then, it is okay to just update "grouped"
+            final Optional<Transformation> optional = this.transformation(tmp);
+            grouped = optional.isPresent() && optional.get().shouldGroupByInput();
         }
-        if (equal) {
+        if (equal && !grouped) {
             object = ForkAndCollectAlgorithm.MAPPER.createArrayNode();
         } else {
             object = ForkAndCollectAlgorithm.MAPPER.createObjectNode();
@@ -252,6 +258,35 @@ public final class ForkAndCollectAlgorithm {
             }
         } else if (source instanceof ArrayNode) {
             ((ArrayNode) source).add(object);
+        }
+    }
+
+    /**
+     * Applies the mappings associated with {@code branch} and add the
+     * transformed node into {@code result}.
+     * @param branch The branch
+     * @param content The JSON string to transform and add
+     * @param result The result JSON node
+     * @throws IOException If there is a problem parsing the string into a JSON
+     *  node
+     * @throws ConfigurationException If there is a configuration problem
+     */
+    private void applyMappingsAndAdd(final Monitor branch, final String content,
+        final JsonNode result) throws IOException, ConfigurationException {
+        final JsonNode object = ForkAndCollectAlgorithm.MAPPER.readTree(content);
+        this.augment(object, branch);
+        final JsonNode transformed = this.transform(object, branch);
+        // This is necessary to avoid having an array of grouped objects.
+        // Instead, we transfer all those objects to the result directly
+        final Optional<Transformation> transf = this.transformation(branch);
+        if (transf.isPresent() && transf.get().shouldGroupByInput()) {
+            final Iterator<Map.Entry<String, JsonNode>> fields = transformed.fields();
+            while (fields.hasNext()) {
+                final Map.Entry<String, JsonNode> tmp = fields.next();
+                this.add(result, tmp.getKey(), tmp.getValue());
+            }
+        } else {
+            this.add(result, branch.getIdentifier(), transformed);
         }
     }
 
@@ -293,55 +328,62 @@ public final class ForkAndCollectAlgorithm {
     private JsonNode transform(final JsonNode node, final Monitor monitor)
         throws IOException, ConfigurationException {
         final JsonNode transformed;
+        final Optional<Transformation> optional = this.transformation(monitor);
+        if (optional.isPresent()) {
+            final Transformation transf = optional.get();
+            final XpathValue value = new XpathValue(
+                ForkAndCollectAlgorithm.MAPPER.writeValueAsString(node),
+                transf.getSelector()
+            );
+            if (transf.getMultivalued() && transf.shouldGroupByInput()) {
+                final Input input =
+                    monitor.getParameter(true, transf.getGroupByInput(), Input.class);
+                transformed = ForkAndCollectAlgorithm.MAPPER.readTree(
+                    String.format(
+                        "{\"%s\":%s}",
+                        monitor.allValues().get(input.getValue()),
+                        ForkAndCollectAlgorithm.equivalentNode(value.nodeArray())
+                    )
+                );
+            } else if (transf.getMultivalued()) {
+                transformed =
+                    ForkAndCollectAlgorithm.equivalentNode(value.nodeArray());
+            } else {
+                transformed =
+                    ForkAndCollectAlgorithm.equivalentNode(value.singleNode());
+            }
+        } else {
+            transformed = node;
+        }
+        return transformed;
+    }
+
+    /**
+     * Finds a {@link Transformation}, in case there is one.
+     * @param monitor The monitor
+     * @return An optional transformation
+     * @throws ConfigurationException If there is more than one transformation
+     *  mapping for the given monitor
+     */
+    private Optional<Transformation> transformation(final Monitor monitor)
+        throws ConfigurationException {
+        final Optional<Transformation> optional;
         final List<Transformation> list = monitor.getMetadata()
             .stream()
             .filter(Transformation.class::isInstance)
             .map(Transformation.class::cast)
             .collect(Collectors.toList());
         if (list.isEmpty()) {
-            transformed = node;
+            optional = Optional.empty();
         } else if (list.size() == 1) {
-            final Transformation transformation = list.get(0);
-            final XpathValue value = new XpathValue(
-                ForkAndCollectAlgorithm.MAPPER.writeValueAsString(node),
-                transformation.getSelector()
-            );
-            final JsonNode tmp;
-            if (transformation.getMultivalued() && transformation.shouldGroupByInput()) {
-                final Optional<Input> input = monitor.getParameters(true)
-                    .stream()
-                    .filter(Input.class::isInstance)
-                    .map(Input.class::cast)
-                    .filter(inp -> inp.getName().equals(transformation.getGroupByInput()))
-                    .findFirst();
-                if (input.isPresent()) {
-                    tmp = ForkAndCollectAlgorithm.MAPPER.readTree(
-                        String.format(
-                            "{\"%s\":%s}",
-                            monitor.allValues().get(input.get().getValue()),
-                            ForkAndCollectAlgorithm.equivalentNode(value.nodeArray())
-                        )
-                    );
-                } else {
-                    throw new ConfigurationException(
-                        "Input %s does not exist in monitor %s",
-                        transformation.getGroupByInput(),
-                        monitor.getName()
-                    );
-                }
-            } else if (transformation.getMultivalued()) {
-                tmp = ForkAndCollectAlgorithm.equivalentNode(value.nodeArray());
-            } else {
-                tmp = ForkAndCollectAlgorithm.equivalentNode(value.singleNode());
-            }
-            transformed = tmp;
+            optional = Optional.of(list.get(0));
         } else {
             throw new ConfigurationException(
                 "Only one transformation mapping is expected for monitor %s",
                 monitor.getIdentifier()
             );
         }
-        return transformed;
+        return optional;
     }
 
     /**

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -290,6 +291,35 @@ public class Node implements Serializable, Comparable<Node> {
             set = this.parameters;
         }
         return set;
+    }
+
+    /**
+     * Finds a parameter by name.
+     * @param merge Whether to merge the parameters for template-based nodes
+     * @param param The parameter's name
+     * @param type The parameter type
+     * @param <T> The type of the parameter (e.g., {@link Input})
+     * @return The parameter
+     * @throws IllegalArgumentException If the input does not exist in this node
+     */
+    public <T extends Parameter> T getParameter(final boolean merge,
+        final String param, final Class<T> type) throws IllegalArgumentException {
+        final Optional<T> parameter = this.getParameters(merge)
+            .stream()
+            .filter(type::isInstance)
+            .map(type::cast)
+            .filter(tmp -> tmp.getName().equals(param))
+            .findFirst();
+        if (parameter.isPresent()) {
+            return parameter.get();
+        }
+        throw new IllegalArgumentException(
+            String.format(
+                "Parameter \"%s\" does not exist in node \"%s\"",
+                param,
+                this.getName()
+            )
+        );
     }
 
     /**
