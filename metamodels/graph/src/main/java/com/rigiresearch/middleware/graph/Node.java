@@ -139,6 +139,9 @@ public class Node implements Serializable, Comparable<Node> {
         if (this.template == Node.TEMPLATE_PILL) {
             this.template = null;
         }
+        if (this.metadata.isEmpty()) {
+            this.metadata = null;
+        }
     }
 
     /**
@@ -152,6 +155,9 @@ public class Node implements Serializable, Comparable<Node> {
     private void afterMarshal(final Marshaller marshaller) {
         if (this.template == null) {
             this.template = Node.TEMPLATE_PILL;
+        }
+        if (this.metadata == null) {
+            this.metadata = new TreeSet<>();
         }
     }
 
