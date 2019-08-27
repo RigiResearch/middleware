@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring.graph;
+package com.rigiresearch.middleware.historian.runtime.graph;
 
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.Property;

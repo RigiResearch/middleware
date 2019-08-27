@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.runtime;
 
 /**
  * This exception is thrown when a request's response code was unexpected.

@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.runtime;
 
 /**
  * The main class.

@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring.json;
+package com.rigiresearch.middleware.historian.runtime.json;
 
 import com.vmware.xpath.json.JsonXpathVisitor;
 import java.util.Set;

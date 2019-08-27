@@ -1,6 +1,6 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.runtime;
 
-import com.rigiresearch.middleware.historian.monitoring.json.JsonNodeXpathVisitor;
+import com.rigiresearch.middleware.historian.runtime.json.JsonNodeXpathVisitor;
 import com.vmware.xpath.json.JsonXpath;
 import java.io.IOException;
 import java.util.Collection;

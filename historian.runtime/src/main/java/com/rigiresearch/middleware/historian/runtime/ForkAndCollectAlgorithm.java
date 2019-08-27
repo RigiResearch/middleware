@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.runtime;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,9 +9,9 @@ import com.rigiresearch.middleware.graph.Input;
 import com.rigiresearch.middleware.graph.Node;
 import com.rigiresearch.middleware.graph.Output;
 import com.rigiresearch.middleware.graph.Parameter;
-import com.rigiresearch.middleware.historian.monitoring.graph.Augmentation;
-import com.rigiresearch.middleware.historian.monitoring.graph.Monitor;
-import com.rigiresearch.middleware.historian.monitoring.graph.Transformation;
+import com.rigiresearch.middleware.historian.runtime.graph.Augmentation;
+import com.rigiresearch.middleware.historian.runtime.graph.Monitor;
+import com.rigiresearch.middleware.historian.runtime.graph.Transformation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;

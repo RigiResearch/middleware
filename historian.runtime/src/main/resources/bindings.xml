@@ -13,9 +13,9 @@
         <xml-elements java-attribute="metadata">
           <xml-element-wrapper name="mappings" />
           <xml-element name="augmentation"
-            type="com.rigiresearch.middleware.historian.monitoring.graph.Augmentation"/>
+            type="com.rigiresearch.middleware.historian.runtime.graph.Augmentation"/>
           <xml-element name="transformation"
-            type="com.rigiresearch.middleware.historian.monitoring.graph.Transformation"/>
+            type="com.rigiresearch.middleware.historian.runtime.graph.Transformation"/>
         </xml-elements>
       </java-attributes>
     </java-type>

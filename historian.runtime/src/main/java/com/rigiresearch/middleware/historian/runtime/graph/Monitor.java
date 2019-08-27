@@ -1,9 +1,9 @@
-package com.rigiresearch.middleware.historian.monitoring.graph;
+package com.rigiresearch.middleware.historian.runtime.graph;
 
 import com.rigiresearch.middleware.graph.Node;
-import com.rigiresearch.middleware.historian.monitoring.Input;
-import com.rigiresearch.middleware.historian.monitoring.Request;
-import com.rigiresearch.middleware.historian.monitoring.UnexpectedResponseCodeException;
+import com.rigiresearch.middleware.historian.runtime.Input;
+import com.rigiresearch.middleware.historian.runtime.Request;
+import com.rigiresearch.middleware.historian.runtime.UnexpectedResponseCodeException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.AbstractMap;

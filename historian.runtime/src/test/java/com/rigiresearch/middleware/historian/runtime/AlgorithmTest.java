@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rigiresearch.middleware.graph.GraphParser;

@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.monitoring;
+package com.rigiresearch.middleware.historian.runtime;
 
 /**
  * Validation error for {@link com.rigiresearch.middleware.graph.Graph}
