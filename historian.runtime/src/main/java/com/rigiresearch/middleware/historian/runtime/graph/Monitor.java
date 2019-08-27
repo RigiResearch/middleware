@@ -111,7 +111,7 @@ public final class Monitor extends Node {
      * @param format A format string
      * @param args Components to the identifier
      */
-    public void setIdentifier(final String format, final String... args) {
+    public void setIdentifier(final String format, final Object... args) {
         this.identifier = String.format(format, args);
     }
 
