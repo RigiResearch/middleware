@@ -54,7 +54,6 @@ subprojects { project ->
 
     // Logs
     implementation "ch.qos.logback:logback-classic:1.2.3"
-    runtime "org.codehaus.janino:janino:3.0.6"
 
     // Annotation processor to ease development
     implementation "org.projectlombok:lombok:1.18.6"
