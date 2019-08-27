@@ -122,6 +122,7 @@ public class Node implements Serializable, Comparable<Node> {
         return this.getParameters(true).stream()
             .filter(Input.class::isInstance)
             .map(Input.class::cast)
+            .filter(Input::hasSource)
             .map(Input::getSource)
             .collect(Collectors.toSet());
     }

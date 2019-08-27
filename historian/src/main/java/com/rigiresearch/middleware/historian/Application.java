@@ -111,10 +111,19 @@ public final class Application {
     private void generateFiles(final Root model)
         throws JAXBException, IOException {
         final File directory = new File(this.target);
+        final File parent = new File(directory, "src/main/resources/");
+        if (!parent.mkdirs() && !parent.exists()) {
+            throw new IOException(
+                String.format(
+                    "Could not create directory %s",
+                    parent.getAbsolutePath()
+                )
+            );
+        }
         final GraphParser parser = new GraphParser()
             .withBindings("bindings.xml");
         final Graph<Node> graph = this.monitoringGraph(model);
-        parser.write(graph, new File(directory, "configuration.xml"));
+        parser.write(graph, new File(parent, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);
         new GraphTemplate().generateFile(graph, directory);
     }

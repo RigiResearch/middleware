@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of the Fork and Collect algorithm.
@@ -31,6 +33,12 @@ import org.apache.commons.configuration2.Configuration;
  */
 @SuppressWarnings("PMD.TooManyMethods")
 public final class ForkAndCollectAlgorithm {
+
+    /**
+     * The logger.
+     */
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(ForkAndCollectAlgorithm.class);
 
     /**
      * A JSON object mapper.
@@ -103,6 +111,13 @@ public final class ForkAndCollectAlgorithm {
      */
     private JsonNode data(final Collection<Monitor> branches)
         throws IOException, UnexpectedResponseCodeException, ConfigurationException {
+        ForkAndCollectAlgorithm.LOGGER.debug(
+            "Branches ({}): {}",
+            branches.size(),
+            branches.stream()
+                .map(Monitor::getName)
+                .collect(Collectors.toSet())
+        );
         final JsonNode result = this.node(branches);
         for (final Monitor branch : branches) {
             // Collect step
