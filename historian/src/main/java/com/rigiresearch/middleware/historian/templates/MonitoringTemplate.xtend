@@ -1,6 +1,7 @@
 package com.rigiresearch.middleware.historian.templates
 
 import com.rigiresearch.middleware.metamodels.monitoring.ApiKeyAuth
+import com.rigiresearch.middleware.metamodels.monitoring.AuthRequirement
 import com.rigiresearch.middleware.metamodels.monitoring.BasicAuth
 import com.rigiresearch.middleware.metamodels.monitoring.Monitor
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringFactory
@@ -111,8 +112,25 @@ final class MonitoringTemplate {
         config.layout.setBlancLinesBefore("base", 1)
         config.layout.setComment("base", "The base URL")
 
+        config.setProperty("auth", root.authRequirements.map[r|r.method.id].join(", ").toString)
+        config.layout.setBlancLinesBefore("auth", 1)
+        // TODO It may be necessary to support authentication methods specifically for monitors individually
+        config.layout.setComment("auth", "Authentication methods (globally available)")
+        for (req : root.authRequirements) {
+            config.setProperty('''auth.«req.method.id».input''', req.toParameter.name)
+            if (req.method instanceof ApiKeyAuth) {
+                config.setProperty('''auth.«req.method.id».periodicity''', "${periodicity}")
+                config.setProperty('''auth.«req.method.id».type''', "key")
+            } else if (req.method instanceof BasicAuth) {
+                config.setProperty('''auth.«req.method.id».type''', "basic")
+            } else {
+                config.setProperty('''auth.«req.method.id».type''', "oauth")
+            }
+        }
+
         for (m : root.monitors) {
-            val parameters = m.authParameters
+            val parameters = newArrayList
+            parameters += m.authRequirements.map[r|r.toParameter]
             if (!m.path.parameters.empty) {
                 parameters += m.path.parameters
                 config.setProperty('''«m.path.id».inputs''', parameters.map[p|p.name].join(", ").toString)
@@ -130,49 +148,56 @@ final class MonitoringTemplate {
                 '''«m.path.id».url''',
                 '''${base}«IF !m.path.url.startsWith("/")»/«ENDIF»«m.path.url»'''.toString
             )
+            // TODO This is rather a simplistic way to render the auth requirements.
+            //  There could be more complex combinations.
+            config.setProperty('''«m.path.id».auth''', m.authRequirements.map[r|r.method.id].join(", "))
         }
         return config
     }
 
     /**
-     * Creates the necessary parameters based on authentication requirements
-     * for the given monitor.
-     * @param monitor The monitor
-     * @return A list of parameters
+     * Creates a parameter based on the given authentication requirement.
+     * @param requirement The authentication requirement
+     * @return The parameter
      */
-    def authParameters(Monitor monitor) {
-        val parameters = newArrayList
+    def toParameter(AuthRequirement requirement) {
+        val method = requirement.method
+        switch (method) {
+            ApiKeyAuth: {
+                method.property
+            }
+            BasicAuth: {
+                EcorePackage.eINSTANCE.eClass
+                MonitoringPackage.eINSTANCE.eClass
+                val property = MonitoringFactory.eINSTANCE.
+                    createLocatedProperty
+                val type = MonitoringFactory.eINSTANCE.createDataType
+                type.type = Type.STRING
+                property.name = "Authorization"
+                property.location = PropertyLocation.HEADER
+                property.required = true
+                property.type = type
+                property
+            }
+            Oauth2Auth: {
+                // TODO Add support for oauth2 authentication
+                throw new UnsupportedOperationException("Not implemented yet")
+            }
+        }
+    }
+
+    /**
+     * Returns the authentication requirements for the given monitor.
+     * @param monitor The monitor
+     * @return A list of requirements
+     */
+    def authRequirements(Monitor monitor) {
         val root = monitor.eContainer as Root
         val requirements = if(!monitor.path.authRequirements.empty)
                 monitor.path.authRequirements
             else
                 root.authRequirements
-        for (requirement : requirements) {
-            val method = requirement.method
-            switch (method) {
-                ApiKeyAuth: {
-                    parameters += method.property
-                }
-                BasicAuth: {
-                    EcorePackage.eINSTANCE.eClass
-                    MonitoringPackage.eINSTANCE.eClass
-                    val property = MonitoringFactory.eINSTANCE.
-                        createLocatedProperty
-                    val type = MonitoringFactory.eINSTANCE.createDataType
-                    type.type = Type.STRING
-                    property.name = "Authorization"
-                    property.location = PropertyLocation.HEADER
-                    property.required = true
-                    property.type = type
-                    parameters += property
-                }
-                Oauth2Auth: {
-                    // TODO Add support for oauth2 authentication
-                    throw new UnsupportedOperationException("Not implemented yet")
-                }
-            }
-        }
-        return parameters
+        return requirements
     }
 
     /**
@@ -182,7 +207,19 @@ final class MonitoringTemplate {
      * @return The corresponding configuration object
      */
     def populateCustomProperties(PropertiesConfiguration config, Root root) {
+        config.layout.globalSeparator = "="
         config.layout.headerComment = '''# File generated by Historian («new Date()»)'''
+        val requirements = root.authRequirements
+        for (req : requirements) {
+            config.setProperty('''auth.«req.method.id».username''', "${env:API_AUTH_USERNAME}")
+            config.setProperty('''auth.«req.method.id».password''', "${env:API_AUTH_PASSWORD}")
+            config.layout.setBlancLinesBefore('''auth.«req.method.id».username''', 1)
+            if (req.method instanceof ApiKeyAuth) {
+                config.setProperty('''auth.«req.method.id».periodicity''', "* * * * *")
+                config.setProperty('''auth.«req.method.id».url''', "")
+                config.setProperty('''auth.«req.method.id».selector''', "")
+            }
+        }
         return config
     }
 

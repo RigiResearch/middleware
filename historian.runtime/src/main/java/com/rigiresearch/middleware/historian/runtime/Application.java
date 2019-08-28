@@ -73,7 +73,8 @@ public final class Application {
     public static void main(final String... args) {
         try {
             new Application().start();
-        } catch (final ConfigurationException | JAXBException exception) {
+        } catch (final ConfigurationException | JAXBException | IOException
+            | UnexpectedResponseCodeException exception) {
             Application.LOGGER.error(exception.getMessage(), exception);
         }
     }
@@ -111,26 +112,58 @@ public final class Application {
     /**
      * Start the monitors.
      * @throws JAXBException If anything fails reading the configuration graph
+     * @throws IOException If the authentication URL is malformed
+     * @throws UnexpectedResponseCodeException If there is an authentication problem
      */
-    private void start() throws JAXBException {
-        final Graph<Monitor> graph = new GraphParser()
-            .withBindings("bindings.xml")
-            .instance(
-                new File(
-                    Thread.currentThread()
-                        .getContextClassLoader()
-                        .getResource("configuration.xml")
-                        .getFile()
-                )
-            );
+    private void start() throws JAXBException, IOException,
+        UnexpectedResponseCodeException {
         final ForkAndCollectAlgorithm algorithm =
-            new ForkAndCollectAlgorithm(graph, this.config);
+            new ForkAndCollectAlgorithm(
+                new GraphParser()
+                    .withBindings("bindings.xml")
+                    .instance(
+                        new File(
+                            Thread.currentThread()
+                                .getContextClassLoader()
+                                .getResource("configuration.xml")
+                                .getFile()
+                        )
+                    ),
+                this.config
+            );
+        this.setupAuthProviders(algorithm.getGraph());
         this.scheduler.schedule(
             this.config.getString("periodicity"), () -> this.collect(algorithm)
         );
         this.scheduler.start();
         Runtime.getRuntime()
             .addShutdownHook(new Thread(this.scheduler::stop));
+    }
+
+    /**
+     * Creates the authentication providers.
+     * @param graph The configuration graph
+     * @throws IOException See {@link ApiKeyProvider#setup()}
+     * @throws UnexpectedResponseCodeException See {@link ApiKeyProvider#setup()}
+     */
+    private void setupAuthProviders(final Graph<Monitor> graph)
+        throws IOException, UnexpectedResponseCodeException {
+        final String[] methods = this.config.getStringArray("auth");
+        for (final String method : methods) {
+            final String type =
+                this.config.getString(String.format("auth.%s.type", method));
+            if ("key".equals(type)) {
+                new ApiKeyProvider(method, this.config, graph, this.scheduler)
+                    .setup();
+            } else {
+                throw new UnsupportedOperationException(
+                    String.format(
+                        "Authentication method \"%s\" is not supported yet",
+                        type
+                    )
+                );
+            }
+        }
     }
 
     /**

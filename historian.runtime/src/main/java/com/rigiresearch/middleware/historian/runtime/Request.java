@@ -11,10 +11,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
@@ -26,6 +34,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 @RequiredArgsConstructor
 public final class Request {
 
@@ -56,8 +65,27 @@ public final class Request {
     private final URL url;
 
     /**
+     * A credentials provider (optional).
+     */
+    private CredentialsProvider provider;
+
+    /**
+     * Sets a username and password to use basic authentication.
+     * @param username The username
+     * @param password The password
+     * @return This request
+     */
+    public Request withCredentials(final String username, final String password) {
+        this.provider = new BasicCredentialsProvider();
+        this.provider.setCredentials(
+            new AuthScope(this.url.getHost(), this.url.getPort()),
+            new UsernamePasswordCredentials(username, password)
+        );
+        return this;
+    }
+
+    /**
      * Collects data from the associated resource.
-     * TODO Support basic authentication for the login monitor.
      * @return The HTTP response
      * @throws IOException If there is an issue executing the HTTP request
      */
@@ -65,10 +93,21 @@ public final class Request {
         final URI uri = this.uri(this.url);
         final CloseableHttpClient client = HttpClients.createDefault();
         final CloseableHttpResponse response;
-        final HttpUriRequest request = new HttpGet(uri);
-        this.parameters(Input.Location.HEADER)
-            .forEach(p -> request.addHeader(p.getName(), p.getValue()));
-        response = client.execute(request);
+        if (this.provider == null) {
+            final HttpUriRequest request = new HttpGet(uri);
+            this.parameters(Input.Location.HEADER)
+                .forEach(p -> request.addHeader(p.getName(), p.getValue()));
+            response = client.execute(request);
+        } else {
+            final HttpRequest request = new HttpPost(uri);
+            this.parameters(Input.Location.HEADER)
+                .forEach(p -> request.addHeader(p.getName(), p.getValue()));
+            final HttpClientContext context = HttpClientContext.create();
+            context.setCredentialsProvider(this.provider);
+            final HttpHost host =
+                new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
+            response = client.execute(host, request, context);
+        }
         return response;
     }
 

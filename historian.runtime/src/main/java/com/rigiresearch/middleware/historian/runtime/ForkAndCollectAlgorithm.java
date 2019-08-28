@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ public final class ForkAndCollectAlgorithm {
     /**
      * A graph instance configured with input/output dependencies.
      */
+    @Getter
     private final Graph<Monitor> graph;
 
     /**

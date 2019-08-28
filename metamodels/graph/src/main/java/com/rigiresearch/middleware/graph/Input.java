@@ -128,6 +128,15 @@ public class Input extends Parameter {
     }
 
     /**
+     * Updates this input's concrete value.
+     * @param value The new value
+     */
+    @SuppressWarnings("checkstyle:HiddenField")
+    public void setValue(final String value) {
+        this.value = value;
+    }
+
+    /**
      * A node.
      * @return The containing node of the referenced output
      */
