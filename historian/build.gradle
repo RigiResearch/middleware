@@ -23,6 +23,7 @@ dependencies {
   implementation project(":metamodels:monitoring")
   implementation name: "edu.uoc.som.openapi-1.0.2.201804111106"
   implementation name: "edu.uoc.som.openapi.io-1.0.3.201804111106"
+  implementation "com.beust:jcommander:1.71"
   implementation "com.google.code.gson:gson:2.8.5"
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
