@@ -4,10 +4,11 @@ import com.rigiresearch.middleware.graph.Graph
 import com.rigiresearch.middleware.graph.Input
 import com.rigiresearch.middleware.graph.Node
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.io.IOException
 import java.nio.file.StandardOpenOption
+import java.util.UUID
 
 /**
  * Generates a DOT specification based on a graph instance.
@@ -22,14 +23,27 @@ final class GraphTemplate {
     /**
      * Creates a file containing a DOT specification based on the given
      * monitoring graph.
-     * @param graph
-     * @param target
+     * @param graph The graph
+     * @param target The target directory
      * @return The Path object
      */
-    def generateFile(Graph<Node> graph, File target) {
+    def generateDotFile(Graph<Node> graph, File target) {
         val file = new File(target, "configuration.dot")
         target.mkdirs
         file.write(graph.asDotSpecification)
+    }
+
+    /**
+     * Creates a file containing a CXL specification based on the given
+     * monitoring graph.
+     * @param graph The graph
+     * @param target The target directory
+     * @return The Path object
+     */
+    def generateCxlFile(Graph<Node> graph, File target) {
+        val file = new File(target, "configuration.cxl")
+        target.mkdirs
+        file.write(graph.asCxlSpecification)
     }
 
     /**
@@ -66,6 +80,45 @@ final class GraphTemplate {
                 «ENDFOR»
             «ENDFOR»
         }
+    '''
+
+    /**
+     * Creates a CXL specification (Cmap) based on the given monitoring graph.
+     * @param graph The graph
+     * @return  The CXL specification
+     */
+    def asCxlSpecification(Graph<Node> graph) '''
+        <?xml version="1.0" encoding="UTF-8"?>
+        <cmap xmlns="http://cmap.ihmc.us/xml/cmap/">
+            <map>
+                <concept-list>
+                    «FOR node : graph.nodes»
+                        <concept id="«node.name»" label="«node.name»"/>
+                    «ENDFOR»
+                </concept-list>
+                <linking-phrase-list>
+                    «val labels = newArrayList»
+                    «FOR node : graph.nodes.filter[!it.dependencies.empty]»
+                        «FOR input : node.getParameters(true).filter(Input).filter[it.hasSource]»
+                            «val label = if (input.name.equals(input.value)) input.name else '''«input.name»/«input.value»'''»
+                            «IF !labels.contains(label)»
+                                «val dummy = labels.add(label)»
+                                <linking-phrase id="«label»" label="«label»"/>
+                            «ENDIF»
+                        «ENDFOR»
+                    «ENDFOR»
+                </linking-phrase-list>
+                <connection-list>
+                    «FOR node : graph.nodes.filter[!it.dependencies.empty]»
+                        «FOR input : node.getParameters(true).filter(Input).filter[it.hasSource]»
+                            «val label = if (input.name.equals(input.value)) input.name else '''«input.name»/«input.value»'''»
+                            <connection id="«UUID.randomUUID()»" from-id="«node.name»" to-id="«label»"/>
+                            <connection id="«UUID.randomUUID()»" from-id="«label»" to-id="«input.source.name»" arrowhead="yes"/>
+                        «ENDFOR»
+                    «ENDFOR»
+                </connection-list>
+            </map>
+        </cmap>
     '''
 
 }

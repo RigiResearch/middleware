@@ -114,6 +114,11 @@ final class CliArguments {
         DOT,
 
         /**
+         * A Cmap specification.
+         */
+        CXL,
+
+        /**
          * A gradle project.
          */
         PROJECT;

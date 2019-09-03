@@ -113,7 +113,20 @@ public final class Application {
         throws IOException, JAXBException {
         switch (generate.getType()) {
             case DOT:
-                this.generateDot(generate.getInput(), generate.getOutput());
+                new GraphTemplate().generateDotFile(
+                    new GraphParser()
+                        .withBindings(Application.BINDINGS)
+                        .instance(generate.getInput()),
+                    generate.getOutput()
+                );
+                break;
+            case CXL:
+                new GraphTemplate().generateCxlFile(
+                    new GraphParser()
+                        .withBindings(Application.BINDINGS)
+                        .instance(generate.getInput()),
+                    generate.getOutput()
+                );
                 break;
             case PROJECT:
                 this.generateProject(
@@ -181,7 +194,6 @@ public final class Application {
         final Graph<Node> graph = this.monitoringGraph(model);
         parser.write(graph, new File(parent, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);
-        new GraphTemplate().generateFile(graph, directory);
     }
 
     /**
@@ -208,23 +220,6 @@ public final class Application {
                     );
                 })
                 .collect(Collectors.toSet())
-        );
-    }
-
-    /**
-     * Generates a DOT specification based on the given graph.
-     * @param graph The configuration graph
-     * @param directory The output directory
-     * @throws JAXBException If there is an exception during the graph
-     *  marshalling
-     */
-    private void generateDot(final File graph, final File directory)
-        throws JAXBException {
-        new GraphTemplate().generateFile(
-            new GraphParser()
-                .withBindings(Application.BINDINGS)
-                .instance(graph),
-            directory
         );
     }
 
