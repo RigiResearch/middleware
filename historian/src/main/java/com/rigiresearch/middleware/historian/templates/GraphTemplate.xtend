@@ -53,39 +53,19 @@ final class GraphTemplate {
      * @param graph The graph
      * @return  The DOT specification
      */
-    def asDotSpecification(Graph<Node> graph) {
-        val templateBased = graph.nodes.filter[it.templateBased]
-        val withoutDependents = graph.nodes.filter[graph.dependents(it).empty]
-        val withDependencies = graph.nodes.reject [
-            templateBased.toList.indexOf(it) > -1 ||
-                withoutDependents.toList.indexOf(it) > -1
-        ].filter[!it.getParameters(true).filter(Input).filter[it.hasSource].empty]
-        '''
+    def asDotSpecification(Graph<Node> graph) '''
         digraph {
-            edge [fontname="Helvetica Neue", arrowhead="dot", style="dotted"];
-            node [shape = box, style="rounded, filled", fillcolor="aliceblue", fontname="Helvetica Neue", margin=0.2];
-            «FOR node : templateBased»
-                «node.name»;
+            edge [fontname="Arial"];
+            node [fontname="Arial", shape=none, fillcolor="grey94", style="rounded, filled", margin=0.1];
+            «FOR node : graph.nodes»
+                "«node.name»";
             «ENDFOR»
-
-            «IF !withDependencies.empty»
-                edge [arrowhead="normal", style="normal"]
-                node [fillcolor="white"];
-                «FOR node : withDependencies»
-                    «FOR input : node.getParameters(true).filter(Input)»
-                        «node.name» -> «input.source.name» [label=«input.value»];
-                    «ENDFOR»
+            «FOR node : graph.nodes.filter[!it.dependencies.empty]»
+                «FOR input : node.getParameters(true).filter(Input).filter[it.hasSource]»
+                    "«node.name»" -> "«input.source.name»" [label="«input.name»"];
                 «ENDFOR»
-
-            «ENDIF»
-            «IF !withoutDependents.empty»
-                node [fillcolor="gray94", style="rounded, filled"];
-                «FOR node : withoutDependents»
-                    «node.name»;
-                «ENDFOR»
-            «ENDIF»
+            «ENDFOR»
         }
-        '''
-    }
+    '''
 
 }
