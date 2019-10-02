@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xml-bindings xmlns="http://www.eclipse.org/eclipselink/xsds/persistence/oxm"
+  package-name="com.rigiresearch.middleware.graph">
+  <java-types>
+    <java-type name="Graph">
+      <xml-root-element name="monitors" />
+      <java-attributes>
+        <xml-element java-attribute="nodes" name="monitor" />
+      </java-attributes>
+    </java-type>
+    <java-type name="Node">
+      <java-attributes>
+        <xml-elements java-attribute="metadata">
+          <xml-element-wrapper name="mappings" />
+          <xml-element name="augmentation"
+            type="com.rigiresearch.middleware.historian.runtime.graph.Augmentation"/>
+          <xml-element name="transformation"
+            type="com.rigiresearch.middleware.historian.runtime.graph.Transformation"/>
+        </xml-elements>
+      </java-attributes>
+    </java-type>
+    <java-type name="Property">
+      <java-attributes>
+        <xml-attribute java-attribute="name" name="type"/>
+      </java-attributes>
+    </java-type>
+  </java-types>
+</xml-bindings>

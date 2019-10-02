@@ -1,36 +1,45 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<xs:schema elementFormDefault="qualified" version="1.0" targetNamespace="http://www.rigiresearch.com/middleware/graph/1.0.0" xmlns:tns="http://www.rigiresearch.com/middleware/graph/1.0.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-
-  <xs:element name="monitors" type="tns:graph"/>
-
-  <xs:complexType name="graph" final="extension restriction">
-    <xs:sequence>
-      <xs:element name="monitor" type="tns:node" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-
-  <xs:complexType name="node" final="extension restriction">
-    <xs:sequence>
-      <xs:choice minOccurs="0" maxOccurs="unbounded">
-        <xs:element name="input" type="tns:input"/>
-        <xs:element name="output" type="tns:output"/>
-      </xs:choice>
-    </xs:sequence>
-    <xs:attribute name="name" type="xs:ID" use="required"/>
-    <xs:attribute name="template" type="xs:IDREF"/>
-  </xs:complexType>
-
-  <xs:complexType name="input" final="extension restriction">
-    <xs:sequence/>
-    <xs:attribute name="name" type="xs:ID" use="required"/>
-    <xs:attribute name="value" type="xs:string" use="required"/>
-    <xs:attribute name="source" type="xs:IDREF"/>
-  </xs:complexType>
-
-  <xs:complexType name="output" final="extension restriction">
-    <xs:sequence/>
-    <xs:attribute name="name" type="xs:ID" use="required"/>
-    <xs:attribute name="selector" type="xs:string" use="required"/>
-  </xs:complexType>
-</xs:schema>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:ns0="http://www.rigiresearch.com/middleware/graph/1.0.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.rigiresearch.com/middleware/graph/1.0.0" elementFormDefault="qualified">
+   <xsd:complexType name="graph">
+      <xsd:sequence>
+         <xsd:element name="node" type="ns0:node" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+   </xsd:complexType>
+   <xsd:complexType name="node">
+      <xsd:sequence>
+         <xsd:choice maxOccurs="unbounded">
+            <xsd:element name="input" type="ns0:input" minOccurs="0"/>
+            <xsd:element name="output" type="ns0:output" minOccurs="0"/>
+         </xsd:choice>
+         <xsd:element name="metadata" minOccurs="0">
+            <xsd:complexType>
+               <xsd:sequence>
+                  <xsd:element name="property" type="ns0:property" minOccurs="0" maxOccurs="unbounded"/>
+               </xsd:sequence>
+            </xsd:complexType>
+         </xsd:element>
+      </xsd:sequence>
+      <xsd:attribute name="name" type="xsd:ID" use="required"/>
+      <xsd:attribute name="template" type="xsd:IDREF"/>
+   </xsd:complexType>
+   <xsd:complexType name="input">
+      <xsd:sequence/>
+      <xsd:attribute name="name" type="xsd:ID" use="required"/>
+      <xsd:attribute name="source" type="xsd:IDREF"/>
+   </xsd:complexType>
+   <xsd:complexType name="output">
+      <xsd:sequence/>
+      <xsd:attribute name="name" type="xsd:ID" use="required"/>
+      <xsd:attribute name="selector" type="xsd:string" use="required"/>
+      <xsd:attribute name="multivalued" type="xsd:boolean"/>
+   </xsd:complexType>
+   <xsd:complexType name="property">
+      <xsd:sequence/>
+      <xsd:attribute name="name" type="xsd:ID"/>
+      <xsd:attribute name="value" type="xsd:string"/>
+   </xsd:complexType>
+   <xsd:element name="graph" type="ns0:graph"/>
+   <xsd:simpleType name="adaptedValue">
+      <xsd:restriction base="xsd:string"/>
+   </xsd:simpleType>
+</xsd:schema>

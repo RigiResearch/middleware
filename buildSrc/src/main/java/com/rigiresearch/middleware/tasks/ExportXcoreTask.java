@@ -34,25 +34,25 @@ public class ExportXcoreTask extends DefaultTask {
     /**
      * The file path for the input .xcore file.
      */
-    File xcoreInputFile;
+    public File xcoreInputFile;
 
     /**
      * The file path for the .ecore file.
      */
-    File ecoreOutputFile;
+    public File ecoreOutputFile;
 
     /**
      * The file path for the .genmodel file.
      */
-    File genmodelOutputFile;
+    public File genmodelOutputFile;
 
     /**
      * Default constructor.
      */
     public ExportXcoreTask() {
         super();
-        setGroup("Modeling");
-        setDescription(
+        this.setGroup("Modeling");
+        this.setDescription(
             "Exports the .ecore and .genmodel files for an Xcore model");
     }
 

@@ -1,0 +1,32 @@
+{
+  "listVcenterResourcePool": {
+    "value": [
+      {
+        "name": "Resources",
+        "resource_pool": "resgroup-1"
+      },
+      {
+        "name": "ethantao",
+        "resource_pool": "resgroup-2"
+      }
+    ]
+  },
+  "listVcenterVm": {
+    "value": [
+      {
+        "cpu_count": 2,
+        "memory_size_MiB": 2048,
+        "name": "test-vm-1",
+        "power_state": "POWERED_ON",
+        "vm": "vm-1"
+      },
+      {
+        "cpu_count": 4,
+        "memory_size_MiB": 8192,
+        "name": "test-vm-2",
+        "power_state": "POWERED_ON",
+        "vm": "vm-2"
+      }
+    ]
+  }
+}

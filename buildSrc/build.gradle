@@ -1,4 +1,4 @@
-apply from: '../gradle/loadProperties.gradle'
+apply from: "../gradle/loadProperties.gradle"
 
 repositories {
   jcenter()

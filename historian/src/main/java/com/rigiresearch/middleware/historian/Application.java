@@ -1,7 +1,11 @@
 package com.rigiresearch.middleware.historian;
 
+import com.beust.jcommander.ParameterException;
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.GraphParser;
+import com.rigiresearch.middleware.graph.Input;
+import com.rigiresearch.middleware.graph.Node;
+import com.rigiresearch.middleware.graph.Parameter;
 import com.rigiresearch.middleware.historian.templates.GraphTemplate;
 import com.rigiresearch.middleware.historian.templates.MonitoringTemplate;
 import com.rigiresearch.middleware.metamodels.AtlTransformation;
@@ -13,10 +17,10 @@ import edu.uoc.som.openapi.io.OpenAPIImporter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXBException;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.slf4j.Logger;
@@ -24,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The main class.
- * TODO use jcommander to handle the parameters.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
@@ -41,15 +44,14 @@ public final class Application {
         LoggerFactory.getLogger(Application.class);
 
     /**
-     * The path to an OpenAPI spec.
+     * The bindings resource name.
      */
-    private final String spec;
+    private static final String BINDINGS = "bindings.xml";
 
     /**
-     * The path to a directory where the monitoring code will be generated.
+     * The arguments configuration.
      */
-    @Getter
-    private final String target;
+    private final CliArguments arguments;
 
     /**
      * The main entry point.
@@ -57,29 +59,100 @@ public final class Application {
      */
     @SuppressWarnings("PMD.DoNotCallSystemExit")
     public static void main(final String... args) {
-        if (args.length != 2) {
-            throw new IllegalArgumentException(
-                "Expected a JSON OpenAPI specification and target directory as input"
-            );
-        }
+        final CliArguments config = new CliArguments();
         try {
-            final Application application = new Application(args[0], args[1]);
-            application.generateFiles(application.model());
+            config.parse(args);
+            if (config.getParsedCommand().isPresent()) {
+                final Application application = new Application(config);
+                application.run(config.getParsedCommand().get());
+            } else {
+                config.usage();
+            }
+        } catch (final ParameterException exception) {
+            Application.LOGGER.error(exception.getMessage());
+            System.exit(1);
         } catch (final IOException | JAXBException exception) {
             Application.LOGGER.error(exception.getMessage(), exception);
+            System.exit(1);
+        }
+    }
+
+    /**
+     * Run this application.
+     * @param command The action to perform
+     * @throws JAXBException If there is an error parsing the graph
+     * @throws IOException If there is an error with the jar file or saving the
+     *  resource
+     */
+    @SuppressWarnings("PMD.TooFewBranchesForASwitchStatement")
+    private void run(final CliArguments.Command command)
+        throws IOException, JAXBException {
+        switch (command) {
+            case GENERATE:
+                if (this.arguments.getGenerate().isHelp()) {
+                    this.arguments.usage(command);
+                } else {
+                    this.generate(this.arguments.getGenerate());
+                }
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    String.format("Unsupported action \"%s\"", command)
+                );
+        }
+    }
+
+    /**
+     * Run this application.
+     * @param generate The generate command
+     * @throws JAXBException If there is an error parsing the graph
+     * @throws IOException If there is an error with the jar file or saving the
+     *  resource
+     */
+    private void generate(final CliArguments.GenerateCommand generate)
+        throws IOException, JAXBException {
+        switch (generate.getType()) {
+            case DOT:
+                new GraphTemplate().generateDotFile(
+                    new GraphParser()
+                        .withBindings(Application.BINDINGS)
+                        .instance(generate.getInput()),
+                    generate.getOutput()
+                );
+                break;
+            case CXL:
+                new GraphTemplate().generateCxlFile(
+                    new GraphParser()
+                        .withBindings(Application.BINDINGS)
+                        .instance(generate.getInput()),
+                    generate.getOutput()
+                );
+                break;
+            case PROJECT:
+                this.generateProject(
+                    this.model(generate.getInput()),
+                    generate.getOutput()
+                );
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    String.format("Unsupported option \"%s\"", generate.getType())
+                );
         }
     }
 
     /**
      * Transforms the OpenAPI specification into a monitoring model.
+     * @param specification An OpenAPI specification
      * @return The model instance
      * @throws UnsupportedEncodingException If the encoding is not supported
      * @throws IOException If there is an error with the jar file or saving the
      *  resource
      */
-    private Root model() throws UnsupportedEncodingException, IOException {
+    private Root model(final File specification)
+        throws UnsupportedEncodingException, IOException {
         final edu.uoc.som.openapi.Root root = new OpenAPIImporter()
-            .createOpenAPIModelFromJson(new File(this.spec));
+            .createOpenAPIModelFromJson(specification);
         final String output = "OUT";
         return (Root) new AtlTransformation.Builder()
             .withMetamodel(MonitoringPackage.eINSTANCE)
@@ -99,19 +172,28 @@ public final class Application {
      * Generates a gradle project containing the monitoring code for a
      * particular API specification.
      * @param model The monitoring model
+     * @param directory The output directory
      * @throws JAXBException If there is an exception during the graph
      *  marshalling
      * @throws IOException If there is an error with the jar file or saving the
      *  resource
      */
-    private void generateFiles(final Root model)
+    private void generateProject(final Root model, final File directory)
         throws JAXBException, IOException {
-        final File directory = new File(this.target);
-        final GraphParser parser = new GraphParser();
-        final Graph graph = this.monitoringGraph(model);
-        parser.write(graph, new File(directory, "configuration.xml"));
+        final File parent = new File(directory, "src/main/resources/");
+        if (!parent.mkdirs() && !parent.exists()) {
+            throw new IOException(
+                String.format(
+                    "Could not create directory %s",
+                    parent.getAbsolutePath()
+                )
+            );
+        }
+        final GraphParser parser = new GraphParser()
+            .withBindings(Application.BINDINGS);
+        final Graph<Node> graph = this.monitoringGraph(model);
+        parser.write(graph, new File(parent, "configuration.xml"));
         new MonitoringTemplate().generateFiles(model, directory);
-        new GraphTemplate().generateFile(graph, directory);
     }
 
     /**
@@ -119,21 +201,22 @@ public final class Application {
      * @param model The monitoring model
      * @return The graph instance
      */
-    private Graph monitoringGraph(final Root model) {
-        return new Graph(
+    private Graph<Node> monitoringGraph(final Root model) {
+        return new Graph<Node>(
             model.getMonitors()
                 .stream()
                 .map(monitor -> {
-                    final Set<Graph.Parameter> parameters = monitor.getPath()
+                    final Set<Parameter> parameters = monitor.getPath()
                         .getParameters()
                         .stream()
                         // TODO add option to generate all inputs
                         .filter(LocatedProperty::isRequired)
-                        .map(property -> new Graph.Input(property.getName(), ""))
+                        .map(property -> new Input(property.getName(), ""))
                         .collect(Collectors.toSet());
-                    return new Graph.Node(
+                    return new Node(
                         monitor.getPath().getId(),
-                        parameters
+                        parameters,
+                        Collections.emptySet()
                     );
                 })
                 .collect(Collectors.toSet())
