@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.runtime.integration;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;

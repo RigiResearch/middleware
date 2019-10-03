@@ -1,7 +1,8 @@
-package com.rigiresearch.middleware.historian.runtime;
+package com.rigiresearch.middleware.historian.runtime.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rigiresearch.middleware.graph.GraphParser;
+import com.rigiresearch.middleware.historian.runtime.ForkAndCollectAlgorithm;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;

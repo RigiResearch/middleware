@@ -66,6 +66,9 @@ subprojects { project ->
 
   test {
     useJUnitPlatform()
+    if (System.properties["skip.integration"] == "true") {
+      exclude "**/*integration*"
+    }
   }
 
   jacocoTestReport {
