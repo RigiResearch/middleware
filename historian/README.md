@@ -18,7 +18,7 @@ cd historian-VERSION/bin && ./historian --help
 
 The target directory is where the Java project will be generated.
 
-Historian can also generate `dot` and `cxl` ((https://cmap.ihmc.us/)[cmaptools]) specifications to visualize a dependency graph:
+Historian can also generate `dot` and `cxl` ([cmaptools](https://cmap.ihmc.us/)) specifications to visualize a dependency graph:
 
 ```bash
 ./historian --input /path/to/dependency-graph.xml --output /path/to/target/directory --type dot
@@ -34,4 +34,4 @@ Historian can also generate `dot` and `cxl` ((https://cmap.ihmc.us/)[cmaptools])
 
 TBD
 
-In the meantime, A sample graph can be found (../historian.runtime/src/test/resources/simple/graph.xml)[here].
+In the meantime, A sample graph can be found [here](../historian.runtime/src/test/resources/simple/graph.xml).
