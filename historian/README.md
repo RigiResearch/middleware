@@ -13,7 +13,7 @@ cd historian-VERSION/bin && ./historian --help
 ### Generating a monitoring project
 
 ```bash
-./historian --input /path/to/openapi-spec.json --output /path/to/target/directory --type project
+./historian generate --input /path/to/openapi-spec.json --output /path/to/target/directory --type project
 ```
 
 The target directory is where the Java project will be generated.
@@ -21,7 +21,7 @@ The target directory is where the Java project will be generated.
 Historian can also generate `dot` and `cxl` ([cmaptools](https://cmap.ihmc.us/)) specifications to visualize a dependency graph:
 
 ```bash
-./historian --input /path/to/dependency-graph.xml --output /path/to/target/directory --type dot
+./historian generate --input /path/to/dependency-graph.xml --output /path/to/target/directory --type dot
 ```
 
 ### Runing the generated project
