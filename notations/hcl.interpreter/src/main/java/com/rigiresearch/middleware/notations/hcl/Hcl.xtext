@@ -1,10 +1,133 @@
 grammar com.rigiresearch.middleware.notations.hcl.Hcl
     with org.eclipse.xtext.common.Terminals
 
-import "http://www.rigiresearch.com/middleware/hcl/1.0.0"
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+import "http://www.rigiresearch.com/middleware/hcl/1.0.0" as hcl
 
-Model:
-    greetings+=Greeting*;
+Specification returns hcl::Specification
+	:	resources += Resource*
+	;
 
-Greeting:
-    'Hello' name=ID '!';
+Resource returns hcl::Resource
+	:	specifier = ValidID (type = TextLiteral)?
+		name = TextLiteral
+		value = DictionaryLiteral
+	;
+
+Value returns hcl::Value
+	:	StringLiteral
+	|	TextExpression
+	|	NumberLiteral
+	|	BooleanLiteral
+	|	ListLiteral
+	|	DictionaryLiteral
+	;
+
+NumberLiteral returns hcl::Number
+	:	{hcl::Number} (value = Number)
+	;
+
+BooleanLiteral returns hcl::Bool
+	:	{hcl::Bool} (value ?= 'true' | 'false')
+	;
+
+ListLiteral returns hcl::List
+	:	{hcl::List} '[' (elements += Value (',' elements += Value)*)? ','? ']'
+	;
+
+DictionaryLiteral returns hcl::Dictionary
+	:	{hcl::Dictionary} '{' elements += NameValuePair* '}'
+	;
+
+NamedDictionary returns hcl::Dictionary
+	:	{hcl::Dictionary} (name = TextLiteral)? '{' elements += NameValuePair* '}'
+	;
+
+NameValuePair returns hcl::NameValuePair
+	:	name = ValidID '=' value = Value
+	|	name = ValidID value = NamedDictionary
+	;
+
+StringLiteral returns hcl::Text
+	:	value = TextLiteral
+	|	value = MultilineTextLiteral
+	;
+
+TextExpression returns hcl::TextExpression
+	:	before=TEXT_EXP_START reference = Reference after=TEXT_EXP_END
+	;
+
+Reference returns hcl::Reference
+	:	ResourceReference
+	|	FunctionCall
+	;
+
+ResourceReference returns hcl::ResourceReference
+	:	fullyQualifiedName += ValidID ('.' fullyQualifiedName += ValidID)+
+	;
+
+// TODO Add support for recursive text expressions
+FunctionCall returns hcl::FunctionCall
+	:	function = ValidID '(' (arguments += Argument (',' arguments += Argument)*)? ')'
+	;
+
+Argument returns hcl::Value
+	:	StringLiteral
+	|	NumberLiteral
+	|	BooleanLiteral
+	|	ResourceReference
+	;
+
+ValidID
+	:	ID
+	;
+
+TextLiteral
+	:	STRING
+	;
+
+MultilineTextLiteral
+	:	MULTILINE_STRING
+	;
+
+Number returns ecore::EString hidden()
+	:	HEX | (INT | DECIMAL) ('.' (INT | DECIMAL))?
+	;
+
+
+@Override
+terminal ID returns ecore::EString
+	:	('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'0'..'9'|'-')*
+	;
+
+@Override
+terminal INT returns ecore::EInt
+	:	('0'..'9')+
+	;
+
+terminal HEX
+	:	'0' ('x'|'X') ('0'..'9'|'a'..'f'|'A'..'F'|'_')+ ('#' (('b'|'B')('i'|'I') | ('l'|'L')))?
+	;
+
+terminal DECIMAL
+	:	INT
+		(('e'|'E') ('+'|'-')? INT)?
+		(('b'|'B')('i'|'I'|'d'|'D') | ('l'|'L'|'d'|'D'|'f'|'F'))?
+	;
+
+terminal TEXT_EXP_START: '"' '$' '{';
+terminal TEXT_EXP_END: '}' '"';
+
+@Override
+terminal STRING returns ecore::EString
+	:	'"' ( '\\' . /* 'b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\' */ | !('\\'|'"'|'$') )* '"'
+	;
+
+terminal MULTILINE_STRING
+	:	'<''<' ID '\n' (.) '\n' ID
+	;
+
+@Override
+terminal SL_COMMENT
+	:	('//' | '#') !('\n'|'\r')* ('\r'? '\n')?
+	;

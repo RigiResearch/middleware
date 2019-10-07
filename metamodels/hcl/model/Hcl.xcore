@@ -6,10 +6,62 @@
 )
 package com.rigiresearch.middleware.metamodels.hcl
 
-class Model {
-    contains Greeting[] greetings
+class Specification {
+	contains Resource[] resources
 }
 
-class Greeting {
-    String name
+class Resource {
+	String specifier
+	String ^type
+	id String name
+	contains Value value
+}
+
+// Type hierarchy
+
+class Value {}
+
+class NameValuePair {
+	String name
+	contains Value value
+}
+
+class Dictionary extends Value {
+	String name
+	// elements may contain duplicate names
+	contains NameValuePair[] elements
+}
+
+class List extends Value {
+	contains Value[] elements
+}
+
+class Number extends Value {
+	String value
+}
+
+class Text extends Value {
+	String value
+}
+
+class Bool extends Value {
+	boolean value
+}
+
+class TextExpression extends Value {
+	// The text before and after the expression
+	String before
+	String after
+	contains Reference reference
+}
+
+class Reference extends Value {}
+
+class FunctionCall extends Reference {
+	String function
+	contains Value[] arguments
+}
+
+class ResourceReference extends Reference {
+	String[] fullyQualifiedName
 }

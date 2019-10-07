@@ -1,7 +1,7 @@
 package com.rigiresearch.middleware.notations.hcl.tests;
 
 import com.google.inject.Inject;
-import com.rigiresearch.middleware.metamodels.hcl.Model;
+import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -26,13 +26,16 @@ class HclParsingTest {
      * A helper for parsing HCL text.
      */
     @Inject
-    private ParseHelper<Model> helper;
+    private ParseHelper<Specification> helper;
 
     @Test
     void loadModel() throws Exception {
-        final Model model = this.helper.parse("Hello Xtext!");
-        Assertions.assertNotNull(model);
-        final EList<Resource.Diagnostic> errors = model.eResource().getErrors();
+        final String source = "provider \"myprovider\" {\n"
+            + "  version = \"~> 0.2\"\n"
+            + "}";
+        final Specification specification = this.helper.parse(source);
+        Assertions.assertNotNull(specification);
+        final EList<Resource.Diagnostic> errors = specification.eResource().getErrors();
         Assertions.assertTrue(
             errors.isEmpty(),
             String.format(
