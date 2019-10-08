@@ -9,11 +9,48 @@
   <modelPluginVariables>org.eclipse.emf.ecore.xcore.lib</modelPluginVariables>
   <genPackages prefix="Hcl" basePackage="com.rigiresearch.middleware.metamodels" disposableProviderFactory="true"
       ecorePackage="Hcl.ecore#/">
-    <genClasses ecoreClass="Hcl.ecore#//Model">
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Model/greetings"/>
+    <genClasses ecoreClass="Hcl.ecore#//Specification">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Specification/resources"/>
     </genClasses>
-    <genClasses ecoreClass="Hcl.ecore#//Greeting">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Greeting/name"/>
+    <genClasses ecoreClass="Hcl.ecore#//Resource">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/specifier"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/type"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Resource/value"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Value"/>
+    <genClasses ecoreClass="Hcl.ecore#//NameValuePair">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//NameValuePair/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//NameValuePair/value"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Dictionary">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Dictionary/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Dictionary/elements"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//List">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//List/elements"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Number">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Number/value"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Text">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Text/value"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Bool">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Bool/value"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//TextExpression">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//TextExpression/before"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//TextExpression/after"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//TextExpression/reference"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Reference"/>
+    <genClasses ecoreClass="Hcl.ecore#//FunctionCall">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//FunctionCall/function"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//FunctionCall/arguments"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//ResourceReference">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//ResourceReference/fullyQualifiedName"/>
     </genClasses>
   </genPackages>
 </genmodel:GenModel>
