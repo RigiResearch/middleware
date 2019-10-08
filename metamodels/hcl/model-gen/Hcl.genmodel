@@ -19,9 +19,9 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Resource/value"/>
     </genClasses>
     <genClasses ecoreClass="Hcl.ecore#//Value"/>
-    <genClasses ecoreClass="Hcl.ecore#//KeyValuePair">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//KeyValuePair/key"/>
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//KeyValuePair/value"/>
+    <genClasses ecoreClass="Hcl.ecore#//NameValuePair">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//NameValuePair/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//NameValuePair/value"/>
     </genClasses>
     <genClasses ecoreClass="Hcl.ecore#//Dictionary">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Dictionary/name"/>
