@@ -1,0 +1,18 @@
+plugins {
+    id "java"
+}
+
+repositories {
+    maven {
+        url "https://repo.eclipse.org/content/repositories/atl-releases/"
+        content {
+            includeGroup "org.eclipse.m2m.atl"
+        }
+    }
+}
+
+dependencies {
+    implementation project(":historian.runtime")
+    implementation project(":metamodels")
+    implementation project(":metamodels:hcl")
+}
