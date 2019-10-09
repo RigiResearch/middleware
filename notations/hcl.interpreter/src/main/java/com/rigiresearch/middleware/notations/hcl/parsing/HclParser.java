@@ -105,7 +105,7 @@ public final class HclParser {
      */
     private Resource temporalResource() {
         final URI uri = URI.createURI(
-            String.format("temp-%d.tf", Math.abs(Math.random()))
+            String.format("temp-%f.tf", Math.abs(Math.random()))
         );
         final Optional<Resource> optional = HclParser.RESOURCE_SET.getResources()
             .stream()

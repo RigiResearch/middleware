@@ -2,8 +2,11 @@ package com.rigiresearch.middleware.vmware.hcl.agent;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.rigiresearch.middleware.historian.runtime.HistorianMonitor;
+import com.rigiresearch.middleware.historian.runtime.UnexpectedResponseCodeException;
 import com.rigiresearch.middleware.metamodels.EcorePrinter;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
+import java.io.IOException;
+import javax.xml.bind.JAXBException;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +48,13 @@ public final class RuntimeAgent {
 
     /**
      * Starts monitoring and handling run-time changes.
-     * @throws Exception If something bad happens starting the Historian monitor
+     * @throws JAXBException If there is a marshalling error
+     * @throws IOException If something bad happens in the monitor
+     * @throws UnexpectedResponseCodeException If there is an unexpected
+     *  response while collecting the data
      */
-    public void start() throws Exception {
+    public void start()
+        throws JAXBException, IOException, UnexpectedResponseCodeException {
         this.monitor.subscribe(this::handle);
         this.monitor.start();
     }

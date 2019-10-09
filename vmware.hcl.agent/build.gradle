@@ -15,4 +15,5 @@ dependencies {
     implementation project(":historian.runtime")
     implementation project(":metamodels")
     implementation project(":metamodels:hcl")
+    implementation project(":notations:hcl.interpreter")
 }

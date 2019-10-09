@@ -79,7 +79,7 @@ Argument returns hcl::Value
 	;
 
 ValidID
-	:	ID
+	:	NAME
 	;
 
 TextLiteral
@@ -95,8 +95,7 @@ Number returns ecore::EString hidden()
 	;
 
 
-@Override
-terminal ID returns ecore::EString
+terminal NAME returns ecore::EString
 	:	('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'0'..'9'|'-')*
 	;
 
@@ -115,8 +114,8 @@ terminal DECIMAL
 		(('b'|'B')('i'|'I'|'d'|'D') | ('l'|'L'|'d'|'D'|'f'|'F'))?
 	;
 
-terminal TEXT_EXP_START: '"' '$' '{';
-terminal TEXT_EXP_END: '}' '"';
+terminal TEXT_EXP_START: '"' ('0'..'9'|'a'..'z'|'A'..'Z'|'_'|'-'|'.')* '$' '{';
+terminal TEXT_EXP_END: '}' ('0'..'9'|'a'..'z'|'A'..'Z'|'_'|'-'|'.')* '"';
 
 @Override
 terminal STRING returns ecore::EString
@@ -124,7 +123,7 @@ terminal STRING returns ecore::EString
 	;
 
 terminal MULTILINE_STRING
-	:	'<''<' ID '\n' (.) '\n' ID
+	:	'<''<' NAME '\n' (.) '\n' NAME
 	;
 
 @Override

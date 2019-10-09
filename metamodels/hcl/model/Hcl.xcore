@@ -13,7 +13,7 @@ class Specification {
 class Resource {
 	String specifier
 	String ^type
-	id String name
+	String name
 	contains Value value
 }
 
