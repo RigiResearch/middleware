@@ -3,10 +3,17 @@ plugins {
 }
 
 repositories {
+    // Repositories for transitive dependencies
     maven {
         url "https://repo.eclipse.org/content/repositories/atl-releases/"
         content {
             includeGroup "org.eclipse.m2m.atl"
+        }
+    }
+    maven {
+        url "https://jitpack.io"
+        content {
+            includeGroup "com.github.vmware"
         }
     }
 }

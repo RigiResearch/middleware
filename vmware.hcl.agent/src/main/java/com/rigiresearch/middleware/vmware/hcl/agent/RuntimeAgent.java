@@ -32,18 +32,12 @@ public final class RuntimeAgent {
     private final HistorianMonitor monitor;
 
     /**
-     * A transformation from {@link JsonNode} to {@link Specification}.
-     */
-    private final Data2Hcl transformation;
-
-    /**
      * Default constructor.
      * @throws ConfigurationException If there is a configuration error
      *  concerning the Historian monitor
      */
     public RuntimeAgent() throws ConfigurationException {
         this.monitor = new HistorianMonitor();
-        this.transformation = new Data2Hcl();
     }
 
     /**
@@ -71,8 +65,7 @@ public final class RuntimeAgent {
      * @param data The collected data
      */
     private void handle(final JsonNode data) {
-        final Specification specification =
-            this.transformation.specification(data);
+        final Specification specification = new Data2Hcl(data).specification();
         RuntimeAgent.LOGGER.info(
             new EcorePrinter(specification).asPrettyString()
         );
