@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.historian.templates
 
+import com.rigiresearch.middleware.historian.ResourceCopy;
 import com.rigiresearch.middleware.metamodels.monitoring.ApiKeyAuth
 import com.rigiresearch.middleware.metamodels.monitoring.AuthRequirement
 import com.rigiresearch.middleware.metamodels.monitoring.BasicAuth
@@ -7,14 +8,11 @@ import com.rigiresearch.middleware.metamodels.monitoring.Monitor
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringFactory
 import com.rigiresearch.middleware.metamodels.monitoring.MonitoringPackage
 import com.rigiresearch.middleware.metamodels.monitoring.Oauth2Auth
-import com.rigiresearch.middleware.metamodels.monitoring.Path
 import com.rigiresearch.middleware.metamodels.monitoring.PropertyLocation
 import com.rigiresearch.middleware.metamodels.monitoring.Root
 import com.rigiresearch.middleware.metamodels.monitoring.Type
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.Date
 import org.apache.commons.configuration2.PropertiesConfiguration
 import org.apache.commons.configuration2.io.FileHandler
@@ -55,38 +53,24 @@ final class MonitoringTemplate {
         new File(target, "src/main/resources").mkdirs
 
         // Copy template files
-        Files.walkFileTree(
-            "src/main/resources/templates/gradle".toPath,
-            new CopyFileVisitor(
-                target.toPath,
-                StandardCopyOption.REPLACE_EXISTING
-            )
-        )
-        Files.copy(
-            "src/main/resources/templates/log4j2.xml".toPath,
-            new File(target, "src/main/resources/log4j2.xml").toPath,
-            StandardCopyOption.REPLACE_EXISTING
-        )
-        Files.copy(
-            "src/main/resources/templates/logback.xml".toPath,
-            new File(target, "src/main/resources/logback.xml").toPath,
-            StandardCopyOption.REPLACE_EXISTING
-        )
+        val copy = new ResourceCopy();
+        copy.copyResourceDirectory(
+            copy.jar(MonitoringTemplate).get(),
+            "templates/gradle",
+            target
+        );
+        copy.copyResourcesToDir(
+            new File(target, "src/main/resources"),
+            false,
+            "templates/log4j2.xml",
+            "templates/logback.xml"
+        );
 
         // Generate new files
         new FileHandler(new PropertiesConfiguration().populateDefaultProperties(root))
             .save(new File(target, "src/main/resources/default.properties"))
         new FileHandler(new PropertiesConfiguration().populateCustomProperties(root))
             .save(new File(target, "src/main/resources/custom.properties"))
-    }
-
-    /**
-     * Converts a {@link String} to a {@link Path}.
-     * @param path The path name
-     * @return A {@link Path}
-     */
-    def private toPath(String path) {
-        new File(path).toPath
     }
 
 	/**
