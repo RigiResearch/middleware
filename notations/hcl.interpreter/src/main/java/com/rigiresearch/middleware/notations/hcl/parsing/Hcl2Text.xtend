@@ -49,10 +49,8 @@ class Hcl2Text {
                 object.asText(context)
             Number:
                 object.asText(context)
-            Resource: {
-                val type = if (object.type !== null) '''"«object.type»" '''
-                '''«object.specifier» «type»"«object.name»" «object.value.asText(context)»'''
-            }
+            Resource:
+                object.asText(context)
             ResourceReference:
                 object.asText(context)
             Specification:
@@ -64,6 +62,14 @@ class Hcl2Text {
         }
         context.remove
         return text
+    }
+
+    /**
+     * Translates a {@link Resource} from the HCL model to a {@link String}.
+     */
+    def protected String asText(Resource object, Queue<String> context) {
+        val type = if (object.type !== null) '''"«object.type.unquoted»" '''
+        '''«object.comment?.lines?.join("")»«object.specifier» «type»"«object.name.unquoted»" «object.value.asText(context)»'''
     }
 
     /**
@@ -86,14 +92,14 @@ class Hcl2Text {
             .map [ e |
                 val eq = if(!(e.value instanceof Dictionary && context.peek.equals(className))) "= "
                 val text = e.value.asText(context)
-                '''«e.name» «eq»«text»'''
+                '''«e.comment?.lines?.join("")»«e.name» «eq»«text»'''
             ]
         '''
         «IF object.name !== null»
-            "«object.name»" «ENDIF»{
-            «FOR e : elements»
-                «e»
-            «ENDFOR»
+          "«object.name»" «ENDIF»{
+          «FOR e : elements»
+            «e»
+          «ENDFOR»
         }'''
     }
 
@@ -138,7 +144,7 @@ class Hcl2Text {
      * Translates a {@link Text} from the HCL model to a {@link String}.
      */
     def protected String asText(Text object, Queue<String> context) {
-        '''"«object.value?.toString»"'''
+        '''"«object.value?.toString.unquoted»"'''
     }
 
     /**
@@ -146,6 +152,16 @@ class Hcl2Text {
      */
     def protected String asText(TextExpression object, Queue<String> context) {
         '''"${«object.reference.asText(context)»}"'''
+    }
+
+    /**
+     * Removes quotation characters at the beginning and end of the given string.
+     */
+    def private unquoted(String text) {
+        if (text !== null && text.startsWith("\"") && text.endsWith("\""))
+            text.substring(1, text.length() - 1)
+        else
+            text
     }
 
 }

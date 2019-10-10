@@ -4,6 +4,7 @@ import com.google.inject.Injector;
 import com.rigiresearch.middleware.metamodels.hcl.HclFactory;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.notations.hcl.HclStandaloneSetup;
+import com.rigiresearch.middleware.vmware.hcl.agent.Hcl2Text;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
@@ -66,7 +67,16 @@ public final class HclParser {
     }
 
     /**
-     * Parses an Hcl specification and returns the AST using the model elements.
+     * Parses an HCL model and returns the corresponding source code.
+     * @param specification The HCL model
+     * @return A non-null text
+     */
+    public String parse(final Specification specification) {
+        return new Hcl2Text().source(specification);
+    }
+
+    /**
+     * Parses an HCL specification and returns the AST using the model elements.
      * @param source The specification source
      * @return A {@link Specification} object
      * @throws HclParsingException If there are any parsing errors

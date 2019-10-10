@@ -1,6 +1,5 @@
 plugins {
     id "java"
-    id "org.xtext.xtend"
 }
 
 repositories {
@@ -24,32 +23,4 @@ dependencies {
     implementation project(":metamodels")
     implementation project(":metamodels:hcl")
     implementation project(":notations:hcl.interpreter")
-    // Xtend templates
-    implementation "org.eclipse.xtend:org.eclipse.xtend.lib:2.18.0"
-}
-
-xtend {
-    generator {
-        //whether to generate @SuppressWarnings("all"), enabled by default
-        suppressWarningsAnnotation = false
-        //whether to generate the @Generated annotation, disabled by default
-        generatedAnnotation {
-            active = true
-            comment = "Copyright University of Victoria"
-            includeDate = true
-        }
-    }
-    debugger {
-        sourceInstaller = 'SMAP'
-        hideSyntheticVariables = true
-    }
-    validator {
-        // Available levels are error, warning, info and ignore
-        error 'org.eclipse.xtend.core.validation.IssueCodes.unused_private_member'
-    }
-}
-
-sourceSets {
-    main.xtendOutputDir = 'src/main/xtend-gen'
-    test.xtendOutputDir = 'test/xtend-gen'
 }
