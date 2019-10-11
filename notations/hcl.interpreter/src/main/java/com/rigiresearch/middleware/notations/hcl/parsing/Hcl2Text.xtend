@@ -69,7 +69,8 @@ class Hcl2Text {
      */
     def protected String asText(Resource object, Queue<String> context) {
         val type = if (object.type !== null) '''"«object.type.unquoted»" '''
-        '''«object.comment?.lines?.join("")»«object.specifier» «type»"«object.name.unquoted»" «object.value.asText(context)»'''
+        '''«object.comment?.lines?.join("")»«object.specifier» «type»"«object.name.unquoted»" «object.value.asText(context)»
+        '''
     }
 
     /**
@@ -84,23 +85,30 @@ class Hcl2Text {
      */
     def protected String asText(Dictionary object, Queue<String> context) {
         val className = HclPackage.eINSTANCE.dictionary.class.canonicalName
-        val elements = object.elements
-            .filter [ e |
+        val elements = object.elements.filter [ e |
                 val text = e.value.asText(context)
                 !text.empty && !text.equals('""') && !text.equals('[]')
             ]
-            .map [ e |
-                val eq = if(!(e.value instanceof Dictionary && context.peek.equals(className))) "= "
+        var length = 0
+        for (e : elements) {
+            if(!(e.value instanceof Dictionary) && e.name.length > length)
+                length = e.name.length
+        }
+        val _length = length
+        val filtered = elements.map [ e |
+                val start = if (e.value instanceof Dictionary) "\n" else ""
+                val name = if (e.value instanceof Dictionary) e.name else String.format('''%-«_length»s''', e.name)
+                val eq = if (!(e.value instanceof Dictionary && context.peek.equals(className))) "= "
                 val text = e.value.asText(context)
-                '''«e.comment?.lines?.join("")»«e.name» «eq»«text»'''
+                '''«start»«e.comment?.lines?.join("")»«name» «eq»«text»'''
             ]
-        '''
+        this.trimEmptyLines('''
         «IF object.name !== null»
-          "«object.name»" «ENDIF»{
-          «FOR e : elements»
-            «e»
+        "«object.name»" «ENDIF»{
+          «FOR e : filtered»
+          «e»
           «ENDFOR»
-        }'''
+        }''')
     }
 
     /**
@@ -152,6 +160,15 @@ class Hcl2Text {
      */
     def protected String asText(TextExpression object, Queue<String> context) {
         '''"${«object.reference.asText(context)»}"'''
+    }
+
+    /**
+     * Trims every line of the given string.
+     */
+    def private String trimEmptyLines(String string) {
+        string.split("\n")
+            .map[line|if(line.trim.empty) "" else line]
+            .join("\n")
     }
 
     /**
