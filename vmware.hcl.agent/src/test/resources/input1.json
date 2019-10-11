@@ -17,6 +17,12 @@
       "vm-123"
     ]
   },
+  "getVcenterDatacenter": [
+    {
+      "datacenter": "datacenter-1",
+      "name": "CAMDC2"
+    }
+  ],
   "getVcenterVm": [
     {
       "vm": "vm-123",
