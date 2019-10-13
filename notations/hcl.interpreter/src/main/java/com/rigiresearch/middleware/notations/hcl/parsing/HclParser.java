@@ -103,6 +103,9 @@ public final class HclParser {
         final Specification specification;
         if (resource.getContents().isEmpty()) {
             specification = HclFactory.eINSTANCE.createSpecification();
+            // Avoid exception "DanglingHREFException: The object '...' is not
+            // contained in a resource"
+            resource.getContents().add(specification);
         } else {
             specification = (Specification) resource.getContents().get(0);
         }
