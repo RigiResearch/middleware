@@ -55,7 +55,6 @@ public final class Server {
      * Runs an HTTP server for handling evolution requests.
      */
     public void run() {
-        Server.LOGGER.info("Starting server");
         Spark.port(this.config.getInt("coordinator.port"));
         final int okay = 200;
         Spark.post("/", (request, response) -> {
@@ -64,14 +63,20 @@ public final class Server {
             response.status(okay);
             return "";
         });
+        Server.LOGGER.info(
+            String.format(
+                "Started the evolution coordinator's server (port %d)",
+                Spark.port()
+            )
+        );
     }
 
     /**
      * Stops the HTTP server.
      */
     public void stop() {
-        Server.LOGGER.info("Stopping server");
         Spark.stop();
+        Server.LOGGER.info("Stopped the evolution coordinator's server");
     }
 
 }

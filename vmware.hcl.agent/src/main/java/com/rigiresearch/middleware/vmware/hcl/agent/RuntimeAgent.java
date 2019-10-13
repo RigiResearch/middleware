@@ -86,6 +86,7 @@ public final class RuntimeAgent {
         throws JAXBException, IOException, UnexpectedResponseCodeException {
         this.monitor.subscribe(this::handle);
         this.monitor.start();
+        RuntimeAgent.LOGGER.info("Started the Historian monitor");
     }
 
     /**
@@ -93,6 +94,7 @@ public final class RuntimeAgent {
      */
     public void stop() {
         this.monitor.stop();
+        RuntimeAgent.LOGGER.info("Stopped the Historian monitor");
     }
 
     /**
@@ -112,7 +114,11 @@ public final class RuntimeAgent {
             request.setEntity(new StringEntity(this.parser.asXml(specification)));
             final CloseableHttpResponse response = client.execute(request);
             final int code = response.getStatusLine().getStatusCode();
-            if (code != RuntimeAgent.OKAY) {
+            if (code == RuntimeAgent.OKAY) {
+                RuntimeAgent.LOGGER.debug(
+                    "Sent current specification to the evolution coordinator"
+                );
+            } else {
                 RuntimeAgent.LOGGER.error(
                     String.format("Unexpected response code %d", code)
                 );
