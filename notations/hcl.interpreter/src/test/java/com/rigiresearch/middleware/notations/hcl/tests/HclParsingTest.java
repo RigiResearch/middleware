@@ -33,9 +33,17 @@ class HclParsingTest {
     private ParseHelper<Specification> helper;
 
     @Test
-    void loadModel() throws Exception {
-        final String source = "provider \"myprovider\" {\n"
-            + "  version = \"~> 0.2\"\n"
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    void testSimpleModel() throws Exception {
+        final String source = "##############################################################\n"
+            + "# Define pattern variables \n"
+            + "##############################################################\n"
+            + "\n"
+            + "##############################################################\n"
+            + "# Vsphere data for provider\n"
+            + "##############################################################\n"
+            + "data \"vsphere_datacenter\" \"vm_1_datacenter\" {\n"
+            + "  name = \"${var.vm_1_datacenter}\"\n"
             + "}";
         final Specification specification = this.helper.parse(source);
         Assertions.assertNotNull(specification);
