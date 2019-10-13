@@ -22,6 +22,11 @@ dependencies {
   implementation project(":metamodels")
   implementation project(":metamodels:hcl")
   implementation project(":notations:hcl.interpreter")
+  implementation "com.sparkjava:spark-core:2.8.0"
+  implementation "org.apache.commons:commons-configuration2:2.5"
+  runtime "commons-beanutils:commons-beanutils:1.9.3"
+  runtime "org.apache.logging.log4j:log4j-core:2.12.0"
+  runtime "org.apache.logging.log4j:log4j-jcl:2.12.0"
   implementation name: "org.eclipse.emf.compare_3.5.3.201909101346"
   implementation name: "org.eclipse.emf.compare.source_3.5.3.201909101346"
 }

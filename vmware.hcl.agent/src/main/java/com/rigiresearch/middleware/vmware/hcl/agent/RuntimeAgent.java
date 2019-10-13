@@ -3,11 +3,22 @@ package com.rigiresearch.middleware.vmware.hcl.agent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.rigiresearch.middleware.historian.runtime.HistorianMonitor;
 import com.rigiresearch.middleware.historian.runtime.UnexpectedResponseCodeException;
-import com.rigiresearch.middleware.metamodels.EcorePrinter;
+import com.rigiresearch.middleware.metamodels.SerializationParser;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import java.io.IOException;
 import javax.xml.bind.JAXBException;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +29,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public final class RuntimeAgent {
 
     /**
@@ -27,9 +39,24 @@ public final class RuntimeAgent {
         LoggerFactory.getLogger(RuntimeAgent.class);
 
     /**
+     * HTTP 200 response code.
+     */
+    private static final int OKAY = 200;
+
+    /**
      * A Historian monitor to detect changes in the subject vSphere.
      */
     private final HistorianMonitor monitor;
+
+    /**
+     * A parser to serialize Ecore models.
+     */
+    private final SerializationParser parser;
+
+    /**
+     * The configuration properties.
+     */
+    private final Configuration config;
 
     /**
      * Default constructor.
@@ -38,6 +65,14 @@ public final class RuntimeAgent {
      */
     public RuntimeAgent() throws ConfigurationException {
         this.monitor = new HistorianMonitor();
+        this.parser = new SerializationParser();
+        this.config = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
+            PropertiesConfiguration.class
+        ).configure(
+            new Parameters().properties()
+                .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
+                .setFileName("agent.properties")
+        ).getConfiguration();
     }
 
     /**
@@ -66,9 +101,25 @@ public final class RuntimeAgent {
      */
     private void handle(final JsonNode data) {
         final Specification specification = new Data2Hcl(data).specification();
-        RuntimeAgent.LOGGER.info(
-            new EcorePrinter(specification).asPrettyString()
-        );
+        try {
+            final CloseableHttpClient client = HttpClients.createDefault();
+            final HttpPost request = new HttpPost(
+                this.config.getString("coordinator.url")
+            );
+            final String type = "application/xml";
+            request.setHeader("Accept", type);
+            request.setHeader("Content-Type", type);
+            request.setEntity(new StringEntity(this.parser.asXml(specification)));
+            final CloseableHttpResponse response = client.execute(request);
+            final int code = response.getStatusLine().getStatusCode();
+            if (code != RuntimeAgent.OKAY) {
+                RuntimeAgent.LOGGER.error(
+                    String.format("Unexpected response code %d", code)
+                );
+            }
+        } catch (final IOException exception) {
+            RuntimeAgent.LOGGER.error("Error serializing/sending model", exception);
+        }
     }
 
 }
