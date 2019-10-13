@@ -1,0 +1,27 @@
+plugins {
+  id "com.diffplug.gradle.p2.asmaven" version "3.18.1"
+}
+
+repositories {
+  flatDir dirs: "lib"
+  maven {
+    url "https://repo.eclipse.org/content/repositories/atl-releases/"
+    content {
+      includeGroup "org.eclipse.m2m.atl"
+    }
+  }
+  maven {
+    url "https://packages.atlassian.com/3rdparty/"
+    content {
+      includeGroup "org.ow2.asm"
+    }
+  }
+}
+
+dependencies {
+  implementation project(":metamodels")
+  implementation project(":metamodels:hcl")
+  implementation project(":notations:hcl.interpreter")
+  implementation name: "org.eclipse.emf.compare_3.5.3.201909101346"
+  implementation name: "org.eclipse.emf.compare.source_3.5.3.201909101346"
+}
