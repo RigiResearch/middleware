@@ -1,8 +1,7 @@
-package com.rigiresearch.middleware.notations.hcl.tests;
+package com.rigiresearch.middleware.notations.hcl.runtime;
 
 import com.rigiresearch.middleware.metamodels.hcl.HclFactory;
 import com.rigiresearch.middleware.metamodels.hcl.Resource;
-import com.rigiresearch.middleware.notations.hcl.runtime.HclQualifiedNameProvider;
 import org.eclipse.xtext.naming.QualifiedName;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;

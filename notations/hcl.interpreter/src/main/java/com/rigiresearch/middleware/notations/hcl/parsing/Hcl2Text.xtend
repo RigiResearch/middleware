@@ -1,4 +1,4 @@
-package com.rigiresearch.middleware.vmware.hcl.agent
+package com.rigiresearch.middleware.notations.hcl.parsing
 
 import com.rigiresearch.middleware.metamodels.hcl.Bool
 import com.rigiresearch.middleware.metamodels.hcl.Dictionary
@@ -26,10 +26,21 @@ import org.eclipse.emf.ecore.EObject
 class Hcl2Text {
 
     /**
-     * Returns a text representation of the given model instance.
+     * Returns the textual representation of the given specification.
      */
     def source(Specification model) {
         return model.asText(new PriorityQueue)
+    }
+
+    /**
+     * Returns the textual representation of the given set of specifications.
+     */
+    def source(SpecificationSet set) {
+        val map = newHashMap()
+        for (entry : set.getMapping().entrySet) {
+            map.put(entry.key, this.source(entry.value))
+        }
+        return map
     }
 
     /**

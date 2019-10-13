@@ -1,10 +1,11 @@
-package com.rigiresearch.middleware.notations.hcl.tests;
+package com.rigiresearch.middleware.notations.hcl.parsing;
 
 import com.google.inject.Inject;
 import com.rigiresearch.middleware.metamodels.hcl.Dictionary;
 import com.rigiresearch.middleware.metamodels.hcl.NameValuePair;
 import com.rigiresearch.middleware.metamodels.hcl.Resource;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
+import com.rigiresearch.middleware.notations.hcl.HclInjectorProvider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
