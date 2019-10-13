@@ -89,6 +89,8 @@ public final class Data2Hcl {
         //  instantiate the model. The evolution coordinator takes that partial
         //  model and will merge it into the one represented by the HCL
         //  specification.
+        // TODO Create issue when VM no longer exists in vmware
+        //   (CAM deployment must be removed too)
         this.data.get("getVcenterVm").forEach(this::handleVm);
         return this.spec;
     }
