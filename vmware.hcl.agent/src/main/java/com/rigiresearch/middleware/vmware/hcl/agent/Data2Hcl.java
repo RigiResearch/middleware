@@ -11,17 +11,26 @@ import com.rigiresearch.middleware.metamodels.hcl.Text;
 import com.rigiresearch.middleware.metamodels.hcl.TextExpression;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Transformation to create an HCL model from collected data from vSphere.
+ * TODO Improve this implementation. Separate the Json node from the creation of
+ *  resources (associated with PMD.TooManyMethods).
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({
+    "PMD.TooManyMethods",
+    "PMD.AvoidDuplicateLiterals",
+    "checkstyle:ExecutableStatementCount"
+})
 public final class Data2Hcl {
 
     /**
@@ -102,13 +111,14 @@ public final class Data2Hcl {
     private void handleVm(final JsonNode node) {
         final JsonNode value = node.get("value");
         final String vmid = node.get("vm").asText();
-        // The vm
+        // 1. The vm
         final Resource resource = HclFactory.eINSTANCE.createResource();
         resource.setSpecifier("resource");
         resource.setType("vsphere_virtual_machine");
         resource.setName(this.reserveName("resource", "vm_%d"));
-        // The vm attributes
+        // 2. The vm attributes
         final Dictionary attributes = HclFactory.eINSTANCE.createDictionary();
+        // - Name
         final Resource name = this.variable(
             attributes,
             String.format("%s_name", resource.getName()),
@@ -116,6 +126,7 @@ public final class Data2Hcl {
             "string"
         );
         this.values.put(name.getName(), node.get("vm").asText());
+        // - Folder
         final Resource folder = this.variable(
             attributes,
             String.format("%s_folder", resource.getName()),
@@ -126,6 +137,7 @@ public final class Data2Hcl {
             folder.getName(),
             this.elementGroup("listVcenterVmFilteredByFolder", vmid).get()
         );
+        // - CPUs
         final Resource cpus = this.variable(
             attributes,
             String.format("%s_number_of_vcpu", resource.getName()),
@@ -133,6 +145,7 @@ public final class Data2Hcl {
             "integer"
         );
         this.values.put(cpus.getName(), value.get("cpu").get("count").asText());
+        // - Memory
         final Resource memory = this.variable(
             attributes,
             String.format("%s_memory", resource.getName()),
@@ -140,31 +153,82 @@ public final class Data2Hcl {
             "integer"
         );
         this.values.put(memory.getName(), value.get("memory").get("size_MiB").asText());
+        // - Resource pool
+        final String dataname =
+            this.elementGroup("listVcenterVmFilteredByResourcePool", vmid).get();
+        final String datacenter =
+            this.elementGroup("listVcenterVmFilteredByDatacenter", vmid).get();
+        final Resource respool = this.findOrCreateResourcePoolData(dataname, datacenter);
+        final NameValuePair respooli = HclFactory.eINSTANCE.createNameValuePair();
+        respooli.setName("resource_pool_id");
+        respooli.setValue(
+            this.reference("data", "vsphere_resource_pool", respool.getName(), "id")
+        );
+        attributes.getElements().add(respooli);
+        // - Guest OS
+        final Resource guest = this.variable(
+            attributes,
+            String.format("%s_guest_os_id", resource.getName()),
+            "guest_id",
+            "string"
+        );
+        this.values.put(guest.getName(), value.get("guest_OS").asText());
+        // - SCSI type
+        final Resource scsi = this.variable(
+            attributes,
+            String.format("%s_scsi_type", resource.getName()),
+            "scsi_type",
+            "string"
+        );
+        this.values.put(scsi.getName(), this.scsiType(value.get("scsi_adapters")));
         // TODO disks
-        // TODO resource pool
         // TODO datastore
-        // TODO guest_id (changes? from where should I get it?)
-        // TODO scsi_type (changes?)
-        // The network interfaces
+        // - Network interfaces
         value.get("nics").forEach(
-            nic -> this.handleNic(vmid, resource.getName(), nic, attributes)
+            nic -> this.handleNic(resource.getName(), datacenter, nic, attributes)
         );
         resource.setValue(attributes);
         this.spec.getResources().add(resource);
     }
 
     /**
+     * Chooses an appropriate SCSI type for a VM based on its SCSI adapters.
+     * See more at
+     * https://www.terraform.io/docs/providers/vsphere/d/virtual_machine.html#scsi_type
+     * @param adapters The adapters node
+     * @return A non-null, non-empty string
+     */
+    private String scsiType(final JsonNode adapters) {
+        final String type;
+        final Set<String> types = new HashSet<>(Data2Hcl.INITIAL_CAPACITY);
+        for (final JsonNode adapter : adapters) {
+            types.add(
+                adapter.get("value")
+                    .get("type")
+                    .asText()
+                    .toLowerCase(Locale.getDefault())
+            );
+        }
+        if (types.size() > 1) {
+            type = "mixed";
+        } else if (types.isEmpty()) {
+            // TODO Is this even possible?
+            type = "mixed";
+        } else {
+            type = types.iterator().next();
+        }
+        return type;
+    }
+
+    /**
      * Creates resources for the given network interface.
-     * @param vmid The id of the containing vm
      * @param vmname The reserved name for the vm
+     * @param datacenter The datacenter's id
      * @param node The JSON node
      * @param attributes The VM attributes to update
      */
-    @SuppressWarnings({
-        "checkstyle:ParameterNumber",
-        "checkstyle:ExecutableStatementCount"
-    })
-    private void handleNic(final String vmid, final String vmname,
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    private void handleNic(final String vmname, final String datacenter,
         final JsonNode node, final Dictionary attributes) {
         final JsonNode value = node.get("value");
         final NameValuePair attribute = HclFactory.eINSTANCE.createNameValuePair();
@@ -197,9 +261,7 @@ public final class Data2Hcl {
             );
             this.values.put(labelvar.getName(), netname);
             // Datacenter
-            final String dataname =
-                this.elementGroup("listVcenterVmFilteredByDatacenter", vmid).get();
-            final Resource datadata = this.findOrCreateDatacenterData(dataname);
+            final Resource datadata = this.findOrCreateDatacenterData(datacenter);
             final NameValuePair dataattr = HclFactory.eINSTANCE.createNameValuePair();
             dataattr.setName("datacenter_id");
             dataattr.setValue(
@@ -256,6 +318,54 @@ public final class Data2Hcl {
             this.index.put(id, datacenter);
         }
         return datacenter;
+    }
+
+    /**
+     * Finds or create a resource pool's data resource.
+     * @param id The resource pool's id
+     * @param datacenter The corresponding datacenter's id
+     * @return The data resource
+     */
+    private Resource findOrCreateResourcePoolData(final String id,
+        final String datacenter) {
+        final Resource respool;
+        if (this.index.containsKey(id)) {
+            respool = this.index.get(id);
+        } else {
+            respool = HclFactory.eINSTANCE.createResource();
+            respool.setSpecifier("data");
+            respool.setType("vsphere_resource_pool");
+            respool.setName(this.reserveName("data", "resource_pool_%d"));
+            final Dictionary attributes = HclFactory.eINSTANCE.createDictionary();
+            final Resource datavar = this.variable(
+                attributes,
+                String.format("%s_name", respool.getName()),
+                "name",
+                "string"
+            );
+            // - name
+            // Get the name of the resource pool
+            String name = "";
+            for (final JsonNode tmp : this.data.get("getVcenterResourcePool")) {
+                if (tmp.get("resource_pool").asText().equals(id)) {
+                    name = tmp.get("name").asText();
+                    break;
+                }
+            }
+            this.values.put(datavar.getName(), name);
+            // - datacenter_id
+            final Resource dcdata = this.findOrCreateDatacenterData(datacenter);
+            final NameValuePair datacenteri = HclFactory.eINSTANCE.createNameValuePair();
+            datacenteri.setName("datacenter_id");
+            datacenteri.setValue(
+                this.reference("data", "vsphere_datacenter", dcdata.getName(), "id")
+            );
+            attributes.getElements().add(datacenteri);
+            respool.setValue(attributes);
+            this.spec.getResources().add(respool);
+            this.index.put(id, respool);
+        }
+        return respool;
     }
 
     /**

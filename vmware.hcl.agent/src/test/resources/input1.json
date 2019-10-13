@@ -17,10 +17,21 @@
       "vm-123"
     ]
   },
+  "listVcenterVmFilteredByResourcePool": {
+    "resource-pool-1": [
+      "vm-123"
+    ]
+  },
   "getVcenterDatacenter": [
     {
       "datacenter": "datacenter-1",
       "name": "CAMDC2"
+    }
+  ],
+  "getVcenterResourcePool": [
+    {
+      "resource_pool": "resource-pool-1",
+      "name": "Resources"
     }
   ],
   "getVcenterVm": [
