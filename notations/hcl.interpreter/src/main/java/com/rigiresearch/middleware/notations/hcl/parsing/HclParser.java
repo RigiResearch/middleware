@@ -6,7 +6,10 @@ import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.notations.hcl.HclStandaloneSetup;
 import com.rigiresearch.middleware.vmware.hcl.agent.Hcl2Text;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -77,6 +80,25 @@ public final class HclParser {
 
     /**
      * Parses an HCL specification and returns the AST using the model elements.
+     * @param file The specification file
+     * @return A {@link Specification} object
+     * @throws HclParsingException If there are any parsing errors
+     * @throws IOException If an I/O problem occurs
+     */
+    public Specification parse(final File file)
+        throws HclParsingException, IOException {
+        final Resource resource = HclParser.resource(
+            URI.createFileURI(file.getPath())
+        );
+        resource.load(
+            Files.newInputStream(file.toPath()),
+            Collections.emptyMap()
+        );
+        return HclParser.parse(resource);
+    }
+
+    /**
+     * Parses an HCL specification and returns the AST using the model elements.
      * @param source The specification source
      * @return A {@link Specification} object
      * @throws HclParsingException If there are any parsing errors
@@ -84,10 +106,30 @@ public final class HclParser {
      */
     public Specification parse(final String source)
         throws HclParsingException, IOException {
-        final Resource resource = this.temporalResource();
-        resource.load(
-            new ByteArrayInputStream(source.getBytes()), Collections.emptyMap()
+        final Resource resource = HclParser.resource(
+            URI.createURI(
+                String.format(
+                    "temp-%d.tf",
+                    new SecureRandom()
+                        .nextInt(Integer.MAX_VALUE)
+                )
+            )
         );
+        resource.load(
+            new ByteArrayInputStream(source.getBytes()),
+            Collections.emptyMap()
+        );
+        return HclParser.parse(resource);
+    }
+
+    /**
+     * Parses an HCL specification and returns the AST using the model elements.
+     * @param resource The associated resource
+     * @return A {@link Specification} object
+     * @throws HclParsingException If there are any parsing errors
+     */
+    private static Specification parse(final Resource resource)
+        throws HclParsingException {
         final List<Issue> issues = HclParser.VALIDATOR.validate(
             resource,
             CheckMode.ALL,
@@ -114,12 +156,10 @@ public final class HclParser {
 
     /**
      * Creates a temporal Xtext resource.
+     * @param uri The resource URI
      * @return The resource instance
      */
-    private Resource temporalResource() {
-        final URI uri = URI.createURI(
-            String.format("temp-%f.tf", Math.abs(Math.random()))
-        );
+    private static Resource resource(final URI uri) {
         final Optional<Resource> optional = HclParser.RESOURCE_SET.getResources()
             .stream()
             .filter(res -> res.getURI().toFileString().equals(uri.toFileString()))
