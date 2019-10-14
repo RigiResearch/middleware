@@ -13,6 +13,7 @@ import com.rigiresearch.middleware.metamodels.hcl.Text
 import com.rigiresearch.middleware.metamodels.hcl.TextExpression
 import java.util.PriorityQueue
 import java.util.Queue
+import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.ecore.EObject
 
 /**
@@ -24,6 +25,16 @@ import org.eclipse.emf.ecore.EObject
  * @since 0.0.1
  */
 class Hcl2Text {
+
+    /**
+     * A comparator for sorting resources.
+     */
+    private static val ResourceComparator R_COMPARATOR = new ResourceComparator();
+
+    /**
+     * A comparator for sorting name-value pairs.
+     */
+    private static val NameValuePairComparator NV_COMPARATOR = new NameValuePairComparator();
 
     /**
      * Returns the textual representation of the given specification.
@@ -95,6 +106,7 @@ class Hcl2Text {
      * Translates a {@link Dictionary} from the HCL model to a {@link String}.
      */
     def protected String asText(Dictionary object, Queue<String> context) {
+        ECollections.sort(object.elements, Hcl2Text.NV_COMPARATOR)
         val className = HclPackage.eINSTANCE.dictionary.class.canonicalName
         val elements = object.elements.filter [ e |
                 val text = e.value.asText(context)
@@ -156,6 +168,7 @@ class Hcl2Text {
      * Translates a {@link Specification} from the HCL model to a {@link String}.
      */
     def protected String asText(Specification object, Queue<String> context) {
+        ECollections.sort(object.resources, Hcl2Text.R_COMPARATOR);
         '''«FOR r : object.resources SEPARATOR "\n"»«r.asText(context)»«ENDFOR»'''
     }
 
