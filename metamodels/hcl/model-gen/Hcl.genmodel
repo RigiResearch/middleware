@@ -16,12 +16,17 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/specifier"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/type"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Resource/comment"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Resource/value"/>
+    </genClasses>
+    <genClasses ecoreClass="Hcl.ecore#//Comment">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Comment/lines"/>
     </genClasses>
     <genClasses ecoreClass="Hcl.ecore#//Value"/>
     <genClasses ecoreClass="Hcl.ecore#//NameValuePair">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//NameValuePair/name"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//NameValuePair/value"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//NameValuePair/comment"/>
     </genClasses>
     <genClasses ecoreClass="Hcl.ecore#//Dictionary">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Dictionary/name"/>

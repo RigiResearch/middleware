@@ -1,6 +1,7 @@
 import com.rigiresearch.middleware.tasks.ExportXcoreTask
 
 plugins {
+  id "java-library"
   id "org.xtext.builder"
 }
 
@@ -9,11 +10,10 @@ def ecoreOutput = "model-gen/Monitoring.ecore"
 def genmodelOutput = "model-gen/Monitoring.genmodel"
 
 dependencies {
-  implementation "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
-  implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
-  implementation "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
-  implementation "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
-
+  api "org.eclipse.emf:org.eclipse.emf.ecore:${emfVersion}"
+  api "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+  api "org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:${ecoreXcoreLibVersion}"
+  api "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"
   xtextLanguages "org.antlr:antlr-runtime:3.2"
   xtextLanguages "org.eclipse.emf:org.eclipse.emf.mwe2.runtime:${mwe2Version}"
   xtextLanguages "org.eclipse.emf:org.eclipse.emf.common:${emfCommonVersion}"

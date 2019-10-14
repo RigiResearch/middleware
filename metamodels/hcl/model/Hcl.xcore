@@ -13,8 +13,13 @@ class Specification {
 class Resource {
 	String specifier
 	String ^type
-	id String name
+	String name
+	contains Comment comment
 	contains Value value
+}
+
+class Comment {
+    String[] lines
 }
 
 // Type hierarchy
@@ -24,6 +29,7 @@ class Value {}
 class NameValuePair {
 	String name
 	contains Value value
+	contains Comment comment
 }
 
 class Dictionary extends Value {

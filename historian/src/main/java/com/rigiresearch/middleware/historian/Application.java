@@ -154,12 +154,15 @@ public final class Application {
         final edu.uoc.som.openapi.Root root = new OpenAPIImporter()
             .createOpenAPIModelFromJson(specification);
         final String output = "OUT";
+        final String module = "atl/OpenAPI2Monitoring.atl";
+        final File directory = new ResourceCopy()
+            .copyResourcesToTempDir(true, module, "atl/OpenAPI2Monitoring.emftvm");
         return (Root) new AtlTransformation.Builder()
             .withMetamodel(MonitoringPackage.eINSTANCE)
             .withMetamodel(OpenAPIPackage.eINSTANCE)
             .withModel(AtlTransformation.ModelType.INPUT, "IN", root)
             .withModel(AtlTransformation.ModelType.OUTPUT, output, "monitoring.xmi")
-            .withTransformation("src/main/resources/atl/OpenAPI2Monitoring.atl")
+            .withTransformation(String.format("%s/%s", directory.getAbsolutePath(), module))
             .build()
             .run()
             .get(output)

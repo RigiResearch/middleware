@@ -16,6 +16,7 @@ dependencies {
   implementation project(":metamodels:hcl")
   implementation "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+  implementation "org.eclipse.xtend:org.eclipse.xtend.lib:${xtextVersion}"
   testImplementation "org.eclipse.xtext:org.eclipse.xtext.testing:${xtextVersion}"
   testImplementation "org.eclipse.xtext:org.eclipse.xtext.xbase.testing:${xtextVersion}"
 }
@@ -52,3 +53,23 @@ task generateXtextLanguage(type: JavaExec) {
 generateXtext.dependsOn(generateXtextLanguage)
 clean.dependsOn(cleanGenerateXtextLanguage)
 eclipse.classpath.plusConfigurations += [configurations.mwe2]
+
+xtend {
+  generator {
+    //whether to generate @SuppressWarnings("all"), enabled by default
+    suppressWarningsAnnotation = false
+    //whether to generate the @Generated annotation, disabled by default
+    generatedAnnotation {
+      active = true
+      includeDate = true
+    }
+  }
+  debugger {
+    sourceInstaller = 'SMAP'
+    hideSyntheticVariables = true
+  }
+  validator {
+    // Available levels are error, warning, info and ignore
+    error 'org.eclipse.xtend.core.validation.IssueCodes.unused_private_member'
+  }
+}

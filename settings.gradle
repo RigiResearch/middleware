@@ -7,3 +7,6 @@ include "metamodels:monitoring"
 include "notations:hcl.interpreter"
 include "historian"
 include "historian.runtime"
+include 'vmware.hcl.agent'
+include 'coordinator'
+

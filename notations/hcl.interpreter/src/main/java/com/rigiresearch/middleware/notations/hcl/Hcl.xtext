@@ -1,15 +1,16 @@
 grammar com.rigiresearch.middleware.notations.hcl.Hcl
-    with org.eclipse.xtext.common.Terminals
+    with org.eclipse.xtext.common.Terminals hidden(WS)
 
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 import "http://www.rigiresearch.com/middleware/hcl/1.0.0" as hcl
 
 Specification returns hcl::Specification
-	:	resources += Resource*
+	:   resources += Resource*
 	;
 
 Resource returns hcl::Resource
-	:	specifier = ValidID (type = TextLiteral)?
+	:	comment = Comment
+	    specifier = ValidID (type = TextLiteral)?
 		name = TextLiteral
 		value = DictionaryLiteral
 	;
@@ -44,8 +45,8 @@ NamedDictionary returns hcl::Dictionary
 	;
 
 NameValuePair returns hcl::NameValuePair
-	:	name = ValidID '=' value = Value
-	|	name = ValidID value = NamedDictionary
+	:	comment = Comment name = ValidID '=' value = Value
+	|	comment = Comment name = ValidID value = NamedDictionary
 	;
 
 StringLiteral returns hcl::Text
@@ -78,8 +79,12 @@ Argument returns hcl::Value
 	|	ResourceReference
 	;
 
+Comment returns hcl::Comment
+    :   lines += SL_COMMENT*
+    ;
+
 ValidID
-	:	ID
+	:	NAME
 	;
 
 TextLiteral
@@ -95,8 +100,7 @@ Number returns ecore::EString hidden()
 	;
 
 
-@Override
-terminal ID returns ecore::EString
+terminal NAME returns ecore::EString
 	:	('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'0'..'9'|'-')*
 	;
 
@@ -115,8 +119,9 @@ terminal DECIMAL
 		(('b'|'B')('i'|'I'|'d'|'D') | ('l'|'L'|'d'|'D'|'f'|'F'))?
 	;
 
-terminal TEXT_EXP_START: '"' '$' '{';
-terminal TEXT_EXP_END: '}' '"';
+// TODO It should be possible to process any character before and after the interpolated expression
+terminal TEXT_EXP_START: '"' ('0'..'9'|'a'..'z'|'A'..'Z'|'_'|'-'|'.')* '$' '{';
+terminal TEXT_EXP_END: '}' ('0'..'9'|'a'..'z'|'A'..'Z'|'_'|'-'|'.')* '"';
 
 @Override
 terminal STRING returns ecore::EString
@@ -124,7 +129,7 @@ terminal STRING returns ecore::EString
 	;
 
 terminal MULTILINE_STRING
-	:	'<''<' ID '\n' (.) '\n' ID
+	:	'<''<' NAME '\n' (.) '\n' NAME
 	;
 
 @Override
