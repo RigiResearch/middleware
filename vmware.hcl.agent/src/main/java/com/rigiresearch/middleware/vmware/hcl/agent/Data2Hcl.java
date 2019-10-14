@@ -17,6 +17,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Transformation to create an HCL model from collected data from vSphere.
@@ -29,6 +31,7 @@ import java.util.Set;
 @SuppressWarnings({
     "PMD.TooManyMethods",
     "PMD.AvoidDuplicateLiterals",
+    "checkstyle:ParameterNumber",
     "checkstyle:ExecutableStatementCount"
 })
 public final class Data2Hcl {
@@ -37,6 +40,11 @@ public final class Data2Hcl {
      * Initial capacity for lists and maps.
      */
     private static final int INITIAL_CAPACITY = 10;
+
+    /**
+     * The number of bytes in a gigabyte.
+     */
+    private static final double BYTES_IN_A_GB = StrictMath.pow(2.0, 30.0);
 
     /**
      * The collected data.
@@ -140,11 +148,19 @@ public final class Data2Hcl {
         // - CPUs
         final Resource cpus = this.variable(
             attributes,
-            String.format("%s_number_of_vcpu", resource.getName()),
+            String.format("%s_number_of_cpus", resource.getName()),
             "num_cpus",
             "integer"
         );
         this.values.put(cpus.getName(), value.get("cpu").get("count").asText());
+        // - Cores per Socket
+        final Resource cores = this.variable(
+            attributes,
+            String.format("%s_num_cores_per_socket", resource.getName()),
+            "num_cores_per_socket",
+            "integer"
+        );
+        this.values.put(cores.getName(), value.get("cpu").get("cores_per_socket").asText());
         // - Memory
         final Resource memory = this.variable(
             attributes,
@@ -162,7 +178,12 @@ public final class Data2Hcl {
         final NameValuePair respooli = HclFactory.eINSTANCE.createNameValuePair();
         respooli.setName("resource_pool_id");
         respooli.setValue(
-            this.reference("data", "vsphere_resource_pool", respool.getName(), "id")
+            this.reference(
+                respool.getSpecifier(),
+                respool.getType(),
+                respool.getName(),
+                "id"
+            )
         );
         attributes.getElements().add(respooli);
         // - Guest OS
@@ -181,12 +202,16 @@ public final class Data2Hcl {
             "string"
         );
         this.values.put(scsi.getName(), this.scsiType(value.get("scsi_adapters")));
-        // TODO disks
-        // TODO datastore
+        // - Disks
+        value.get("disks").forEach(
+            disk -> this.handleDisk(resource.getName(), datacenter, disk, attributes)
+        );
         // - Network interfaces
         value.get("nics").forEach(
             nic -> this.handleNic(resource.getName(), datacenter, nic, attributes)
         );
+        // TODO cdrom
+        //  terraform.io/docs/providers/vsphere/r/virtual_machine.html#cdrom-options
         resource.setValue(attributes);
         this.spec.getResources().add(resource);
     }
@@ -221,13 +246,79 @@ public final class Data2Hcl {
     }
 
     /**
+     * Creates resources for the given disk.
+     * @param vmname The VM id
+     * @param datacenter The datacenter id
+     * @param node The JSON node
+     * @param attributes The VM attributes
+     */
+    private void handleDisk(final String vmname, final String datacenter,
+        final JsonNode node, final Dictionary attributes) {
+        final JsonNode value = node.get("value");
+        final String diskn =
+            this.reserveName("var", String.format("%s_disk_%%d", vmname));
+        final NameValuePair attribute = HclFactory.eINSTANCE.createNameValuePair();
+        final Dictionary dictionary = HclFactory.eINSTANCE.createDictionary();
+        attribute.setName("disk");
+        attribute.setValue(dictionary);
+        // - Size
+        final Resource size = this.variable(
+            dictionary,
+            String.format("%s_size", diskn),
+            "size",
+            "string"
+        );
+        final long capacity =
+            Math.round(value.get("capacity").asDouble() / Data2Hcl.BYTES_IN_A_GB);
+        this.values.put(size.getName(), String.valueOf(capacity));
+        // - Unit number
+        final Resource unit = this.variable(
+            dictionary,
+            String.format("%s_unit_number", diskn),
+            "unit_number",
+            "integer"
+        );
+        this.values.put(unit.getName(), value.get("scsi").get("unit").asText());
+        // - Label and Datastore
+        final Pattern pattern = Pattern.compile("\\[([\\w\\-]+)\\]\\s(.+)");
+        final Matcher matcher =
+            pattern.matcher(value.get("backing").get("vmdk_file").asText());
+        if (matcher.find()) {
+            // - Label
+            // TODO this may be wrong (not sure if this should be "path" instead)
+            final Resource label = this.variable(
+                dictionary,
+                String.format("%s_label", diskn),
+                "label",
+                "string"
+            );
+            this.values.put(label.getName(), matcher.group(2));
+            // - Datastore
+            final Resource dsdata =
+                this.findOrCreateDatastoreData(matcher.group(1), datacenter);
+            final NameValuePair datastorei =
+                HclFactory.eINSTANCE.createNameValuePair();
+            datastorei.setName("datastore_id");
+            datastorei.setValue(
+                this.reference(
+                    dsdata.getSpecifier(),
+                    dsdata.getType(),
+                    dsdata.getName(),
+                    "id"
+                )
+            );
+            dictionary.getElements().add(datastorei);
+        }
+        attributes.getElements().add(attribute);
+    }
+
+    /**
      * Creates resources for the given network interface.
      * @param vmname The reserved name for the vm
      * @param datacenter The datacenter's id
      * @param node The JSON node
      * @param attributes The VM attributes to update
      */
-    @SuppressWarnings("checkstyle:ParameterNumber")
     private void handleNic(final String vmname, final String datacenter,
         final JsonNode node, final Dictionary attributes) {
         final JsonNode value = node.get("value");
@@ -236,7 +327,7 @@ public final class Data2Hcl {
         // TODO other attributes?
         final Resource type = this.variable(
             dictionary,
-            String.format("%s_adapter_type", vmname),
+            String.format("%s_adapter_%%d_type", vmname),
             "adapter_type",
             "string"
         );
@@ -244,8 +335,9 @@ public final class Data2Hcl {
         // Network id: data + variable resources
         final String netname = value.get("backing").get("network_name").asText();
         final Resource netdata;
-        if (this.index.containsKey(netname)) {
-            netdata = this.index.get(netname);
+        final String prefix = "network-";
+        if (this.index.containsKey(prefix + netname)) {
+            netdata = this.index.get(prefix + netname);
         } else {
             netdata = HclFactory.eINSTANCE.createResource();
             final Dictionary netvalue = HclFactory.eINSTANCE.createDictionary();
@@ -255,7 +347,7 @@ public final class Data2Hcl {
             // Network label
             final Resource labelvar = this.variable(
                 netvalue,
-                String.format("%s_interface_label", netdata.getName()),
+                String.format("%s_interface_%%d_label", netdata.getName()),
                 "name",
                 "string"
             );
@@ -265,17 +357,26 @@ public final class Data2Hcl {
             final NameValuePair dataattr = HclFactory.eINSTANCE.createNameValuePair();
             dataattr.setName("datacenter_id");
             dataattr.setValue(
-                this.reference("data", "vsphere_datacenter", datadata.getName(), "id")
+                this.reference(
+                    datadata.getSpecifier(),
+                    datadata.getType(),
+                    datadata.getName(),
+                    "id")
             );
             netvalue.getElements().add(dataattr);
             netdata.setValue(netvalue);
             this.spec.getResources().add(netdata);
-            this.index.put(netname, netdata);
+            this.index.put(prefix + netname, netdata);
         }
         final NameValuePair networki = HclFactory.eINSTANCE.createNameValuePair();
         networki.setName("network_id");
         networki.setValue(
-            this.reference("data", "vsphere_network", netdata.getName(), "id")
+            this.reference(
+                netdata.getSpecifier(),
+                netdata.getType(),
+                netdata.getName(),
+                "id"
+            )
         );
         dictionary.getElements().add(networki);
         attribute.setName("network_interface");
@@ -290,8 +391,9 @@ public final class Data2Hcl {
      */
     private Resource findOrCreateDatacenterData(final String id) {
         final Resource datacenter;
-        if (this.index.containsKey(id)) {
-            datacenter = this.index.get(id);
+        final String prefix = "datacenter-";
+        if (this.index.containsKey(prefix + id)) {
+            datacenter = this.index.get(prefix + id);
         } else {
             datacenter = HclFactory.eINSTANCE.createResource();
             datacenter.setSpecifier("data");
@@ -315,9 +417,55 @@ public final class Data2Hcl {
             this.values.put(datavar.getName(), name);
             datacenter.setValue(dictionary);
             this.spec.getResources().add(datacenter);
-            this.index.put(id, datacenter);
+            this.index.put(prefix + id, datacenter);
         }
         return datacenter;
+    }
+
+    /**
+     * Finds or create a datastore's data resource.
+     * @param id The datastore's id
+     * @param datacenter The associated datastore's id
+     * @return The data resource
+     */
+    private Resource findOrCreateDatastoreData(final String id,
+        final String datacenter) {
+        final Resource datastore;
+        final String prefix = "datastore-";
+        if (this.index.containsKey(prefix + id)) {
+            datastore = this.index.get(prefix + id);
+        } else {
+            datastore = HclFactory.eINSTANCE.createResource();
+            datastore.setSpecifier("data");
+            datastore.setType("vsphere_datastore");
+            datastore.setName(this.reserveName("datastore", "datastore_%d"));
+            final Dictionary attributes = HclFactory.eINSTANCE.createDictionary();
+            datastore.setValue(attributes);
+            // - name
+            final Resource namevar = this.variable(
+                attributes,
+                String.format("%s_name", datastore.getName()),
+                "name",
+                "string"
+            );
+            this.values.put(namevar.getName(), id);
+            // - datacenter_id
+            final Resource dcdata = this.findOrCreateDatacenterData(datacenter);
+            final NameValuePair datacenteri = HclFactory.eINSTANCE.createNameValuePair();
+            datacenteri.setName("datacenter_id");
+            datacenteri.setValue(
+                this.reference(
+                    dcdata.getSpecifier(),
+                    dcdata.getType(),
+                    dcdata.getName(),
+                    "id"
+                )
+            );
+            attributes.getElements().add(datacenteri);
+            this.spec.getResources().add(datastore);
+            this.index.put(prefix + id, datastore);
+        }
+        return datastore;
     }
 
     /**
@@ -329,8 +477,9 @@ public final class Data2Hcl {
     private Resource findOrCreateResourcePoolData(final String id,
         final String datacenter) {
         final Resource respool;
-        if (this.index.containsKey(id)) {
-            respool = this.index.get(id);
+        final String prefix = "resource-pool-";
+        if (this.index.containsKey(prefix + id)) {
+            respool = this.index.get(prefix + id);
         } else {
             respool = HclFactory.eINSTANCE.createResource();
             respool.setSpecifier("data");
@@ -358,12 +507,17 @@ public final class Data2Hcl {
             final NameValuePair datacenteri = HclFactory.eINSTANCE.createNameValuePair();
             datacenteri.setName("datacenter_id");
             datacenteri.setValue(
-                this.reference("data", "vsphere_datacenter", dcdata.getName(), "id")
+                this.reference(
+                    dcdata.getSpecifier(),
+                    dcdata.getType(),
+                    dcdata.getName(),
+                    "id"
+                )
             );
             attributes.getElements().add(datacenteri);
             respool.setValue(attributes);
             this.spec.getResources().add(respool);
-            this.index.put(id, respool);
+            this.index.put(prefix + id, respool);
         }
         return respool;
     }
