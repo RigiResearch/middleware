@@ -3,6 +3,10 @@ plugins {
   id "org.xtext.xtend"
 }
 
+repositories {
+  flatDir dirs: "lib"
+}
+
 sourceSets {
   main {
     xtendOutputDir = "src/main/xtend-gen"
@@ -14,6 +18,8 @@ sourceSets {
 
 dependencies {
   implementation project(":metamodels:hcl")
+  implementation name: "org.eclipse.emf.compare_3.5.3.201909101346"
+  implementation name: "org.eclipse.emf.compare.source_3.5.3.201909101346"
   implementation "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   implementation "org.eclipse.xtend:org.eclipse.xtend.lib:${xtextVersion}"

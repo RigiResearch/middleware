@@ -1,5 +1,7 @@
-package com.rigiresearch.middleware.coordinator;
+package com.rigiresearch.middleware.metamodels.hcl;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -7,6 +9,7 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -38,10 +41,12 @@ public final class Server {
     /**
      * Default constructor.
      * @throws ConfigurationException If the configuration file is not found
+     * @throws GitAPIException See {@link EvolutionCoordination}
+     * @throws IOException See {@link EvolutionCoordination}
+     * @throws URISyntaxException See {@link EvolutionCoordination}
      */
-    public Server()
-        throws ConfigurationException {
-        this.coordinator = new EvolutionCoordination();
+    public Server() throws ConfigurationException, GitAPIException, IOException,
+        URISyntaxException {
         this.config = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
             PropertiesConfiguration.class
         ).configure(
@@ -49,6 +54,7 @@ public final class Server {
                 .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
                 .setFileName("coordinator.properties")
         ).getConfiguration();
+        this.coordinator = new EvolutionCoordination(this.config);
     }
 
     /**
@@ -58,9 +64,9 @@ public final class Server {
         Spark.port(this.config.getInt("coordinator.port"));
         final int okay = 200;
         Spark.post("/", (request, response) -> {
-            this.coordinator.toString();
-            Server.LOGGER.info(request.body());
+            this.coordinator.runtimeUpdate(request.body());
             response.status(okay);
+            // TODO return a summary of what was done
             return "";
         });
         Server.LOGGER.info(

@@ -1,8 +1,6 @@
-package com.rigiresearch.middleware.coordinator;
+package com.rigiresearch.middleware.metamodels.hcl;
 
 import com.google.common.base.Predicates;
-import com.rigiresearch.middleware.metamodels.hcl.HclPackage;
-import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.BasicMonitor;
@@ -17,26 +15,28 @@ import org.eclipse.emf.compare.scope.DefaultComparisonScope;
 import org.eclipse.emf.compare.utils.EMFComparePredicates;
 
 /**
- * A component for coordinating the specification evolution.
+ * A merge utility tailored for HCL specifications.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
-public final class EvolutionCoordination {
+public final class HclMergeStrategy {
 
     /**
-     * Merges two HCL models.
-     * @param previous The previous version of the model
-     * @param current The current version of the model
-     * @return A non-null specification
+     * A predicate to filter diff elements.
      */
-    public Specification merge(final Specification previous,
-        final Specification current) {
-        final Comparison comparison = EMFCompare.builder()
-            .setDiffEngine(new HclDiffEngine())
-            .build()
-            .compare(new DefaultComparisonScope(previous, current, null));
-        final Predicate<? super Diff> predicate = Predicates.and(
+    private final Predicate<? super Diff> predicate;
+
+    /**
+     * A batch merger.
+     */
+    private final IBatchMerger merger;
+
+    /**
+     * Default constructor.
+     */
+    public HclMergeStrategy() {
+        this.predicate = Predicates.and(
             // Do not replace the whole dictionary but only element by element
             Predicates.not(
                 EMFComparePredicates.onFeature(
@@ -53,13 +53,28 @@ public final class EvolutionCoordination {
             // Do not merge null elements
             diff -> diff.getMatch().getRight() != null
         );
+        this.merger = new BatchMerger(
+            IMerger.RegistryImpl.createStandaloneInstance()
+        );
+    }
+
+    /**
+     * Merges two HCL models.
+     * @param previous The previous version of the model
+     * @param current The current version of the model
+     * @return The previous specification containing all of the changes
+     */
+    public Specification merge(final Specification previous,
+        final Specification current) {
+        final Comparison comparison = EMFCompare.builder()
+            .setDiffEngine(new HclDiffEngine())
+            .build()
+            .compare(new DefaultComparisonScope(previous, current, null));
         final Iterable<Diff> filtered = comparison.getDifferences()
             .stream()
-            .filter(predicate)
+            .filter(this.predicate)
             .collect(Collectors.toList());
-        final IBatchMerger merger =
-            new BatchMerger(IMerger.RegistryImpl.createStandaloneInstance());
-        merger.copyAllRightToLeft(filtered, new BasicMonitor());
+        this.merger.copyAllRightToLeft(filtered, new BasicMonitor());
         return previous;
     }
 

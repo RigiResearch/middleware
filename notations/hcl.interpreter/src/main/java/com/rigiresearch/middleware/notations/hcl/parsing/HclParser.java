@@ -3,6 +3,7 @@ package com.rigiresearch.middleware.notations.hcl.parsing;
 import com.google.inject.Injector;
 import com.rigiresearch.middleware.metamodels.hcl.HclFactory;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
+import com.rigiresearch.middleware.metamodels.hcl.SpecificationSet;
 import com.rigiresearch.middleware.notations.hcl.HclStandaloneSetup;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -11,6 +12,7 @@ import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.URI;
@@ -56,6 +58,11 @@ public final class HclParser {
     private final IResourceValidator validator;
 
     /**
+     * An HCL to text transformation.
+     */
+    private final Hcl2Text transformation;
+
+    /**
      * Default constructor.
      */
     public HclParser() {
@@ -63,6 +70,7 @@ public final class HclParser {
             .createInjectorAndDoEMFRegistration();
         this.resources = this.initialize();
         this.validator = this.injector.getInstance(IResourceValidator.class);
+        this.transformation = new Hcl2Text();
     }
 
     /**
@@ -83,6 +91,16 @@ public final class HclParser {
      */
     public String parse(final Specification specification) {
         return new Hcl2Text().source(specification);
+    }
+
+    /**
+     * Parses a set of HCL models and returns the corresponding source code
+     * mapped with their file URI.
+     * @param set A specification set
+     * @return A non-null text
+     */
+    public Map<URI, String> parse(final SpecificationSet set) {
+        return this.transformation.source(set);
     }
 
     /**

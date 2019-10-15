@@ -9,6 +9,7 @@ import com.rigiresearch.middleware.metamodels.hcl.Number
 import com.rigiresearch.middleware.metamodels.hcl.Resource
 import com.rigiresearch.middleware.metamodels.hcl.ResourceReference
 import com.rigiresearch.middleware.metamodels.hcl.Specification
+import com.rigiresearch.middleware.metamodels.hcl.SpecificationSet
 import com.rigiresearch.middleware.metamodels.hcl.Text
 import com.rigiresearch.middleware.metamodels.hcl.TextExpression
 import java.util.PriorityQueue
@@ -29,12 +30,12 @@ class Hcl2Text {
     /**
      * A comparator for sorting resources.
      */
-    private static val ResourceComparator R_COMPARATOR = new ResourceComparator();
+    static val ResourceComparator R_COMPARATOR = new ResourceComparator();
 
     /**
      * A comparator for sorting name-value pairs.
      */
-    private static val NameValuePairComparator NV_COMPARATOR = new NameValuePairComparator();
+    static val NameValuePairComparator NV_COMPARATOR = new NameValuePairComparator();
 
     /**
      * Returns the textual representation of the given specification.

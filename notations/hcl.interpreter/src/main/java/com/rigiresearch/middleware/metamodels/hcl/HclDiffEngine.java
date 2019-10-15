@@ -1,8 +1,5 @@
-package com.rigiresearch.middleware.coordinator;
+package com.rigiresearch.middleware.metamodels.hcl;
 
-import com.rigiresearch.middleware.metamodels.hcl.HclPackage;
-import com.rigiresearch.middleware.metamodels.hcl.NameValuePair;
-import com.rigiresearch.middleware.metamodels.hcl.Resource;
 import org.eclipse.emf.compare.Match;
 import org.eclipse.emf.compare.diff.DefaultDiffEngine;
 import org.eclipse.emf.compare.diff.FeatureFilter;
@@ -19,7 +16,7 @@ public final class HclDiffEngine extends DefaultDiffEngine {
 
     @Override
     protected FeatureFilter createFeatureFilter() {
-        return new HclDiffEngine.HclFeatureFilter();
+        return new HclFeatureFilter();
     }
 
     /**
@@ -34,7 +31,7 @@ public final class HclDiffEngine extends DefaultDiffEngine {
             if (match.getLeft() == null || match.getRight() == null) {
                 ignore = super.isIgnoredReference(match, reference);
             } else {
-                ignore = HclDiffEngine.HclFeatureFilter.handle(
+                ignore = HclFeatureFilter.handle(
                     reference,
                     match.getLeft()
                 );
