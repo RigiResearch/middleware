@@ -100,22 +100,25 @@ public final class SerializationParser {
         return this.asEObjects(
             Files.readAllLines(Paths.get(file.toURI()))
                 .stream()
-                .collect(Collectors.joining("\n"))
+                .collect(Collectors.joining("\n")),
+            URI.createFileURI(file.getPath())
         );
     }
 
     /**
      * Loads an {@link EObject} from the given XML representation.
      * @param xml The  XML-formatted string
+     * @param uri The URI to assign to the newly created resource
      * @return The corresponding list of eObjects
      * @throws IOException If something fails while loading the file
      */
-    public EList<EObject> asEObjects(final String xml)
+    public EList<EObject> asEObjects(final String xml, final URI uri)
         throws IOException {
         final XMIResource resource = new XMIResourceImpl();
         final URIConverter.ReadableInputStream stream =
             new URIConverter.ReadableInputStream(new StringReader(xml));
         resource.load(stream, this.params);
+        resource.setURI(uri);
         return resource.getContents();
     }
 

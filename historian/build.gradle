@@ -5,7 +5,6 @@ plugins {
 
 repositories {
   flatDir dirs: "lib"
-  mavenCentral()
   maven {
     url "https://repo.eclipse.org/content/repositories/atl-releases/"
   }

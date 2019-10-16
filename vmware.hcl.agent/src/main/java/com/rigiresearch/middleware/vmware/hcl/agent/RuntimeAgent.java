@@ -101,13 +101,12 @@ public final class RuntimeAgent {
      * Handles the collected data from vSphere.
      * @param data The collected data
      */
-    private void handle(final JsonNode data) {
+    public void handle(final JsonNode data) {
         final Specification specification = new Data2Hcl(data).specification();
         try {
             final CloseableHttpClient client = HttpClients.createDefault();
-            final HttpPost request = new HttpPost(
-                this.config.getString("coordinator.url")
-            );
+            final HttpPost request =
+                new HttpPost(this.config.getString("coordinator.url"));
             final String type = "application/xml";
             request.setHeader("Accept", type);
             request.setHeader("Content-Type", type);

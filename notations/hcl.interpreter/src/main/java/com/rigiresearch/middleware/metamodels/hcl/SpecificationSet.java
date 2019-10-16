@@ -5,13 +5,13 @@ import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import com.rigiresearch.middleware.notations.hcl.runtime.HclQualifiedNameProvider;
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.util.EcoreUtil;
@@ -42,7 +42,7 @@ public final class SpecificationSet {
     /**
      * The specifications composing this set.
      */
-    private final List<Specification> elements;
+    private final Map<URI, Specification> elements;
 
     /**
      * A fqn-(resource-spec) mapping to recreate the source code files.
@@ -64,9 +64,14 @@ public final class SpecificationSet {
      * @param specifications The specifications composing this set
      */
     public SpecificationSet(final Specification... specifications) {
-        this.elements = Arrays.stream(specifications)
-            .collect(Collectors.toCollection(ArrayList::new));
         this.provider = new HclQualifiedNameProvider();
+        this.elements = Arrays.stream(specifications)
+            .collect(
+                Collectors.toMap(
+                    tmp -> tmp.eResource().getURI(),
+                    Function.identity()
+                )
+            );
         this.mapping = this.initializeMapping();
         this.parser = new HclParser();
     }
@@ -78,7 +83,7 @@ public final class SpecificationSet {
     private Map<QualifiedName, Map.Entry<Resource, Specification>> initializeMapping() {
         final Map<QualifiedName, Map.Entry<Resource, Specification>> map =
             new HashMap<>(SpecificationSet.INITIAL_CAPACITY);
-        for (final Specification spec : this.elements) {
+        for (final Specification spec : this.elements.values()) {
             for (final Resource resource : spec.getResources()) {
                 map.put(
                     this.provider.getFullyQualifiedName(resource),
@@ -101,13 +106,11 @@ public final class SpecificationSet {
         try {
             specification = this.parser.parse("");
         } catch (final HclParsingException | IOException exception) {
-            SpecificationSet.LOGGER.error(
-                "Error creating empty specification",
-                exception
-            );
+            SpecificationSet.LOGGER.error("Error creating empty specification", exception);
         }
-        for (final Specification spec : this.elements) {
-            specification.getResources().addAll(spec.getResources());
+        for (final Specification spec : this.elements.values()) {
+            specification.getResources()
+                .addAll(EcoreUtil.copyAll(spec.getResources()));
         }
         return specification;
     }
@@ -118,16 +121,7 @@ public final class SpecificationSet {
      * @return A non-null map
      */
     public Map<URI, Specification> getMapping() {
-        final Map<URI, Specification> map =
-            new HashMap<>(SpecificationSet.INITIAL_CAPACITY);
-        for (final Specification specification : this.elements) {
-            if (map.containsKey(specification.eResource().getURI())) {
-                throw new IllegalStateException("URI must be unique per specification");
-            } else {
-                map.put(specification.eResource().getURI(), specification);
-            }
-        }
-        return map;
+        return Collections.unmodifiableMap(this.elements);
     }
 
     /**
@@ -145,33 +139,53 @@ public final class SpecificationSet {
      * @param specification An updated unified specification
      */
     public void update(final Specification specification) {
-        final Map<URI, Specification> specs = this.getMapping();
         // 1. Delete resources
         this.removeResources(specification);
         // 2. Update and add resources
         final boolean specifiers =
-            SpecificationSet.isOrganizedBasedOnSpecifiers(specs);
+            SpecificationSet.isOrganizedBasedOnSpecifiers(this.elements);
         for (final Resource tmp : specification.getResources()) {
             final QualifiedName fqn = this.provider.getFullyQualifiedName(tmp);
             if (this.mapping.containsKey(fqn)) {
                 final Map.Entry<Resource, Specification> entry = this.mapping.get(fqn);
-                // Replace the old resource with the new one
-                entry.getValue().getResources().remove(entry.getKey());
-                entry.getValue().getResources().add(EcoreUtil.copy(tmp));
+                this.replace(entry.getValue(), entry.getKey(), tmp);
             } else {
                 // New resource
-                if (specs.size() == 1) {
-                    final Specification spec = specs.values().iterator().next();
+                if (this.elements.size() == 1) {
+                    final Specification spec = this.elements.values().iterator().next();
                     spec.getResources().add(EcoreUtil.copy(tmp));
                     this.mapping.put(fqn, new AbstractMap.SimpleEntry<>(tmp, spec));
                 } else if (specifiers && !"resource".equals(tmp.getSpecifier())) {
                     final String name = String.format("%s.tf", tmp.getSpecifier());
-                    this.addToCorrespondingUri(URI.createFileURI(name), tmp, specs);
+                    this.addToCorrespondingUri(URI.createFileURI(name), tmp);
                 } else {
-                    this.addToCorrespondingUri(URI.createFileURI("main.tf"), tmp, specs);
+                    this.addToCorrespondingUri(URI.createFileURI("main.tf"), tmp);
                 }
             }
         }
+    }
+
+    /**
+     * Replace a resource within a specification.
+     * @param specification The specification
+     * @param previous The old resource
+     * @param next The new resource
+     * @return Whether the resource was removed
+     */
+    private boolean replace(final Specification specification,
+        final Resource previous, final Resource next) {
+        boolean replaced = false;
+        final Iterator<Resource> iterator = specification.getResources().iterator();
+        while (iterator.hasNext()) {
+            final QualifiedName fqn = this.provider.getFullyQualifiedName(iterator.next());
+            if (fqn.equals(this.provider.getFullyQualifiedName(previous))) {
+                iterator.remove();
+                specification.getResources().add(EcoreUtil.copy(next));
+                replaced = true;
+                break;
+            }
+        }
+        return replaced;
     }
 
     /**
@@ -194,7 +208,9 @@ public final class SpecificationSet {
                 // Remove the specification if that was the only resource in it
                 final Specification spec = this.mapping.get(fqn).getValue();
                 if (spec.getResources().size() == 1) {
-                    this.elements.remove(spec);
+                    this.elements.remove(spec.eResource().getURI());
+                    SpecificationSet.LOGGER
+                        .debug("Removed specification containing resource {}", fqn);
                 } else {
                     spec.getResources()
                         .removeIf(
@@ -203,6 +219,8 @@ public final class SpecificationSet {
                 }
                 // Remove the resource from the mapping
                 iterator.remove();
+                SpecificationSet.LOGGER
+                    .debug("Removed resource {} because it's not in the update", fqn);
             }
         }
     }
@@ -211,29 +229,24 @@ public final class SpecificationSet {
      * Adds the given resource to an existing specification or creates a new one.
      * @param uri The expected URI associated with the specification
      * @param resource The resource to add
-     * @param specifications A URI-specification mapping
      */
-    private void addToCorrespondingUri(final URI uri, final Resource resource,
-        final Map<URI, Specification> specifications) {
+    private void addToCorrespondingUri(final URI uri, final Resource resource) {
         final QualifiedName fqn = this.provider.getFullyQualifiedName(resource);
-        final Optional<URI> optional = specifications.keySet()
+        final Optional<URI> optional = this.elements.keySet()
             .stream()
             .filter(tmp -> tmp.toFileString().endsWith(uri.lastSegment()))
             .findAny();
         Specification spec = null;
         if (optional.isPresent()) {
-            spec = specifications.get(optional.get());
+            spec = this.elements.get(optional.get());
         } else {
             try {
                 spec = this.parser.parse(this.parser.resource(uri));
             } catch (final HclParsingException exception) {
                 // This shouldn't happen
-                SpecificationSet.LOGGER.error(
-                    "Error parsing empty resource",
-                    exception
-                );
+                SpecificationSet.LOGGER.error("Error parsing empty resource", exception);
             }
-            this.elements.add(spec);
+            this.elements.put(spec.eResource().getURI(), spec);
         }
         spec.getResources().add(EcoreUtil.copy(resource));
         this.mapping.put(fqn, new AbstractMap.SimpleEntry<>(resource, spec));
@@ -247,7 +260,7 @@ public final class SpecificationSet {
      */
     private static boolean isOrganizedBasedOnSpecifiers(
         final Map<URI, Specification> specifications) {
-        boolean specifiers = true;
+        boolean specifiers = !specifications.entrySet().isEmpty();
         loop: for (final Map.Entry<URI, Specification> entry
             : specifications.entrySet()) {
             final String segment = entry.getKey().lastSegment();

@@ -28,6 +28,21 @@ final class HclMergeStrategyTest {
     private static final String ERROR_MESSAGE = "Incorrect merge result";
 
     /**
+     * Format string for the previous file.
+     */
+    private static final String PREVIOUS = "%s/previous.tf";
+
+    /**
+     * Format string for the current file.
+     */
+    private static final String CURRENT = "%s/current.tf";
+
+    /**
+     * Format string for the result file.
+     */
+    private static final String RESULT = "%s/result.tf";
+
+    /**
      * An HCL parser.
      */
     private static final HclParser PARSER = new HclParser();
@@ -45,15 +60,46 @@ final class HclMergeStrategyTest {
     @ParameterizedTest
     void testMerge(final String directory) throws Exception {
         final Specification previous = HclMergeStrategyTest.PARSER.parse(
-            this.source(String.format("%s/previous.tf", directory))
+            HclMergeStrategyTest.source(
+                String.format(HclMergeStrategyTest.PREVIOUS, directory)
+            )
         );
         final Specification current = HclMergeStrategyTest.PARSER.parse(
-            this.source(String.format("%s/current.tf", directory))
+            HclMergeStrategyTest.source(
+                String.format(HclMergeStrategyTest.CURRENT, directory)
+            )
         );
         final Specification result = new HclMergeStrategy()
             .merge(previous, current);
         Assertions.assertEquals(
-            this.source(String.format("%s/result.tf", directory)),
+            HclMergeStrategyTest.source(
+                String.format(HclMergeStrategyTest.RESULT, directory)
+            ),
+            HclMergeStrategyTest.PARSER.parse(result),
+            HclMergeStrategyTest.ERROR_MESSAGE
+        );
+    }
+
+    @CsvSource("complex")
+    @ParameterizedTest
+    void testSpecificationSet(final String directory) throws Exception {
+        final Specification previous = HclMergeStrategyTest.PARSER.parse(
+            HclMergeStrategyTest.source(
+                String.format(HclMergeStrategyTest.PREVIOUS, directory)
+            )
+        );
+        final SpecificationSet set = new SpecificationSet(previous);
+        final Specification current = HclMergeStrategyTest.PARSER.parse(
+            HclMergeStrategyTest.source(
+                String.format(HclMergeStrategyTest.CURRENT, directory)
+            )
+        );
+        final Specification result = new HclMergeStrategy()
+            .merge(set.unified(), current);
+        Assertions.assertEquals(
+            HclMergeStrategyTest.source(
+                String.format(HclMergeStrategyTest.RESULT, directory)
+            ),
             HclMergeStrategyTest.PARSER.parse(result),
             HclMergeStrategyTest.ERROR_MESSAGE
         );
@@ -65,7 +111,7 @@ final class HclMergeStrategyTest {
      * @return A non-null string
      * @throws Exception If there's an I/O error
      */
-    private String source(final String path) throws Exception {
+    private static String source(final String path) throws Exception {
         final byte[] buffer = new byte[HclMergeStrategyTest.DEFAULT_SIZE];
         final InputStream input = Thread.currentThread()
             .getContextClassLoader()

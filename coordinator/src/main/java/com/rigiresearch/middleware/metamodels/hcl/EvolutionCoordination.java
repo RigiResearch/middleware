@@ -5,6 +5,7 @@ import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import org.apache.commons.configuration2.Configuration;
+import org.eclipse.emf.common.util.URI;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.URIish;
 import org.slf4j.Logger;
@@ -58,7 +59,10 @@ public final class EvolutionCoordination {
     public void runtimeUpdate(final String xml) throws GitAPIException {
         try {
             this.repository.update(
-                (Specification) this.serialization.asEObjects(xml).get(0)
+                (Specification) this.serialization.asEObjects(
+                    xml,
+                    URI.createFileURI("tmp.tf")
+                ).get(0)
             );
         } catch (final IOException exception) {
             EvolutionCoordination.LOGGER.error(

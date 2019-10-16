@@ -1,26 +1,30 @@
 plugins {
-    id "java"
+  id "application"
 }
 
 repositories {
-    // Repositories for transitive dependencies
-    maven {
-        url "https://repo.eclipse.org/content/repositories/atl-releases/"
-        content {
-            includeGroup "org.eclipse.m2m.atl"
-        }
+  // Repositories for transitive dependencies
+  maven {
+    url "https://repo.eclipse.org/content/repositories/atl-releases/"
+    content {
+      includeGroup "org.eclipse.m2m.atl"
     }
-    maven {
-        url "https://jitpack.io"
-        content {
-            includeGroup "com.github.vmware"
-        }
+  }
+  maven {
+    url "https://jitpack.io"
+    content {
+      includeGroup "com.github.vmware"
     }
+  }
 }
 
 dependencies {
-    implementation project(":historian.runtime")
-    implementation project(":metamodels")
-    implementation project(":metamodels:hcl")
-    implementation "org.apache.httpcomponents:httpclient:4.5.9"
+  implementation project(":historian.runtime")
+  implementation project(":metamodels")
+  implementation project(":metamodels:hcl")
+  implementation "org.apache.httpcomponents:httpclient:4.5.9"
+}
+
+application {
+  mainClassName = "com.rigiresearch.middleware.vmware.hcl.agent.Application"
 }

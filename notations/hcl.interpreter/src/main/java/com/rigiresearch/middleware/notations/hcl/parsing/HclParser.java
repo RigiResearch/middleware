@@ -90,7 +90,7 @@ public final class HclParser {
      * @return A non-null text
      */
     public String parse(final Specification specification) {
-        return new Hcl2Text().source(specification);
+        return this.transformation.source(specification);
     }
 
     /**

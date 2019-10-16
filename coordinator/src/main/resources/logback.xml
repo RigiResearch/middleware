@@ -15,7 +15,7 @@
   <root level="info">
     <appender-ref ref="STDOUT"/>
   </root>
-  <logger name="com.rigiresearch.middleware.coordinator" level="debug"/>
+  <logger name="com.rigiresearch.middleware" level="debug"/>
   <logger name="spark" level="error"/>
   <logger name="org.eclipse.jetty" level="error"/>
 </configuration>

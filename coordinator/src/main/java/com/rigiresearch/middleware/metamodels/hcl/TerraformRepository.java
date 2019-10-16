@@ -7,9 +7,13 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.jgit.api.CreateBranchCommand;
@@ -70,26 +74,51 @@ public final class TerraformRepository {
      * @throws IOException If there's an error creating a temporal directory
      * @throws GitAPIException If there's a problem cloning the Git repository
      */
-    @SuppressWarnings("PMD.ConstructorOnlyInitializesOrCallOtherConstructors")
     public TerraformRepository(final URIish remote, final String token)
         throws IOException, GitAPIException {
         this.credentials = new UsernamePasswordCredentialsProvider(token, "");
-        this.repository = Git.cloneRepository()
+        this.repository = this.initializeRepository(remote);
+        this.skipci = false;
+        this.parser = new HclParser();
+        this.merger = new HclMergeStrategy();
+    }
+
+    /**
+     * Clones a git repository and creates a shutdown hook to remove it.
+     * @param remote The URL of the repository
+     * @return A git repoitory
+     * @throws IOException If there's an error creating a temporal directory
+     * @throws GitAPIException If there's a problem cloning the Git repository
+     */
+    private Repository initializeRepository(final URIish remote)
+        throws IOException, GitAPIException {
+        final Repository repo = Git.cloneRepository()
             .setURI(remote.toString())
             .setDirectory(Files.createTempDirectory("").toFile())
             .setCredentialsProvider(this.credentials)
             .call()
             .getRepository();
-        this.skipci = false;
-        this.parser = new HclParser();
-        this.merger = new HclMergeStrategy();
+        TerraformRepository.LOGGER.info("Cloned repository {}", remote.toString());
         Runtime.getRuntime()
             .addShutdownHook(
-                new Thread(() -> this.repository.getDirectory()
-                    .getParentFile()
-                    .delete()
-                )
+                new Thread(() -> {
+                    try {
+                        final Path path =
+                            Paths.get(repo.getDirectory().getAbsolutePath());
+                        Files.walk(path)
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                    } catch (final IOException exception) {
+                        TerraformRepository.LOGGER.error(
+                            "Error removing temporary directory",
+                            exception
+                        );
+                    }
+                    TerraformRepository.LOGGER.info("Removed local repository");
+                })
             );
+        return repo;
     }
 
     /**
@@ -113,17 +142,20 @@ public final class TerraformRepository {
             }
             final Calendar calendar = Calendar.getInstance();
             final String branch = String.format(
-                "update-%d/%d/%d-%d:%d:%d",
+                "update/%d-%d-%d-%d_%d_%d",
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH),
-                calendar.get(Calendar.HOUR),
+                calendar.get(Calendar.HOUR_OF_DAY),
                 calendar.get(Calendar.MINUTE),
                 calendar.get(Calendar.SECOND)
             );
             git.branchCreate()
                 .setName(branch)
                 .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.SET_UPSTREAM)
+                .call();
+            git.checkout()
+                .setName(branch)
                 .call();
             this.addAndCommit(git);
             git.push()
@@ -132,6 +164,10 @@ public final class TerraformRepository {
                 .call();
             TerraformRepository.LOGGER.info("Pushed changes to remote repository");
             // TODO Create pull request
+            git.checkout()
+                .setName("master")
+                .call();
+            TerraformRepository.LOGGER.info("Checked out the master branch");
         }
     }
 
@@ -145,7 +181,8 @@ public final class TerraformRepository {
         throws HclParsingException, IOException {
         final File directory = this.repository.getDirectory().getParentFile();
         final File[] templates = directory.listFiles(
-            (file, name) -> !file.isDirectory() && name.endsWith(".tf")
+            (file, name) -> !new File(file, name).isDirectory()
+                && name.endsWith(".tf")
         );
         if (templates == null || templates.length == 0) {
             // The resources are being imported for the first time
@@ -160,12 +197,21 @@ public final class TerraformRepository {
             final Map<URI, String> source = this.parser.parse(set);
             for (final File template : templates) {
                 template.delete();
+                TerraformRepository.LOGGER.debug("Removed local template {}", template);
             }
             for (final Map.Entry<URI, String> entry : source.entrySet()) {
+                File template = new File(entry.getKey().toFileString());
+                if (!template.isAbsolute()) {
+                    template = new File(directory, entry.getKey().toFileString());
+                }
                 Files.write(
-                    new File(directory, entry.getKey().toFileString()).toPath(),
+                    template.toPath(),
                     entry.getValue().getBytes(),
                     StandardOpenOption.CREATE_NEW
+                );
+                TerraformRepository.LOGGER.debug(
+                    "Created template {}",
+                    entry.getKey().toFileString()
                 );
             }
         }
@@ -180,14 +226,23 @@ public final class TerraformRepository {
      */
     private void addAndCommit(final Git git)
         throws NoFilepatternException, GitAPIException {
-        for (final String file : git.status().call().getModified()) {
+        // Modified
+        final Collection<String> modified =
+            new ArrayList<>(git.status().call().getModified());
+        modified.addAll(git.status().call().getChanged());
+        for (final String file : modified) {
             git.add().addFilepattern(file).call();
             this.commit(git, String.format("Update %s", file));
         }
-        for (final String file : git.status().call().getMissing()) {
+        // Deleted
+        final Collection<String> deleted =
+            new ArrayList<>(git.status().call().getMissing());
+        deleted.addAll(git.status().call().getRemoved());
+        for (final String file : deleted) {
             git.rm().addFilepattern(file).call();
             this.commit(git, String.format("Delete %s", file));
         }
+        // Untracked
         for (final String file : git.status().call().getUntracked()) {
             git.add().addFilepattern(file).call();
             this.commit(git, String.format("Add %s", file));

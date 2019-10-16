@@ -29,6 +29,11 @@ public final class Server {
         LoggerFactory.getLogger(Server.class);
 
     /**
+     * The default port in case none is provided.
+     */
+    private static final int PORT = 5050;
+
+    /**
      * An evolution coordinator.
      */
     private final EvolutionCoordination coordinator;
@@ -61,7 +66,7 @@ public final class Server {
      * Runs an HTTP server for handling evolution requests.
      */
     public void run() {
-        Spark.port(this.config.getInt("coordinator.port"));
+        Spark.port(this.config.getInt("coordinator.port", Server.PORT));
         final int okay = 200;
         Spark.post("/", (request, response) -> {
             this.coordinator.runtimeUpdate(request.body());
