@@ -147,7 +147,8 @@ public final class ForkAndCollectAlgorithm {
                 // At this point, if two or more branches produce an object
                 // because they are different, they should not be processed
                 // together. That is possible only for the root object. Then,
-                // we have to separate them into equivalent groups.
+                // we have to separate them into groups based on the branches'
+                // names.
                 final Map<String, List<Monitor>> batches = this.splitBranches(next);
                 for (final List<Monitor> batch : batches.values()) {
                     final JsonNode data = this.data(batch);
