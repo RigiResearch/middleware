@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
  * A value extracted from a string based on an Xpath selector. This
  * implementation currently supports JSON content.
  * TODO Add support for XML content.
+ * TODO Use a JsonNode instead of the content string to stop parsing the nodes
+ *  from and to string, when this class is instantiated.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
