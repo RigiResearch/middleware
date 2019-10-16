@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<monitors xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
+  <monitor name="getVcenterVm">
+    <input name="vm" source="listVcenterVm">vm</input>
+    <mappings>
+      <transformation selector="value"/>
+      <augmentation inputs="vm"/>
+    </mappings>
+  </monitor>
+  <monitor name="getVcenterDatacenter">
+    <input name="datacenter" source="listVcenterDatacenter">datacenter</input>
+    <mappings>
+      <transformation selector="value"/>
+      <augmentation inputs="datacenter"/>
+    </mappings>
+  </monitor>
+  <monitor name="getVcenterResourcePool">
+    <input name="resource_pool" source="listVcenterResourcePool">resource_pool</input>
+    <mappings>
+      <transformation selector="value"/>
+      <augmentation inputs="resource_pool"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of datacenters -->
+  <monitor name="listVcenterDatacenter">
+    <output name="datacenter" selector="//datacenter" multivalued="true"/>
+    <mappings>
+      <transformation selector="//datacenter" multivalued="true"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of hosts -->
+  <monitor name="listVcenterHost">
+    <output name="host" selector="//host" multivalued="true"/>
+    <mappings>
+      <transformation selector="//host" multivalued="true"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of VMs -->
+  <monitor name="listVcenterVm">
+    <input name="filter.vms">vm-22306,vm-18551,vm-22232</input>
+    <output name="vm" selector="//vm" multivalued="true"/>
+    <mappings>
+      <transformation selector="//vm" multivalued="true"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of folders -->
+  <monitor name="listVcenterFolder">
+    <output name="folder" selector="//folder" multivalued="true"/>
+    <mappings>
+      <transformation selector="//folder" multivalued="true"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of resource pools -->
+  <monitor name="listVcenterResourcePool">
+    <output name="resource_pool" selector="//resource_pool" multivalued="true"/>
+    <mappings>
+      <transformation selector="//value" multivalued="true"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of VMs per folder -->
+  <monitor name="listVcenterVmFilteredByFolder" template="listVcenterVm">
+    <input name="filter.folders" source="listVcenterFolder">folder</input>
+    <mappings>
+      <transformation selector="//vm" multivalued="true" groupByInput="filter.folders"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of VMs per resource pool -->
+  <monitor name="listVcenterVmFilteredByResourcePool" template="listVcenterVm">
+    <input name="filter.resource_pools" source="listVcenterResourcePool">resource_pool</input>
+    <mappings>
+      <transformation selector="//vm" multivalued="true" groupByInput="filter.resource_pools"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of VMs per datacenter -->
+  <monitor name="listVcenterVmFilteredByDatacenter" template="listVcenterVm">
+    <input name="filter.datacenters" source="listVcenterDatacenter">datacenter</input>
+    <mappings>
+      <transformation selector="//vm" multivalued="true" groupByInput="filter.datacenters"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of VMs per host -->
+  <monitor name="listVcenterVmFilteredByHost" template="listVcenterVm">
+    <input name="filter.hosts" source="listVcenterHost">host</input>
+    <mappings>
+      <transformation selector="//vm" multivalued="true" groupByInput="filter.hosts"/>
+    </mappings>
+  </monitor>
+</monitors>
