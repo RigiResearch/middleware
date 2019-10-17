@@ -1,5 +1,8 @@
-package com.rigiresearch.middleware.metamodels.hcl;
+package com.rigiresearch.middleware.coordinator;
 
+import com.rigiresearch.middleware.metamodels.hcl.HclMergeStrategy;
+import com.rigiresearch.middleware.metamodels.hcl.Specification;
+import com.rigiresearch.middleware.metamodels.hcl.SpecificationSet;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParser;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.File;
@@ -18,8 +21,11 @@ import java.util.Map;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -66,6 +72,11 @@ public final class TerraformRepository {
      * A merge utility for HCL models.
      */
     private final HclMergeStrategy merger;
+
+    /**
+     * The current branch.
+     */
+    private Ref branch;
 
     /**
      * Default constructor.
@@ -131,17 +142,14 @@ public final class TerraformRepository {
     public void update(final Specification specification)
         throws IOException, GitAPIException, HclParsingException {
         try (Git git = Git.open(this.repository.getDirectory())) {
-            git.pull()
-                .setStrategy(MergeStrategy.THEIRS)
-                .setCredentialsProvider(this.credentials)
-                .call();
+            this.prepareBranch(git);
             this.updateTemplates(specification);
             if (git.status().call().isClean()) {
                 TerraformRepository.LOGGER.info("The repository is already up to date");
                 return;
             }
             final Calendar calendar = Calendar.getInstance();
-            final String branch = String.format(
+            final String name = String.format(
                 "update/%d-%d-%d-%d_%d_%d",
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
@@ -151,23 +159,63 @@ public final class TerraformRepository {
                 calendar.get(Calendar.SECOND)
             );
             git.branchCreate()
-                .setName(branch)
+                .setName(name)
                 .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.SET_UPSTREAM)
                 .call();
-            git.checkout()
-                .setName(branch)
+            this.branch = git.checkout()
+                .setName(name)
                 .call();
             this.addAndCommit(git);
             git.push()
-                .add(branch)
+                .add(name)
                 .setCredentialsProvider(this.credentials)
                 .call();
             TerraformRepository.LOGGER.info("Pushed changes to remote repository");
             // TODO Create pull request
-            git.checkout()
-                .setName("master")
+        }
+    }
+
+    /**
+     * Prepares the repository and the branch to use depending on the state of
+     * the repository and the remote branches.
+     * @param git The git repository
+     * @throws IOException If there's an I/O error
+     * @throws GitAPIException If there's a git error
+     */
+    private void prepareBranch(final Git git) throws IOException, GitAPIException {
+        if (this.branch == null) {
+            final Ref head = git.getRepository().findRef(Constants.HEAD);
+            if (head == null || head.getObjectId() == null) {
+                // This is a new repository. We need to create a file to have a HEAD
+                final File file =
+                    new File(git.getRepository().getDirectory().getParentFile(), ".gitignore");
+                file.createNewFile();
+                this.addAndCommit(git);
+            }
+            final String current = git.getRepository().getBranch();
+            this.branch = git.checkout().setName(current).call();
+            TerraformRepository.LOGGER.debug("Checked out branch '{}'", current);
+        }
+        // First, fetch the latest changes from the remote repo
+        git.fetch()
+            .setCredentialsProvider(this.credentials)
+            .setRemote(Constants.DEFAULT_REMOTE_NAME)
+            .call();
+        // Then, determine whether the current branch still exists
+        final String shorthand = this.branch.getName().replace("refs/heads/", "");
+        final boolean exists = git.branchList()
+            .setListMode(ListBranchCommand.ListMode.REMOTE)
+            .call()
+            .stream()
+            .anyMatch(ref -> ref.getName().contains(shorthand));
+        if (exists) {
+            // If it was created before, it hasn't been merged yet
+            git.merge()
+                .include(git.getRepository().findRef(Constants.FETCH_HEAD))
+                .setStrategy(MergeStrategy.THEIRS)
                 .call();
-            TerraformRepository.LOGGER.info("Checked out the master branch");
+        } else {
+            git.checkout().setName(Constants.MASTER).call();
         }
     }
 

@@ -60,7 +60,7 @@ public final class XpathValue {
     public JsonNode singleNode() throws IOException {
         final JsonNode node = XpathValue.MAPPER.readTree(this.content);
         if (!JsonXpath.exists(node, this.selector)) {
-            XpathValue.LOGGER.warn(
+            XpathValue.LOGGER.debug(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
             );
         }
@@ -86,7 +86,7 @@ public final class XpathValue {
         final JsonNodeXpathVisitor visitor = new JsonNodeXpathVisitor();
         JsonXpath.findAndUpdateMultiple(node, this.selector, visitor);
         if (visitor.getResult().size() == 0) {
-            XpathValue.LOGGER.warn(
+            XpathValue.LOGGER.debug(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
             );
         }

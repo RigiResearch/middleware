@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+  runtime files("src/dist/lib/config")
   implementation project(":historian.runtime")
   implementation project(":metamodels")
   implementation project(":metamodels:hcl")

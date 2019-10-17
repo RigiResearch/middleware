@@ -102,7 +102,8 @@ public final class RuntimeAgent {
      * @param data The collected data
      */
     public void handle(final JsonNode data) {
-        final Specification specification = new Data2Hcl(data).specification();
+        final Data2Hcl transformation = new Data2Hcl(data);
+        final Specification specification = transformation.specification();
         try {
             final CloseableHttpClient client = HttpClients.createDefault();
             final HttpPost request =
@@ -114,6 +115,10 @@ public final class RuntimeAgent {
             final CloseableHttpResponse response = client.execute(request);
             final int code = response.getStatusLine().getStatusCode();
             if (code == RuntimeAgent.OKAY) {
+                RuntimeAgent.LOGGER.info(
+                    "Template values are {}",
+                    transformation.variableValues()
+                );
                 RuntimeAgent.LOGGER.debug(
                     "Sent current specification to the evolution coordinator"
                 );

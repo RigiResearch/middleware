@@ -37,7 +37,6 @@
   </monitor>
   <!-- Inventory of VMs -->
   <monitor name="listVcenterVm">
-    <input name="filter.vms">vm-22306,vm-18551,vm-22232</input>
     <output name="vm" selector="//vm" multivalued="true"/>
     <mappings>
       <transformation selector="//vm" multivalued="true"/>

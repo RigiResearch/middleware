@@ -4,4 +4,4 @@
  * @version $Id$
  * @since 0.1.0
  */
-package com.rigiresearch.middleware.metamodels.hcl;
+package com.rigiresearch.middleware.coordinator;

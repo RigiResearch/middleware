@@ -1,6 +1,7 @@
-package com.rigiresearch.middleware.metamodels.hcl;
+package com.rigiresearch.middleware.coordinator;
 
 import com.rigiresearch.middleware.metamodels.SerializationParser;
+import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.IOException;
 import java.net.URISyntaxException;

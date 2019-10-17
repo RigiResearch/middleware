@@ -6,7 +6,6 @@ import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.GraphParser;
 import com.rigiresearch.middleware.historian.runtime.graph.Monitor;
 import it.sauronsoftware.cron4j.Scheduler;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,12 +126,9 @@ public final class HistorianMonitor {
                 new GraphParser()
                     .withBindings("bindings.xml")
                     .instance(
-                        new File(
-                            Thread.currentThread()
-                                .getContextClassLoader()
-                                .getResource("configuration.xml")
-                                .getFile()
-                        )
+                        Thread.currentThread()
+                            .getContextClassLoader()
+                            .getResourceAsStream("configuration.xml")
                     ),
                 this.config
             );
@@ -187,10 +183,7 @@ public final class HistorianMonitor {
                 HistorianMonitor.LOGGER.info("The monitored resources have not changed");
             } else {
                 this.previous = result;
-                HistorianMonitor.LOGGER.info(
-                    "{}",
-                    HistorianMonitor.MAPPER.writeValueAsString(this.previous)
-                );
+                this.consumers.forEach(consumer -> consumer.accept(result));
             }
         } catch (final UnexpectedResponseCodeException | IOException
             | com.rigiresearch.middleware.historian.runtime.ConfigurationException exception) {
