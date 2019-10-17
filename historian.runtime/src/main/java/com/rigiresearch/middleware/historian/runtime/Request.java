@@ -108,6 +108,7 @@ public final class Request {
                 new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
             response = client.execute(host, request, context);
         }
+        Request.LOGGER.debug("{}", uri);
         return response;
     }
 
@@ -151,12 +152,13 @@ public final class Request {
             .setScheme(initial.getProtocol())
             .setHost(initial.getHost())
             .setPath(flatpath.get(0));
-        this.parameters(
-            Input.Location.QUERY,
-            Input.Location.FORM_DATA
-        ).forEach(param -> {
-            builder.setParameter(param.getName(), param.getValue());
-        });
+        this.parameters(Input.Location.QUERY, Input.Location.FORM_DATA)
+            .filter(param -> param.getValue() != null)
+            .forEach(param -> {
+                for (final String value : param.getValue().split(",")) {
+                    builder.addParameter(param.getName(), value);
+                }
+            });
         try {
             return builder.build();
         } catch (final URISyntaxException exception) {

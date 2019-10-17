@@ -15,6 +15,7 @@ import com.rigiresearch.middleware.historian.runtime.graph.Transformation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -111,14 +112,16 @@ public final class ForkAndCollectAlgorithm {
      *  unexpected response code
      * @throws ConfigurationException See {@link #transform(JsonNode, Monitor)}
      */
+    @SuppressWarnings("checkstyle:NestedForDepth")
     private JsonNode data(final Collection<Monitor> branches)
         throws IOException, UnexpectedResponseCodeException, ConfigurationException {
-        ForkAndCollectAlgorithm.LOGGER.debug(
-            "Branches ({}): {}",
+        ForkAndCollectAlgorithm.LOGGER.info(
+            "Branches: {} Endpoints: {}",
             branches.size(),
             branches.stream()
                 .map(Monitor::getName)
-                .collect(Collectors.toSet())
+                .distinct()
+                .collect(Collectors.joining(", "))
         );
         final JsonNode result = this.node(branches);
         for (final Monitor branch : branches) {
@@ -142,9 +145,17 @@ public final class ForkAndCollectAlgorithm {
                 if (next.isEmpty()) {
                     continue;
                 }
-                final JsonNode data = this.data(next);
-                final String name = next.iterator().next().getName();
-                this.add(result, name, data);
+                // At this point, if two or more branches produce an object
+                // because they are different, they should not be processed
+                // together. That is possible only for the root object. Then,
+                // we have to separate them into groups based on the branches'
+                // names.
+                final Map<String, List<Monitor>> batches = this.splitBranches(next);
+                for (final List<Monitor> batch : batches.values()) {
+                    final JsonNode data = this.data(batch);
+                    final String name = batch.iterator().next().getName();
+                    this.add(result, name, data);
+                }
             }
         }
         return result;
@@ -175,7 +186,17 @@ public final class ForkAndCollectAlgorithm {
                     final String bid = branch.getIdentifier();
                     final String tid = tmp.getIdentifier();
                     tmp.setIdentifier("%s-%s-%s", bid, tid, value);
-                    tmp.setValue(name, value);
+                    // Update the input that depends on this value
+                    final Optional<Input> optional = tmp.getParameters(true)
+                        .stream()
+                        .filter(Input.class::isInstance)
+                        .map(Input.class::cast)
+                        .filter(Input::hasSource)
+                        .filter(input ->
+                            input.getSource().getName().equals(branch.getName())
+                                && input.getValue().equals(name)
+                        ).findFirst();
+                    optional.ifPresent(input -> tmp.setContextValue(input.getName(), value));
                     singletons.forEach(set ->
                         set.forEach(e ->
                             tmp.setContextValue(e.getKey(), e.getValue())
@@ -188,6 +209,25 @@ public final class ForkAndCollectAlgorithm {
             );
         this.graph.getNodes().addAll(branches);
         return branches;
+    }
+
+    /**
+     * Splits a collection of branches into batches of branches based on their
+     * name.
+     * @param branches The collection of branches
+     * @return A non-null map
+     */
+    private Map<String, List<Monitor>> splitBranches(
+        final Collection<Monitor> branches) {
+        final int capacity = branches.size();
+        final Map<String, List<Monitor>> map = new HashMap<>();
+        for (final Monitor branch : branches) {
+            if (!map.containsKey(branch.getName())) {
+                map.put(branch.getName(), new ArrayList<>(capacity));
+            }
+            map.get(branch.getName()).add(branch);
+        }
+        return map;
     }
 
     /**
@@ -208,8 +248,7 @@ public final class ForkAndCollectAlgorithm {
                 final XpathValue value = new XpathValue(content, output.getSelector());
                 if (output.isMultivalued()) {
                     final Collection<String> values = value.values();
-                    final ResultSet<String, String> set =
-                        new ResultSet<>(false);
+                    final ResultSet<String, String> set = new ResultSet<>(false);
                     values.forEach(str -> set.addEntry(output.getName(), str));
                     collections.add(set);
                 } else {
@@ -225,7 +264,7 @@ public final class ForkAndCollectAlgorithm {
     /**
      * Creates a Json node based on the current branches.
      * @param branches The current branches
-     * @return An array if all the branches share the nanme, an object otherwise
+     * @return An array if all the branches share the name, an object otherwise
      * @throws ConfigurationException See {@link #transformation(Monitor)}
      */
     private JsonNode node(final Collection<Monitor> branches)
@@ -291,8 +330,8 @@ public final class ForkAndCollectAlgorithm {
     private void applyMappingsAndAdd(final Monitor branch, final String content,
         final JsonNode result) throws IOException, ConfigurationException {
         final JsonNode object = ForkAndCollectAlgorithm.MAPPER.readTree(content);
-        this.augment(object, branch);
         final JsonNode transformed = this.transform(object, branch);
+        this.augment(transformed, branch);
         // This is necessary to avoid having an array of grouped objects.
         // Instead, we transfer all those objects to the result directly
         final Optional<Transformation> transf = this.transformation(branch);
@@ -333,7 +372,7 @@ public final class ForkAndCollectAlgorithm {
     /**
      * Transforms the given node according to the monitor's metadata
      * configuration. Specifically, it uses {@link Transformation} instances.
-     * @param node The JSON node to transforms
+     * @param node The JSON node to transform
      * @param monitor The monitor
      * @return The transformed node
      * @throws IOException If there is a problem parsing the node to String or
@@ -358,7 +397,7 @@ public final class ForkAndCollectAlgorithm {
                 transformed = ForkAndCollectAlgorithm.MAPPER.readTree(
                     String.format(
                         "{\"%s\":%s}",
-                        monitor.allValues().get(input.getValue()),
+                        monitor.allValues().get(input.getName()),
                         ForkAndCollectAlgorithm.equivalentNode(value.nodeArray())
                     )
                 );

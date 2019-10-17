@@ -1,6 +1,8 @@
 package com.rigiresearch.middleware.graph;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -26,6 +28,11 @@ public final class GraphParser {
      * The classes to include in the Jaxb context.
      */
     private static final Class<?>[] CLASS = {Graph.class};
+
+    /**
+     * Default buffer size.
+     */
+    private static final int BUFFER_SIZE = 8 * 1024;
 
     /**
      * A Jaxb properties map.
@@ -73,6 +80,31 @@ public final class GraphParser {
             this.properties
         ).createUnmarshaller()
             .unmarshal(file);
+    }
+
+    /**
+     * Unmarshalls a graph instance.
+     * @param input An input stream
+     * @param <T> The subtype of {@link Node}
+     * @return The unmarshalled graph
+     * @throws JAXBException If there is an error unmarshalling the graph
+     * @throws IOException If there's an I/O error
+     */
+    public <T extends Node> Graph<T> instance(final InputStream input)
+        throws JAXBException, IOException {
+        if (input != null) {
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+            final byte[] buffer = new byte[GraphParser.BUFFER_SIZE];
+            int length = input.read(buffer);
+            while (length > 0) {
+                output.write(buffer, 0, length);
+                length = input.read(buffer);
+            }
+            input.close();
+            output.close();
+            return this.instance(output.toString());
+        }
+        throw new IllegalArgumentException("Input stream is null");
     }
 
     /**

@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
  * A value extracted from a string based on an Xpath selector. This
  * implementation currently supports JSON content.
  * TODO Add support for XML content.
+ * TODO Use a JsonNode instead of the content string to stop parsing the nodes
+ *  from and to string, when this class is instantiated.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
@@ -58,7 +60,7 @@ public final class XpathValue {
     public JsonNode singleNode() throws IOException {
         final JsonNode node = XpathValue.MAPPER.readTree(this.content);
         if (!JsonXpath.exists(node, this.selector)) {
-            XpathValue.LOGGER.warn(
+            XpathValue.LOGGER.debug(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
             );
         }
@@ -84,7 +86,7 @@ public final class XpathValue {
         final JsonNodeXpathVisitor visitor = new JsonNodeXpathVisitor();
         JsonXpath.findAndUpdateMultiple(node, this.selector, visitor);
         if (visitor.getResult().size() == 0) {
-            XpathValue.LOGGER.warn(
+            XpathValue.LOGGER.debug(
                 String.format(XpathValue.ERROR_FORMAT, this.selector)
             );
         }

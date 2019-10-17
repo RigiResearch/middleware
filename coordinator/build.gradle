@@ -1,9 +1,9 @@
 plugins {
-  id "com.diffplug.gradle.p2.asmaven" version "3.18.1"
+  id "application"
 }
 
 repositories {
-  flatDir dirs: "lib"
+  flatDir dirs: "${project(":notations:hcl.interpreter").projectDir}/lib"
   maven {
     url "https://repo.eclipse.org/content/repositories/atl-releases/"
     content {
@@ -19,14 +19,18 @@ repositories {
 }
 
 dependencies {
-  implementation project(":metamodels")
+  runtime files("src/dist/lib/config")
   implementation project(":metamodels:hcl")
+  implementation project(":metamodels")
   implementation project(":notations:hcl.interpreter")
   implementation "com.sparkjava:spark-core:2.8.0"
   implementation "org.apache.commons:commons-configuration2:2.5"
+  implementation "org.eclipse.jgit:org.eclipse.jgit:5.5.1.201910021850-r"
   runtime "commons-beanutils:commons-beanutils:1.9.3"
   runtime "org.apache.logging.log4j:log4j-core:2.12.0"
   runtime "org.apache.logging.log4j:log4j-jcl:2.12.0"
-  implementation name: "org.eclipse.emf.compare_3.5.3.201909101346"
-  implementation name: "org.eclipse.emf.compare.source_3.5.3.201909101346"
+}
+
+application {
+  mainClassName = "com.rigiresearch.middleware.coordinator.Application"
 }

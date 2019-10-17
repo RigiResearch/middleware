@@ -1,6 +1,9 @@
 package com.rigiresearch.middleware.coordinator;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +37,8 @@ public final class Application {
             server.run();
             Runtime.getRuntime()
                 .addShutdownHook(new Thread(server::stop));
-        } catch (final ConfigurationException exception) {
+        } catch (final ConfigurationException | GitAPIException | IOException
+            | URISyntaxException exception) {
             Application.LOGGER.error("Error configuring the server", exception);
         }
     }

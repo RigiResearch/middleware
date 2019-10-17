@@ -138,7 +138,7 @@ public final class Monitor extends Node {
      * @return The input values from the context of this monitor
      */
     public Map<String, Object> getContextValues() {
-        return this.values;
+        return this.context;
     }
 
     /**

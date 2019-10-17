@@ -100,12 +100,6 @@ public final class Data2Hcl {
      * @return The specification instance
      */
     public Specification specification() {
-        // TODO Transform the data into spec. Start from the VMs, then the
-        //  resources with which they are related. When the "graph" is complete,
-        //  take the attributes/elements that can be changed at run-time and
-        //  instantiate the model. The evolution coordinator takes that partial
-        //  model and will merge it into the one represented by the HCL
-        //  specification.
         // TODO Create issue when VM no longer exists in vmware
         //   (CAM deployment must be removed too)
         this.data.get("getVcenterVm").forEach(this::handleVm);
@@ -117,7 +111,6 @@ public final class Data2Hcl {
      * @param node The JSON node that represents the VM resource
      */
     private void handleVm(final JsonNode node) {
-        final JsonNode value = node.get("value");
         final String vmid = node.get("vm").asText();
         // 1. The vm
         final Resource resource = HclFactory.eINSTANCE.createResource();
@@ -152,7 +145,7 @@ public final class Data2Hcl {
             "num_cpus",
             "integer"
         );
-        this.values.put(cpus.getName(), value.get("cpu").get("count").asText());
+        this.values.put(cpus.getName(), node.get("cpu").get("count").asText());
         // - Cores per Socket
         final Resource cores = this.variable(
             attributes,
@@ -160,7 +153,7 @@ public final class Data2Hcl {
             "num_cores_per_socket",
             "integer"
         );
-        this.values.put(cores.getName(), value.get("cpu").get("cores_per_socket").asText());
+        this.values.put(cores.getName(), node.get("cpu").get("cores_per_socket").asText());
         // - Memory
         final Resource memory = this.variable(
             attributes,
@@ -168,7 +161,7 @@ public final class Data2Hcl {
             "memory",
             "integer"
         );
-        this.values.put(memory.getName(), value.get("memory").get("size_MiB").asText());
+        this.values.put(memory.getName(), node.get("memory").get("size_MiB").asText());
         // - Resource pool
         final String dataname =
             this.elementGroup("listVcenterVmFilteredByResourcePool", vmid).get();
@@ -193,7 +186,7 @@ public final class Data2Hcl {
             "guest_id",
             "string"
         );
-        this.values.put(guest.getName(), value.get("guest_OS").asText());
+        this.values.put(guest.getName(), node.get("guest_OS").asText());
         // - SCSI type
         final Resource scsi = this.variable(
             attributes,
@@ -201,13 +194,13 @@ public final class Data2Hcl {
             "scsi_type",
             "string"
         );
-        this.values.put(scsi.getName(), this.scsiType(value.get("scsi_adapters")));
+        this.values.put(scsi.getName(), this.scsiType(node.get("scsi_adapters")));
         // - Disks
-        value.get("disks").forEach(
+        node.get("disks").forEach(
             disk -> this.handleDisk(resource.getName(), datacenter, disk, attributes)
         );
         // - Network interfaces
-        value.get("nics").forEach(
+        node.get("nics").forEach(
             nic -> this.handleNic(resource.getName(), datacenter, nic, attributes)
         );
         // TODO cdrom

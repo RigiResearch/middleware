@@ -6,6 +6,8 @@ import com.rigiresearch.middleware.historian.runtime.UnexpectedResponseCodeExcep
 import com.rigiresearch.middleware.metamodels.SerializationParser;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import javax.xml.bind.JAXBException;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
@@ -44,6 +46,11 @@ public final class RuntimeAgent {
     private static final int OKAY = 200;
 
     /**
+     * Initial capacity for maps/collections.
+     */
+    private static final int INITIAL_CAPACITY = 10;
+
+    /**
      * A Historian monitor to detect changes in the subject vSphere.
      */
     private final HistorianMonitor monitor;
@@ -57,6 +64,11 @@ public final class RuntimeAgent {
      * The configuration properties.
      */
     private final Configuration config;
+
+    /**
+     * Previous template values.
+     */
+    private Map<String, String> previous;
 
     /**
      * Default constructor.
@@ -73,6 +85,7 @@ public final class RuntimeAgent {
                 .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
                 .setFileName("agent.properties")
         ).getConfiguration();
+        this.previous = new HashMap<>(RuntimeAgent.INITIAL_CAPACITY);
     }
 
     /**
@@ -101,21 +114,18 @@ public final class RuntimeAgent {
      * Handles the collected data from vSphere.
      * @param data The collected data
      */
-    private void handle(final JsonNode data) {
-        final Specification specification = new Data2Hcl(data).specification();
+    public void handle(final JsonNode data) {
+        final Data2Hcl transformation = new Data2Hcl(data);
+        final Specification specification = transformation.specification();
         try {
-            final CloseableHttpClient client = HttpClients.createDefault();
-            final HttpPost request = new HttpPost(
-                this.config.getString("coordinator.url")
+            final CloseableHttpResponse response = RuntimeAgent.postRequest(
+                this.config.getString("coordinator.url"),
+                "application/xml",
+                this.parser.asXml(specification)
             );
-            final String type = "application/xml";
-            request.setHeader("Accept", type);
-            request.setHeader("Content-Type", type);
-            request.setEntity(new StringEntity(this.parser.asXml(specification)));
-            final CloseableHttpResponse response = client.execute(request);
             final int code = response.getStatusLine().getStatusCode();
             if (code == RuntimeAgent.OKAY) {
-                RuntimeAgent.LOGGER.debug(
+                RuntimeAgent.LOGGER.info(
                     "Sent current specification to the evolution coordinator"
                 );
             } else {
@@ -123,9 +133,94 @@ public final class RuntimeAgent {
                     String.format("Unexpected response code %d", code)
                 );
             }
+            this.logValueReport(transformation.variableValues());
         } catch (final IOException exception) {
             RuntimeAgent.LOGGER.error("Error serializing/sending model", exception);
         }
+    }
+
+    /**
+     * Reports added, changed and removed values.
+     * @param current The current values
+     */
+    private void logValueReport(final Map<String, String> current) {
+        synchronized (RuntimeAgent.LOGGER) {
+            RuntimeAgent.LOGGER.info("The current status of the template is as follows");
+            if (this.previous.equals(current)) {
+                RuntimeAgent.LOGGER.info(
+                    "The collected values have not changed"
+                );
+            } else {
+                // Bold colors
+                final String green = "\033[1;32m";
+                final String red = "\033[1;31m";
+                final String format = "{}{} = {}{}";
+                for (final Map.Entry<String, String> entry : current.entrySet()) {
+                    final boolean exists = this.previous.containsKey(entry.getKey());
+                    final String property = entry.getKey();
+                    final String value = entry.getValue();
+                    if (exists && this.previous.get(property).equals(value)) {
+                        // Didn't change
+                        RuntimeAgent.LOGGER.info("{} = {}", property, value);
+                        this.previous.remove(entry.getKey());
+                    } else if (exists) {
+                        // Changed
+                        RuntimeAgent.LOGGER.info(
+                            "{} = {}{}{} -> {}{}{}",
+                            property,
+                            red,
+                            this.previous.get(property),
+                            red,
+                            green,
+                            value,
+                            green
+                        );
+                        this.previous.remove(entry.getKey());
+                    } else {
+                        // Added
+                        RuntimeAgent.LOGGER.info(
+                            format,
+                            green,
+                            property,
+                            value,
+                            green
+                        );
+                    }
+                }
+                if (!this.previous.isEmpty()) {
+                    for (final Map.Entry<String, String> entry
+                        : this.previous.entrySet()) {
+                        // removed
+                        RuntimeAgent.LOGGER.info(
+                            format,
+                            red,
+                            entry.getKey(),
+                            entry.getValue(),
+                            red
+                        );
+                    }
+                }
+                this.previous = current;
+            }
+        }
+    }
+
+    /**
+     * Makes a POST request to a certain URL.
+     * @param url The target URL
+     * @param type The type of content being sent
+     * @param body The content
+     * @return The request's response
+     * @throws IOException If there's an I/O error
+     */
+    private static CloseableHttpResponse postRequest(final String url,
+        final String type, final String body) throws IOException {
+        final CloseableHttpClient client = HttpClients.createDefault();
+        final HttpPost request = new HttpPost(url);
+        request.setHeader("Accept", type);
+        request.setHeader("Content-Type", type);
+        request.setEntity(new StringEntity(body));
+        return client.execute(request);
     }
 
 }

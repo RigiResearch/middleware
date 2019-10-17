@@ -1,6 +1,8 @@
 package com.rigiresearch.middleware.notations.hcl;
 
 import com.rigiresearch.middleware.notations.hcl.runtime.HclQualifiedNameProvider;
+import com.rigiresearch.middleware.notations.hcl.runtime.HclValueConverterService;
+import org.eclipse.xtext.conversion.IValueConverterService;
 import org.eclipse.xtext.naming.IQualifiedNameProvider;
 
 /**
@@ -19,6 +21,15 @@ public class HclRuntimeModule extends AbstractHclRuntimeModule {
     @Override
     public Class<? extends IQualifiedNameProvider> bindIQualifiedNameProvider() {
         return HclQualifiedNameProvider.class;
+    }
+
+    /**
+     * Binds a custom value converter.
+     * @return A class
+     */
+    @Override
+    public Class<? extends IValueConverterService> bindIValueConverterService() {
+        return HclValueConverterService.class;
     }
 
 }

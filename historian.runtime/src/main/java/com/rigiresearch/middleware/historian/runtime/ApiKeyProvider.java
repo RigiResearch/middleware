@@ -89,7 +89,7 @@ public final class ApiKeyProvider {
         ApiKeyProvider.LOGGER.debug("Using auth token {}", token);
         synchronized (this.graph) {
             for (final Monitor monitor : this.graph.getNodes()) {
-                monitor.setValue(name, token);
+                monitor.setContextValue(name, token);
             }
         }
     }

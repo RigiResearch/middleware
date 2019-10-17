@@ -1,20 +1,16 @@
 package com.rigiresearch.middleware.coordinator;
 
-import com.google.common.base.Predicates;
-import com.rigiresearch.middleware.metamodels.hcl.HclPackage;
+import com.rigiresearch.middleware.metamodels.SerializationParser;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import org.eclipse.emf.common.util.BasicMonitor;
-import org.eclipse.emf.compare.Comparison;
-import org.eclipse.emf.compare.ConflictKind;
-import org.eclipse.emf.compare.Diff;
-import org.eclipse.emf.compare.EMFCompare;
-import org.eclipse.emf.compare.merge.BatchMerger;
-import org.eclipse.emf.compare.merge.IBatchMerger;
-import org.eclipse.emf.compare.merge.IMerger;
-import org.eclipse.emf.compare.scope.DefaultComparisonScope;
-import org.eclipse.emf.compare.utils.EMFComparePredicates;
+import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import org.apache.commons.configuration2.Configuration;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.transport.URIish;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A component for coordinating the specification evolution.
@@ -25,42 +21,63 @@ import org.eclipse.emf.compare.utils.EMFComparePredicates;
 public final class EvolutionCoordination {
 
     /**
-     * Merges two HCL models.
-     * @param previous The previous version of the model
-     * @param current The current version of the model
-     * @return A non-null specification
+     * The logger.
      */
-    public Specification merge(final Specification previous,
-        final Specification current) {
-        final Comparison comparison = EMFCompare.builder()
-            .setDiffEngine(new HclDiffEngine())
-            .build()
-            .compare(new DefaultComparisonScope(previous, current, null));
-        final Predicate<? super Diff> predicate = Predicates.and(
-            // Do not replace the whole dictionary but only element by element
-            Predicates.not(
-                EMFComparePredicates.onFeature(
-                    HclPackage.Literals.DICTIONARY__ELEMENTS
-                )
-            ),
-            // Do not merge elements with some kind of conflict
-            Predicates.not(
-                EMFComparePredicates.hasConflict(
-                    ConflictKind.REAL,
-                    ConflictKind.PSEUDO
-                )
-            ),
-            // Do not merge null elements
-            diff -> diff.getMatch().getRight() != null
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(EvolutionCoordination.class);
+
+    /**
+     * A repository of Terraform templates.
+     */
+    private final TerraformRepository repository;
+
+    /**
+     * An Ecore serialization parser.
+     */
+    private final SerializationParser serialization;
+
+    /**
+     * Default constructor.
+     * @param config The configuration properties
+     * @throws IOException If there's an I/O error
+     * @throws GitAPIException If there's an error cloning the repository
+     * @throws URISyntaxException If the repository's URL is malformed
+     */
+    public EvolutionCoordination(final Configuration config)
+        throws IOException, GitAPIException, URISyntaxException {
+        this.repository = new TerraformRepository(
+            new URIish(config.getString("coordinator.repository.url")),
+            config.getString("coordinator.repository.token")
         );
-        final Iterable<Diff> filtered = comparison.getDifferences()
-            .stream()
-            .filter(predicate)
-            .collect(Collectors.toList());
-        final IBatchMerger merger =
-            new BatchMerger(IMerger.RegistryImpl.createStandaloneInstance());
-        merger.copyAllRightToLeft(filtered, new BasicMonitor());
-        return previous;
+        this.serialization = new SerializationParser();
+    }
+
+    /**
+     * Handles a specification update from run-time changes.
+     * @param xml The serialized specification
+     * @throws GitAPIException If there's a Git error updating the templates
+     */
+    public void runtimeUpdate(final String xml) throws GitAPIException {
+        try {
+            this.repository.update(
+                (Specification) this.serialization.asEObjects(
+                    xml,
+                    URI.createFileURI("tmp.tf")
+                ).get(0)
+            );
+        } catch (final IOException exception) {
+            EvolutionCoordination.LOGGER.error(
+                "I/O error updating the Terraform templates",
+                exception
+            );
+            // TODO create issue with the error and the update
+        } catch (final HclParsingException exception) {
+            EvolutionCoordination.LOGGER.error(
+                "Error parsing the Terraform templates from the repository",
+                exception
+            );
+            // TODO create issue with the error and the update
+        }
     }
 
 }
