@@ -76,7 +76,7 @@ public final class Server {
         });
         Server.LOGGER.info(
             String.format(
-                "Started the evolution coordinator's server (port %d)",
+                "Started the evolution service (port %d)",
                 Spark.port()
             )
         );
@@ -87,7 +87,7 @@ public final class Server {
      */
     public void stop() {
         Spark.stop();
-        Server.LOGGER.info("Stopped the evolution coordinator's server");
+        Server.LOGGER.info("Stopped the evolution service");
     }
 
 }

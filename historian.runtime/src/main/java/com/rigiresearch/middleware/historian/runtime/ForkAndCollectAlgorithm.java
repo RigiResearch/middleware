@@ -115,12 +115,13 @@ public final class ForkAndCollectAlgorithm {
     @SuppressWarnings("checkstyle:NestedForDepth")
     private JsonNode data(final Collection<Monitor> branches)
         throws IOException, UnexpectedResponseCodeException, ConfigurationException {
-        ForkAndCollectAlgorithm.LOGGER.debug(
-            "Branches ({}): {}",
+        ForkAndCollectAlgorithm.LOGGER.info(
+            "Branches: {} Endpoints: {}",
             branches.size(),
             branches.stream()
                 .map(Monitor::getName)
-                .collect(Collectors.toSet())
+                .distinct()
+                .collect(Collectors.joining(", "))
         );
         final JsonNode result = this.node(branches);
         for (final Monitor branch : branches) {
