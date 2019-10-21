@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.coordinator;
 
+import com.rigiresearch.middleware.coordinator.templates.CamTemplates;
 import com.rigiresearch.middleware.metamodels.hcl.HclMergeStrategy;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.metamodels.hcl.SpecificationSet;
@@ -144,6 +145,10 @@ public final class TerraformRepository {
         try (Git git = Git.open(this.repository.getDirectory())) {
             this.prepareBranch(git);
             this.updateTemplates(specification);
+            this.updateCamTemplate(
+                git.getRepository().getDirectory().getParentFile(),
+                specification
+            );
             if (git.status().call().isClean()) {
                 TerraformRepository.LOGGER.info("The repository is already up to date");
                 return;
@@ -173,6 +178,34 @@ public final class TerraformRepository {
             TerraformRepository.LOGGER.info("Pushed changes to remote repository");
             // TODO Create pull request
         }
+    }
+
+    /**
+     * Updates or creates IBM CAM's templates.
+     * @param directory The repository directory
+     * @param specification The latest specification
+     * @throws IOException If there's an I/O error
+     */
+    private void updateCamTemplate(final File directory,
+        final Specification specification) throws IOException {
+        final CamTemplates templates = new CamTemplates();
+        final File template = new File(directory, "camtemplate.json");
+        if (!template.exists()) {
+            Files.write(
+                template.toPath(),
+                templates.template().getBytes(),
+                StandardOpenOption.CREATE_NEW
+            );
+        }
+        final File variables = new File(directory, "camvariables.json");
+        if (!variables.exists()) {
+            variables.createNewFile();
+        }
+        Files.write(
+            variables.toPath(),
+            templates.variables(specification).getBytes(),
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
     }
 
     /**
