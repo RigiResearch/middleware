@@ -1,7 +1,6 @@
 package com.rigiresearch.middleware.historian.runtime;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.GraphParser;
 import com.rigiresearch.middleware.historian.runtime.graph.Monitor;
@@ -19,8 +18,6 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A run-time monitor to collect data from a target API.
@@ -30,17 +27,6 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public final class HistorianMonitor {
-
-    /**
-     * The logger.
-     */
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(HistorianMonitor.class);
-
-    /**
-     * A JSON object mapper.
-     */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * A list of consumers for reporting run-time changes.
@@ -58,11 +44,6 @@ public final class HistorianMonitor {
     private final Scheduler scheduler;
 
     /**
-     * The current JSON object.
-     */
-    private JsonNode previous;
-
-    /**
      * Default constructor.
      * @throws ConfigurationException If there is an error building the
      *  configuration
@@ -71,7 +52,6 @@ public final class HistorianMonitor {
         this.consumers = new ArrayList<>(1);
         this.config = HistorianMonitor.initialize();
         this.scheduler = new Scheduler();
-        this.previous = HistorianMonitor.MAPPER.createObjectNode();
     }
 
     /**
@@ -179,12 +159,7 @@ public final class HistorianMonitor {
     private void collect(final ForkAndCollectAlgorithm algorithm) {
         try {
             final JsonNode result = algorithm.data();
-            if (result.equals(this.previous)) {
-                HistorianMonitor.LOGGER.info("The monitored resources have not changed");
-            } else {
-                this.previous = result;
-                this.consumers.forEach(consumer -> consumer.accept(result));
-            }
+            this.consumers.forEach(consumer -> consumer.accept(result));
         } catch (final UnexpectedResponseCodeException | IOException
             | com.rigiresearch.middleware.historian.runtime.ConfigurationException exception) {
             throw new IllegalStateException(exception);

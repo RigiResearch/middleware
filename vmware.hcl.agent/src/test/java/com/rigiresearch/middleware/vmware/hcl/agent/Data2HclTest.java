@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import java.io.IOException;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,7 +21,7 @@ class Data2HclTest {
         "input2.json"
     })
     @ParameterizedTest
-    void testTransformation(final String path) throws IOException, ConfigurationException {
+    void testTransformation(final String path) throws IOException {
         final JsonNode data = new ObjectMapper().readTree(
             Thread.currentThread()
                 .getContextClassLoader()

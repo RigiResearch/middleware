@@ -1,9 +1,12 @@
 package com.rigiresearch.middleware.vmware.hcl.agent;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rigiresearch.middleware.historian.runtime.HistorianMonitor;
 import com.rigiresearch.middleware.historian.runtime.UnexpectedResponseCodeException;
 import com.rigiresearch.middleware.metamodels.SerializationParser;
+import com.rigiresearch.middleware.metamodels.hcl.HclFactory;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,6 +24,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +55,11 @@ public final class RuntimeAgent {
     private static final int INITIAL_CAPACITY = 10;
 
     /**
+     * A JSON mapper.
+     */
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /**
      * A Historian monitor to detect changes in the subject vSphere.
      */
     private final HistorianMonitor monitor;
@@ -68,7 +77,12 @@ public final class RuntimeAgent {
     /**
      * Previous template values.
      */
-    private Map<String, String> previous;
+    private Map<String, String> values;
+
+    /**
+     * Previous specification.
+     */
+    private Specification specification;
 
     /**
      * Default constructor.
@@ -85,7 +99,8 @@ public final class RuntimeAgent {
                 .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
                 .setFileName("agent.properties")
         ).getConfiguration();
-        this.previous = new HashMap<>(RuntimeAgent.INITIAL_CAPACITY);
+        this.values = new HashMap<>(RuntimeAgent.INITIAL_CAPACITY);
+        this.specification = HclFactory.eINSTANCE.createSpecification();
     }
 
     /**
@@ -116,27 +131,33 @@ public final class RuntimeAgent {
      */
     public void handle(final JsonNode data) {
         final Data2Hcl transformation = new Data2Hcl(data);
-        final Specification specification = transformation.specification();
+        final Specification current = transformation.specification();
+        final Map<String, String> map = transformation.variableValues();
         try {
-            final CloseableHttpResponse response = RuntimeAgent.postRequest(
-                this.config.getString("coordinator.url"),
-                "application/xml",
-                this.parser.asXml(specification)
-            );
-            final int code = response.getStatusLine().getStatusCode();
-            if (code == RuntimeAgent.OKAY) {
-                RuntimeAgent.LOGGER.info(
-                    "Sent current specification to the evolution coordinator"
-                );
+            final ObjectNode body = RuntimeAgent.MAPPER.createObjectNode();
+            boolean changed = false;
+            if (EcoreUtil.equals(this.specification, current)) {
+                RuntimeAgent.LOGGER.info("The specification did not changed");
             } else {
-                RuntimeAgent.LOGGER.error(
-                    String.format("Unexpected response code %d", code)
+                body.set(
+                    "specification",
+                    RuntimeAgent.MAPPER.valueToTree(this.parser.asXml(current))
                 );
+                changed = true;
             }
-            this.logValueReport(transformation.variableValues());
+            if (!this.values.equals(map)) {
+                body.set("values", RuntimeAgent.MAPPER.valueToTree(map));
+                changed = true;
+            }
+            if (changed) {
+                this.postRequest(RuntimeAgent.MAPPER.writeValueAsString(body));
+            }
         } catch (final IOException exception) {
             RuntimeAgent.LOGGER.error("Error serializing/sending model", exception);
+        } finally {
+            this.specification = current;
         }
+        this.logValueReport(transformation.variableValues());
     }
 
     /**
@@ -145,37 +166,37 @@ public final class RuntimeAgent {
      */
     private void logValueReport(final Map<String, String> current) {
         synchronized (RuntimeAgent.LOGGER) {
-            RuntimeAgent.LOGGER.info("The current status of the template is as follows");
-            if (this.previous.equals(current)) {
+            if (this.values.equals(current)) {
                 RuntimeAgent.LOGGER.info(
-                    "The collected values have not changed"
+                    "The specification values did not changed"
                 );
             } else {
+                RuntimeAgent.LOGGER.info("The specification values are as follows");
                 // Bold colors
                 final String green = "\033[1;32m";
                 final String red = "\033[1;31m";
                 final String format = "{}{} = {}{}";
                 for (final Map.Entry<String, String> entry : current.entrySet()) {
-                    final boolean exists = this.previous.containsKey(entry.getKey());
+                    final boolean exists = this.values.containsKey(entry.getKey());
                     final String property = entry.getKey();
                     final String value = entry.getValue();
-                    if (exists && this.previous.get(property).equals(value)) {
+                    if (exists && this.values.get(property).equals(value)) {
                         // Didn't change
                         RuntimeAgent.LOGGER.info("{} = {}", property, value);
-                        this.previous.remove(entry.getKey());
+                        this.values.remove(entry.getKey());
                     } else if (exists) {
                         // Changed
                         RuntimeAgent.LOGGER.info(
                             "{} = {}{}{} -> {}{}{}",
                             property,
                             red,
-                            this.previous.get(property),
+                            this.values.get(property),
                             red,
                             green,
                             value,
                             green
                         );
-                        this.previous.remove(entry.getKey());
+                        this.values.remove(entry.getKey());
                     } else {
                         // Added
                         RuntimeAgent.LOGGER.info(
@@ -187,9 +208,9 @@ public final class RuntimeAgent {
                         );
                     }
                 }
-                if (!this.previous.isEmpty()) {
+                if (!this.values.isEmpty()) {
                     for (final Map.Entry<String, String> entry
-                        : this.previous.entrySet()) {
+                        : this.values.entrySet()) {
                         // removed
                         RuntimeAgent.LOGGER.info(
                             format,
@@ -200,27 +221,34 @@ public final class RuntimeAgent {
                         );
                     }
                 }
-                this.previous = current;
+                this.values = current;
             }
         }
     }
 
     /**
-     * Makes a POST request to a certain URL.
-     * @param url The target URL
-     * @param type The type of content being sent
+     * Makes a POST request to the evolution coordinator.
      * @param body The content
-     * @return The request's response
      * @throws IOException If there's an I/O error
      */
-    private static CloseableHttpResponse postRequest(final String url,
-        final String type, final String body) throws IOException {
+    private void postRequest(final String body) throws IOException {
         final CloseableHttpClient client = HttpClients.createDefault();
-        final HttpPost request = new HttpPost(url);
+        final HttpPost request = new HttpPost(this.config.getString("coordinator.url"));
+        final String type = "application/json";
         request.setHeader("Accept", type);
         request.setHeader("Content-Type", type);
         request.setEntity(new StringEntity(body));
-        return client.execute(request);
+        final CloseableHttpResponse response = client.execute(request);
+        final int code = response.getStatusLine().getStatusCode();
+        if (code == RuntimeAgent.OKAY) {
+            RuntimeAgent.LOGGER.info(
+                "Sent request to the evolution coordinator"
+            );
+        } else {
+            RuntimeAgent.LOGGER.error(
+                String.format("Unexpected response code %d", code)
+            );
+        }
     }
 
 }
