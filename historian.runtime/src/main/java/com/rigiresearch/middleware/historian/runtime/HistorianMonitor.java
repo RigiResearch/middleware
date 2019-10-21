@@ -8,6 +8,7 @@ import it.sauronsoftware.cron4j.Scheduler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.xml.bind.JAXBException;
 import org.apache.commons.configuration2.CompositeConfiguration;
@@ -18,6 +19,8 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A run-time monitor to collect data from a target API.
@@ -27,6 +30,12 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
  */
 @SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public final class HistorianMonitor {
+
+    /**
+     * The logger.
+     */
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(HistorianMonitor.class);
 
     /**
      * A list of consumers for reporting run-time changes.
@@ -44,6 +53,11 @@ public final class HistorianMonitor {
     private final Scheduler scheduler;
 
     /**
+     * Whether this monitor is currently collecting data.
+     */
+    private final AtomicBoolean running;
+
+    /**
      * Default constructor.
      * @throws ConfigurationException If there is an error building the
      *  configuration
@@ -52,6 +66,7 @@ public final class HistorianMonitor {
         this.consumers = new ArrayList<>(1);
         this.config = HistorianMonitor.initialize();
         this.scheduler = new Scheduler();
+        this.running = new AtomicBoolean(false);
     }
 
     /**
@@ -157,12 +172,18 @@ public final class HistorianMonitor {
      * @param algorithm An instance of the Fork and Collect algorithm
      */
     private void collect(final ForkAndCollectAlgorithm algorithm) {
+        if (this.running.getAndSet(true)) {
+            HistorianMonitor.LOGGER.info("Skipping scheduled data collection");
+            return;
+        }
         try {
             final JsonNode result = algorithm.data();
             this.consumers.forEach(consumer -> consumer.accept(result));
         } catch (final UnexpectedResponseCodeException | IOException
             | com.rigiresearch.middleware.historian.runtime.ConfigurationException exception) {
             throw new IllegalStateException(exception);
+        } finally {
+            this.running.set(false);
         }
     }
 
