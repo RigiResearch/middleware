@@ -102,6 +102,56 @@ public final class Data2Hcl {
     public Specification specification() {
         // TODO Create issue when VM no longer exists in vmware
         //   (CAM deployment must be removed too)
+        // Add resources associated with the provider
+        // - var allow_unverified_ssl
+        final Resource unverified = HclFactory.eINSTANCE.createResource();
+        final Dictionary attrs = HclFactory.eINSTANCE.createDictionary();
+        unverified.setSpecifier("variable");
+        unverified.setName("allow_unverified_ssl");
+        unverified.setValue(attrs);
+        final NameValuePair description = HclFactory.eINSTANCE.createNameValuePair();
+        description.setName("description");
+        final Text desctext = HclFactory.eINSTANCE.createText();
+        desctext.setValue("Communication with vsphere server with self signed certificate");
+        description.setValue(desctext);
+        final NameValuePair value = HclFactory.eINSTANCE.createNameValuePair();
+        value.setName("default");
+        final Text valuetext = HclFactory.eINSTANCE.createText();
+        valuetext.setValue("true");
+        value.setValue(valuetext);
+        attrs.getElements().add(description);
+        attrs.getElements().add(value);
+        this.spec.getResources().add(unverified);
+        // - provider vsphere
+        final Resource vsphere = HclFactory.eINSTANCE.createResource();
+        final Dictionary vattrs = HclFactory.eINSTANCE.createDictionary();
+        vsphere.setSpecifier("provider");
+        vsphere.setName("vsphere");
+        vsphere.setValue(vattrs);
+        final NameValuePair ssl = HclFactory.eINSTANCE.createNameValuePair();
+        ssl.setName("allow_unverified_ssl");
+        ssl.setValue(this.reference("var", "allow_unverified_ssl"));
+        final NameValuePair version = HclFactory.eINSTANCE.createNameValuePair();
+        version.setName("version");
+        final Text versiontext = HclFactory.eINSTANCE.createText();
+        versiontext.setValue("~> 1.3");
+        version.setValue(versiontext);
+        vattrs.getElements().add(version);
+        vattrs.getElements().add(ssl);
+        this.spec.getResources().add(vsphere);
+        // - provider camc
+        final Resource camc = HclFactory.eINSTANCE.createResource();
+        final Dictionary cattrs = HclFactory.eINSTANCE.createDictionary();
+        camc.setSpecifier("provider");
+        camc.setName("camc");
+        camc.setValue(cattrs);
+        final NameValuePair camversion = HclFactory.eINSTANCE.createNameValuePair();
+        camversion.setName("version");
+        final Text versionattr = HclFactory.eINSTANCE.createText();
+        versionattr.setValue("~> 0.2");
+        camversion.setValue(versionattr);
+        cattrs.getElements().add(camversion);
+        this.spec.getResources().add(camc);
         this.data.get("getVcenterVm").forEach(this::handleVm);
         return this.spec;
     }
@@ -126,7 +176,7 @@ public final class Data2Hcl {
             "name",
             "string"
         );
-        this.values.put(name.getName(), node.get("vm").asText());
+        this.values.put(name.getName(), node.get("name").asText());
         // - Folder
         final Resource folder = this.variable(
             attributes,
@@ -143,7 +193,7 @@ public final class Data2Hcl {
             attributes,
             String.format("%s_number_of_cpus", resource.getName()),
             "num_cpus",
-            "integer"
+            "string"
         );
         this.values.put(cpus.getName(), node.get("cpu").get("count").asText());
         // - Cores per Socket
@@ -151,7 +201,7 @@ public final class Data2Hcl {
             attributes,
             String.format("%s_num_cores_per_socket", resource.getName()),
             "num_cores_per_socket",
-            "integer"
+            "string"
         );
         this.values.put(cores.getName(), node.get("cpu").get("cores_per_socket").asText());
         // - Memory
@@ -159,7 +209,7 @@ public final class Data2Hcl {
             attributes,
             String.format("%s_memory", resource.getName()),
             "memory",
-            "integer"
+            "string"
         );
         this.values.put(memory.getName(), node.get("memory").get("size_MiB").asText());
         // - Resource pool
@@ -269,7 +319,7 @@ public final class Data2Hcl {
             dictionary,
             String.format("%s_unit_number", diskn),
             "unit_number",
-            "integer"
+            "string"
         );
         this.values.put(unit.getName(), value.get("scsi").get("unit").asText());
         // - Label and Datastore
@@ -324,7 +374,11 @@ public final class Data2Hcl {
             "adapter_type",
             "string"
         );
-        this.values.put(type.getName(), value.get("type").asText());
+        this.values.put(
+            type.getName(),
+            value.get("type").asText()
+                .toLowerCase(Locale.getDefault())
+        );
         // Network id: data + variable resources
         final String netname = value.get("backing").get("network_name").asText();
         final Resource netdata;

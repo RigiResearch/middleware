@@ -72,7 +72,7 @@ class CamTemplates {
             }
           ],
           "template_input_params": [
-            «FOR input : specification.resources.filter[it.specifier.equals("variable")]»
+            «FOR input : specification.resources.filter[it.specifier.equals("variable")] SEPARATOR ",\n"»
             {
               "name": "«input.name»",
               "type": "«input.attr("type")»",
