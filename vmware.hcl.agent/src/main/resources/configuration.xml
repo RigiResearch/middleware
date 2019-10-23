@@ -7,6 +7,13 @@
       <augmentation inputs="vm"/>
     </mappings>
   </monitor>
+  <monitor name="getVcenterFolder">
+    <input name="folder" source="listVcenterFolder">folder</input>
+    <mappings>
+      <transformation selector="value"/>
+      <augmentation inputs="folder"/>
+    </mappings>
+  </monitor>
   <monitor name="getVcenterDatacenter">
     <input name="datacenter" source="listVcenterDatacenter">datacenter</input>
     <mappings>

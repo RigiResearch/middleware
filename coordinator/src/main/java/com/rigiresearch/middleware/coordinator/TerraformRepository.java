@@ -19,6 +19,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import lombok.Getter;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
@@ -77,6 +78,7 @@ public final class TerraformRepository {
     /**
      * The current branch.
      */
+    @Getter
     private Ref branch;
 
     /**

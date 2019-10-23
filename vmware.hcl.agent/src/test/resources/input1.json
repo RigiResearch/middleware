@@ -2,6 +2,9 @@
   "listVcenterVm": [
     "vm-123"
   ],
+  "listVcenterFolder": [
+    "folder-1"
+  ],
   "listVcenterVmFilteredByHost": {
     "host-1": [
       "vm-123"
@@ -22,6 +25,12 @@
       "vm-123"
     ]
   },
+  "getVcenterFolder": [
+    {
+      "folder": "folder-1",
+      "name": "Folder1"
+    }
+  ],
   "getVcenterDatacenter": [
     {
       "datacenter": "datacenter-1",

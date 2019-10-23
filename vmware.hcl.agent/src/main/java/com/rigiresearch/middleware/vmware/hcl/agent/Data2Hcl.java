@@ -97,8 +97,10 @@ public final class Data2Hcl {
 
     /**
      * Transform the collected data into a {@link Specification}.
+     * TODO improve this method
      * @return The specification instance
      */
+    @SuppressWarnings("checkstyle:JavaNCSS")
     public Specification specification() {
         // TODO Create issue when VM no longer exists in vmware
         //   (CAM deployment must be removed too)
@@ -109,6 +111,11 @@ public final class Data2Hcl {
         unverified.setSpecifier("variable");
         unverified.setName("allow_unverified_ssl");
         unverified.setValue(attrs);
+        final NameValuePair type = HclFactory.eINSTANCE.createNameValuePair();
+        type.setName("type");
+        final Text typetext = HclFactory.eINSTANCE.createText();
+        typetext.setValue("string");
+        type.setValue(typetext);
         final NameValuePair description = HclFactory.eINSTANCE.createNameValuePair();
         description.setName("description");
         final Text desctext = HclFactory.eINSTANCE.createText();
@@ -119,6 +126,7 @@ public final class Data2Hcl {
         final Text valuetext = HclFactory.eINSTANCE.createText();
         valuetext.setValue("true");
         value.setValue(valuetext);
+        attrs.getElements().add(type);
         attrs.getElements().add(description);
         attrs.getElements().add(value);
         this.spec.getResources().add(unverified);
@@ -160,6 +168,7 @@ public final class Data2Hcl {
      * Creates a VM resource.
      * @param node The JSON node that represents the VM resource
      */
+    @SuppressWarnings("PMD.ExcessiveMethodLength")
     private void handleVm(final JsonNode node) {
         final String vmid = node.get("vm").asText();
         // 1. The vm
@@ -184,9 +193,18 @@ public final class Data2Hcl {
             "folder",
             "string"
         );
+        final String folderid =
+            this.elementGroup("listVcenterVmFilteredByFolder", vmid).get();
+        String foldername = "";
+        for (final JsonNode tmp : this.data.get("getVcenterFolder")) {
+            if (tmp.at("/folder").textValue().equals(folderid)) {
+                foldername = tmp.at("/name").textValue();
+                break;
+            }
+        }
         this.values.put(
             folder.getName(),
-            this.elementGroup("listVcenterVmFilteredByFolder", vmid).get()
+            foldername
         );
         // - CPUs
         final Resource cpus = this.variable(

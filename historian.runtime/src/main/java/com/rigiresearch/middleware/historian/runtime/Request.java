@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A data collector.
- * @author Miguel Jimenez (miguel@leslumier.es)
+ * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
@@ -43,6 +43,12 @@ public final class Request {
      */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(Request.class);
+
+    /**
+     * An HTTP client.
+     */
+    private static final CloseableHttpClient CLIENT =
+        HttpClients.createDefault();
 
     /**
      * The default buffer size.
@@ -91,13 +97,12 @@ public final class Request {
      */
     public CloseableHttpResponse response() throws IOException {
         final URI uri = this.uri(this.url);
-        final CloseableHttpClient client = HttpClients.createDefault();
         final CloseableHttpResponse response;
         if (this.provider == null) {
             final HttpUriRequest request = new HttpGet(uri);
             this.parameters(Input.Location.HEADER)
                 .forEach(p -> request.addHeader(p.getName(), p.getValue()));
-            response = client.execute(request);
+            response = Request.CLIENT.execute(request);
         } else {
             final HttpRequest request = new HttpPost(uri);
             this.parameters(Input.Location.HEADER)
@@ -106,7 +111,7 @@ public final class Request {
             context.setCredentialsProvider(this.provider);
             final HttpHost host =
                 new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-            response = client.execute(host, request, context);
+            response = Request.CLIENT.execute(host, request, context);
         }
         Request.LOGGER.debug("{}", uri);
         return response;

@@ -16,10 +16,7 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 class Data2HclTest {
 
-    @CsvSource({
-        "input1.json",
-        "input2.json"
-    })
+    @CsvSource("input1.json")
     @ParameterizedTest
     void testTransformation(final String path) throws IOException {
         final JsonNode data = new ObjectMapper().readTree(
