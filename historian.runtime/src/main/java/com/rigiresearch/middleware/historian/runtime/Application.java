@@ -1,5 +1,7 @@
 package com.rigiresearch.middleware.historian.runtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import javax.xml.bind.JAXBException;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -32,7 +34,16 @@ public final class Application {
      */
     public static void main(final String... args) {
         try {
+            final ObjectMapper mapper = new ObjectMapper();
             final HistorianMonitor monitor = new HistorianMonitor();
+            // Log collected data by default
+            monitor.subscribe(data -> {
+                try {
+                    Application.LOGGER.info(mapper.writeValueAsString(data));
+                } catch (final JsonProcessingException exception) {
+                    Application.LOGGER.error("Error printing out data", exception);
+                }
+            });
             monitor.start();
             Runtime.getRuntime()
                 .addShutdownHook(new Thread(monitor::stop));
