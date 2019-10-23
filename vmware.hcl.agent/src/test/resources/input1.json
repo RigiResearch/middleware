@@ -3,7 +3,11 @@
     "vm-123"
   ],
   "listVcenterFolder": [
-    "folder-1"
+    {
+      "folder": "folder-1",
+      "name": "Folder1",
+      "type": "VIRTUAL_MACHINE"
+    }
   ],
   "listVcenterVmFilteredByHost": {
     "host-1": [
@@ -25,11 +29,8 @@
       "vm-123"
     ]
   },
-  "getVcenterFolder": [
-    {
-      "folder": "folder-1",
-      "name": "Folder1"
-    }
+  "listVcenterResourcePool": [
+    "resource-pool-1"
   ],
   "getVcenterDatacenter": [
     {
@@ -41,6 +42,16 @@
     {
       "resource_pool": "resource-pool-1",
       "name": "Resources"
+    }
+  ],
+  "listVcenterCluster": [
+    "domain-c123"
+  ],
+  "getVcenterCluster": [
+    {
+      "name": "CLUSTER-1",
+      "resource_pool": "resource-pool-1",
+      "cluster": "domain-c123"
     }
   ],
   "getVcenterVm": [

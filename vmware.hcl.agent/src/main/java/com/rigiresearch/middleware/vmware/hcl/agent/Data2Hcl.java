@@ -196,7 +196,7 @@ public final class Data2Hcl {
         final String folderid =
             this.elementGroup("listVcenterVmFilteredByFolder", vmid).get();
         String foldername = "";
-        for (final JsonNode tmp : this.data.get("getVcenterFolder")) {
+        for (final JsonNode tmp : this.data.get("listVcenterFolder")) {
             if (tmp.at("/folder").textValue().equals(folderid)) {
                 foldername = tmp.at("/name").textValue();
                 break;
@@ -561,8 +561,15 @@ public final class Data2Hcl {
             // Get the name of the resource pool
             String name = "";
             for (final JsonNode tmp : this.data.get("getVcenterResourcePool")) {
-                if (tmp.get("resource_pool").asText().equals(id)) {
+                if (tmp.at("/resource_pool").asText().equals(id)) {
                     name = tmp.get("name").asText();
+                    break;
+                }
+            }
+            // If the resource pool is in a cluster, append its name as prefix
+            for (final JsonNode tmp : this.data.get("getVcenterCluster")) {
+                if (tmp.at("/resource_pool").asText().equals(id)) {
+                    name = String.format("%s/%s", tmp.at("/name").textValue(), name);
                     break;
                 }
             }

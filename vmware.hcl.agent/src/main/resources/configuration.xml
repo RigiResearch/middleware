@@ -7,11 +7,11 @@
       <augmentation inputs="vm"/>
     </mappings>
   </monitor>
-  <monitor name="getVcenterFolder">
-    <input name="folder" source="listVcenterFolder">folder</input>
+  <monitor name="getVcenterCluster">
+    <input name="cluster" source="listVcenterCluster">cluster</input>
     <mappings>
       <transformation selector="value"/>
-      <augmentation inputs="folder"/>
+      <augmentation inputs="cluster"/>
     </mappings>
   </monitor>
   <monitor name="getVcenterDatacenter">
@@ -53,14 +53,21 @@
   <monitor name="listVcenterFolder">
     <output name="folder" selector="//folder" multivalued="true"/>
     <mappings>
-      <transformation selector="//folder" multivalued="true"/>
+      <transformation selector="value"/>
+    </mappings>
+  </monitor>
+  <!-- Inventory of clusters -->
+  <monitor name="listVcenterCluster">
+    <output name="cluster" selector="//cluster" multivalued="true"/>
+    <mappings>
+      <transformation selector="//cluster" multivalued="true"/>
     </mappings>
   </monitor>
   <!-- Inventory of resource pools -->
   <monitor name="listVcenterResourcePool">
     <output name="resource_pool" selector="//resource_pool" multivalued="true"/>
     <mappings>
-      <transformation selector="//value" multivalued="true"/>
+      <transformation selector="//resource_pool" multivalued="true"/>
     </mappings>
   </monitor>
   <!-- Inventory of VMs per folder -->
