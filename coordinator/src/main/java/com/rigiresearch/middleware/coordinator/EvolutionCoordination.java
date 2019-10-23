@@ -154,12 +154,12 @@ public final class EvolutionCoordination {
                 );
                 EvolutionCoordination.LOGGER.debug(
                     "Created template {}",
-                    template.get("name").textValue()
+                    template.at("/name").textValue()
                 );
             } else {
                 EvolutionCoordination.LOGGER.debug(
                     "Using template {}",
-                    template.get("name").textValue()
+                    template.at("/name").textValue()
                 );
             }
             final ArrayNode stacks =
@@ -168,14 +168,14 @@ public final class EvolutionCoordination {
             if (stacks.size() > 0) {
                 // TODO Which stack should I use? I'm taking the first one always
                 stack = this.client.retrieveStack(
-                    stacks.get(0).get("id").textValue(),
+                    stacks.get(0).at("/id").textValue(),
                     params
                 );
             } else {
                 stack = this.client.createStack(
-                    String.format("%s-imported", template.get("name").textValue()),
+                    String.format("%s-imported", template.at("/name").textValue()),
                     "Imported resources from VMware vSphere",
-                    template.get("id").textValue(),
+                    template.at("/id").textValue(),
                     this.config.getString("cam.vsphere.connection"),
                     params
                 );

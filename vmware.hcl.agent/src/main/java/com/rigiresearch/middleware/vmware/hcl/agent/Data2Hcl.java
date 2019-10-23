@@ -10,6 +10,7 @@ import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.metamodels.hcl.Text;
 import com.rigiresearch.middleware.metamodels.hcl.TextExpression;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,6 +46,12 @@ public final class Data2Hcl {
      * The number of bytes in a gigabyte.
      */
     private static final double BYTES_IN_A_GB = StrictMath.pow(2.0, 30.0);
+
+    /**
+     * Pattern to separate datastore and VMDK file for a VM's disk.
+     */
+    private static final Pattern VMDK_PATTERN =
+        Pattern.compile("\\[([\\w\\-]+)\\]\\s(.+)");
 
     /**
      * The collected data.
@@ -264,17 +271,69 @@ public final class Data2Hcl {
         );
         this.values.put(scsi.getName(), this.scsiType(node.get("scsi_adapters")));
         // - Disks
-        node.get("disks").forEach(
-            disk -> this.handleDisk(resource.getName(), datacenter, disk, attributes)
+        final String datastore =
+            this.vmDatastore(node.at("/disks"), datacenter, attributes);
+        node.at("/disks").forEach(
+            disk -> this.handleDisk(
+                resource.getName(),
+                datacenter,
+                datastore,
+                disk,
+                attributes
+            )
         );
         // - Network interfaces
-        node.get("nics").forEach(
+        node.at("/nics").forEach(
             nic -> this.handleNic(resource.getName(), datacenter, nic, attributes)
         );
         // TODO cdrom
         //  terraform.io/docs/providers/vsphere/r/virtual_machine.html#cdrom-options
         resource.setValue(attributes);
         this.spec.getResources().add(resource);
+    }
+
+    /**
+     * Identifies the VM's datastore from its disks and adds a reference to it
+     * in its attributes.
+     * @param disks The VM's "disks" attribute
+     * @param datacenter The datacenter id
+     * @param attributes The VM's attributes
+     * @return The datastore's id
+     */
+    private String vmDatastore(final JsonNode disks, final String datacenter,
+        final Dictionary attributes) {
+        final Collection<String> datastores = new HashSet<>(Data2Hcl.INITIAL_CAPACITY);
+        disks.forEach(disk -> {
+            final Matcher matcher = Data2Hcl.VMDK_PATTERN.matcher(
+                disk.at("/value/backing/vmdk_file").textValue()
+            );
+            if (matcher.find()) {
+                datastores.add(matcher.group(1));
+            }
+        });
+        final String datastore;
+        if (datastores.size() == 1) {
+            // All disks reside in the same datastore
+            datastore = datastores.iterator().next();
+        } else {
+            // Assuming all VMs have at least one disk, the set is not empty
+            datastore = datastores.iterator().next();
+        }
+        final Resource dsdata =
+            this.findOrCreateDatastoreData(datastore, datacenter);
+        final NameValuePair datastorei =
+            HclFactory.eINSTANCE.createNameValuePair();
+        datastorei.setName("datastore_id");
+        datastorei.setValue(
+            this.reference(
+                dsdata.getSpecifier(),
+                dsdata.getType(),
+                dsdata.getName(),
+                "id"
+            )
+        );
+        attributes.getElements().add(datastorei);
+        return datastore;
     }
 
     /**
@@ -310,11 +369,12 @@ public final class Data2Hcl {
      * Creates resources for the given disk.
      * @param vmname The VM id
      * @param datacenter The datacenter id
+     * @param datastore The VM's datastore id
      * @param node The JSON node
      * @param attributes The VM attributes
      */
     private void handleDisk(final String vmname, final String datacenter,
-        final JsonNode node, final Dictionary attributes) {
+        final String datastore, final JsonNode node, final Dictionary attributes) {
         final JsonNode value = node.get("value");
         final String diskn =
             this.reserveName("var", String.format("%s_disk_%%d", vmname));
@@ -341,9 +401,8 @@ public final class Data2Hcl {
         );
         this.values.put(unit.getName(), value.get("scsi").get("unit").asText());
         // - Label and Datastore
-        final Pattern pattern = Pattern.compile("\\[([\\w\\-]+)\\]\\s(.+)");
         final Matcher matcher =
-            pattern.matcher(value.get("backing").get("vmdk_file").asText());
+            Data2Hcl.VMDK_PATTERN.matcher(value.at("/backing/vmdk_file").textValue());
         if (matcher.find()) {
             // - Label
             // TODO this may be wrong (not sure if this should be "path" instead)
@@ -355,20 +414,23 @@ public final class Data2Hcl {
             );
             this.values.put(label.getName(), matcher.group(2));
             // - Datastore
-            final Resource dsdata =
-                this.findOrCreateDatastoreData(matcher.group(1), datacenter);
-            final NameValuePair datastorei =
-                HclFactory.eINSTANCE.createNameValuePair();
-            datastorei.setName("datastore_id");
-            datastorei.setValue(
-                this.reference(
-                    dsdata.getSpecifier(),
-                    dsdata.getType(),
-                    dsdata.getName(),
-                    "id"
-                )
-            );
-            dictionary.getElements().add(datastorei);
+            if (!matcher.group(1).equals(datastore)) {
+                // If this disk's datastore is not the same as the VM's datastore
+                final Resource dsdata =
+                    this.findOrCreateDatastoreData(matcher.group(1), datacenter);
+                final NameValuePair datastorei =
+                    HclFactory.eINSTANCE.createNameValuePair();
+                datastorei.setName("datastore_id");
+                datastorei.setValue(
+                    this.reference(
+                        dsdata.getSpecifier(),
+                        dsdata.getType(),
+                        dsdata.getName(),
+                        "id"
+                    )
+                );
+                dictionary.getElements().add(datastorei);
+            }
         }
         attributes.getElements().add(attribute);
     }
