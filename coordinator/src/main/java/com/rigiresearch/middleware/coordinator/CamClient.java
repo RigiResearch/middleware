@@ -191,15 +191,15 @@ public final class CamClient {
                     CamClient.MAPPER.readTree(response.getEntity().getContent());
                 this.config.setProperty(
                     CamClient.ACCESS_TOKEN,
-                    node.get("access_token").textValue()
+                    node.at("/access_token").textValue()
                 );
                 this.config.setProperty(
                     CamClient.ACCESS_TOKEN_EXP,
-                    node.get("expires_in").longValue()
+                    node.at("/expires_in").longValue()
                 );
                 this.config.setProperty(
                     CamClient.ACCESS_TOKEN_TYPE,
-                    node.get("token_type").textValue()
+                    node.at("/token_type").textValue()
                 );
                 CamClient.LOGGER.debug(
                     "Collected {} token {} (CAM)",
@@ -679,7 +679,7 @@ public final class CamClient {
         final ArrayNode elements = CamClient.MAPPER.createArrayNode();
         if (code == CamClient.OKAY) {
             for (final JsonNode tmp : body) {
-                if (tmp.get("templateId").textValue().equals(template)) {
+                if (tmp.at("/templateId").textValue().equals(template)) {
                     elements.add(tmp);
                 }
             }
