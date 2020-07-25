@@ -16,6 +16,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/specifier"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/type"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/name"/>
+      <genFeatures property="Readonly" createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//Resource/fullyQualifiedName"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Resource/comment"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//Resource/value"/>
     </genClasses>
@@ -55,7 +56,8 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Hcl.ecore#//FunctionCall/arguments"/>
     </genClasses>
     <genClasses ecoreClass="Hcl.ecore#//ResourceReference">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//ResourceReference/fullyQualifiedName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//ResourceReference/components"/>
+      <genFeatures property="Readonly" createChild="false" ecoreFeature="ecore:EAttribute Hcl.ecore#//ResourceReference/fullyQualifiedName"/>
     </genClasses>
   </genPackages>
 </genmodel:GenModel>

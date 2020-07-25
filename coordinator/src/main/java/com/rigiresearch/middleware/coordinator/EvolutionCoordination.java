@@ -2,7 +2,6 @@ package com.rigiresearch.middleware.coordinator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.rigiresearch.middleware.metamodels.SerializationParser;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
@@ -87,6 +86,7 @@ public final class EvolutionCoordination {
             final JsonNode node = EvolutionCoordination.MAPPER.readTree(body);
             final JsonNode spec = node.get("specification");
             final JsonNode vals = node.get("values");
+            final JsonNode imports = node.get("imports");
             if (spec != null) {
                 final Specification specification =
                     (Specification) this.serialization.asEObjects(
@@ -96,7 +96,7 @@ public final class EvolutionCoordination {
                 this.repository.update(specification);
             }
             if (vals != null) {
-                this.updateStack(vals);
+                this.updateStack(vals, imports);
             }
         } catch (final IOException exception) {
             EvolutionCoordination.LOGGER.error(
@@ -116,102 +116,62 @@ public final class EvolutionCoordination {
     /**
      * Updates (or creates) a CAM stack for the current repository and given
      * values.
-     * TODO improve this method
      * @param values The stack's parameter values
+     * @param imports Resources to import into Terraform's state
      */
-    @SuppressWarnings({
-        "checkstyle:CyclomaticComplexity",
-        "checkstyle:ExecutableStatementCount",
-        "checkstyle:NPathComplexity",
-        "PMD.NPathComplexity",
-        "PMD.CyclomaticComplexity"
-    })
-    private void updateStack(final JsonNode values) {
+    private void updateStack(final JsonNode values, final JsonNode imports) {
         try {
             final Map<String, String> params = this.client.requestParameters();
-            final ArrayNode templates = this.client.templatesForRepository(
-                this.config.getString("coordinator.repository.url"),
-                params
-            );
             final String branch =
                 this.repository.getBranch().getName().replace("refs/heads/", "");
-            JsonNode template = null;
-            if (templates.size() > 0) {
-                for (final JsonNode tmp : templates) {
-                    final JsonNode ref = tmp.at("/manifest/template_source/github/ref");
-                    if (!ref.isMissingNode() && ref.textValue().equals(branch)) {
-                        template = tmp;
-                        break;
-                    }
-                }
-            }
-            if (template == null) {
-                template = this.client.createTemplate(
-                    this.config.getString("coordinator.repository.url"),
-                    this.config.getString("coordinator.repository.token"),
-                    branch,
-                    params
-                );
-                EvolutionCoordination.LOGGER.debug(
-                    "Created template {}",
-                    template.at("/name").textValue()
-                );
-            } else {
-                EvolutionCoordination.LOGGER.debug(
-                    "Using template {}",
-                    template.at("/name").textValue()
-                );
-            }
-            final ArrayNode stacks =
-                this.client.stacksForTemplate(template.get("id").textValue(), params);
-            final JsonNode stack;
-            if (stacks.size() > 0) {
-                // TODO Which stack should I use? I'm taking the first one always
-                stack = this.client.retrieveStack(
-                    stacks.get(0).at("/id").textValue(),
-                    params
-                );
-            } else {
-                stack = this.client.createStack(
-                    String.format("%s-imported", template.at("/name").textValue()),
-                    "Imported resources from VMware vSphere",
-                    template.at("/id").textValue(),
-                    this.config.getString("cam.vsphere.connection"),
-                    params
-                );
-            }
-            final Map<String, String> vals = new HashMap<>(values.size() + 1);
+            final JsonNode template = this.client.findOrCreateTemplate(
+                this.config.getString("coordinator.repository.url"),
+                branch,
+                params
+            );
+            final JsonNode stack = this.client.findOrCreateStack(
+                template.at("/id").textValue(),
+                branch,
+                params
+            );
+            final Map<String, String> imps = EvolutionCoordination.toJavaMap(imports);
+            final Map<String, String> vals = EvolutionCoordination.toJavaMap(values);
             // FIXME Since this is the first Plan, the stack requires a value for all vars
             vals.put("allow_unverified_ssl", "true");
-            final Iterator<String> fields = values.fieldNames();
-            while (fields.hasNext()) {
-                final String field = fields.next();
-                vals.put(field, values.get(field).textValue());
-            }
             final String stackid = stack.at("/id").textValue();
-            JsonNode plan =
-                this.client.performPlan(stackid, vals, params);
-            EvolutionCoordination.LOGGER.info("Performed a Terraform plan");
-            if ("PLAN".equals(plan.at("/action").textValue())
-                && "IN_PROGRESS".equals(plan.at("/status").textValue())) {
-                final long delay = 3000L;
-                do {
-                    EvolutionCoordination.LOGGER.debug("Waiting for Plan to finish");
-                    Thread.sleep(delay);
-                    plan = this.client.retrieveStack(stackid, params);
-                } while ("PLAN".equals(plan.at("/action").textValue())
-                    && "IN_PROGRESS".equals(plan.at("/status").textValue()));
+            this.client.performPlan(stackid, vals, params);
+            final JsonNode plan =
+                this.client.waitForActionOnStack("PLAN", stackid, params);
+            for (final Map.Entry<String, String> entry : imps.entrySet()) {
+                EvolutionCoordination.LOGGER.info(
+                    "TODO terraform import {} {}",
+                    entry.getKey(),
+                    entry.getValue()
+                );
             }
-            // TODO import VMs
-            EvolutionCoordination.LOGGER.info("TODO Perform a Terraform import");
             if ("SUCCESS_WITH_CHANGES".equals(plan.at("/status").textValue())) {
-                // TODO Apply
-                EvolutionCoordination.LOGGER.info("TODO Perform a Terraform apply");
-                // this.client.performApply(stackid, params);
+                this.client.performApply(stackid, params);
+                this.client.waitForActionOnStack("APPLY", stackid, params);
+                // TODO in case the APPLY fails, create a Github issue
             }
-        } catch (final IOException | URISyntaxException | InterruptedException exception) {
+        } catch (final IOException | URISyntaxException exception) {
             EvolutionCoordination.LOGGER.error("Error updating the stack", exception);
         }
+    }
+
+    /**
+     * Translates a JSON node back to map.
+     * @param node The input node
+     * @return A non-null map
+     */
+    private static Map<String, String> toJavaMap(final JsonNode node) {
+        final Map<String, String> values = new HashMap<>(node.size());
+        final Iterator<String> fields = node.fieldNames();
+        while (fields.hasNext()) {
+            final String field = fields.next();
+            values.put(field, node.get(field).textValue());
+        }
+        return values;
     }
 
 }

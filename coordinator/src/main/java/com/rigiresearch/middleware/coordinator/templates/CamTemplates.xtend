@@ -4,6 +4,7 @@ import com.rigiresearch.middleware.metamodels.hcl.Dictionary
 import com.rigiresearch.middleware.metamodels.hcl.Resource
 import com.rigiresearch.middleware.metamodels.hcl.Specification
 import com.rigiresearch.middleware.metamodels.hcl.Text
+import java.util.Collections
 
 /**
  * JSON templates for generating CAM's camtemplate.json and camvariables.json.
@@ -72,7 +73,9 @@ class CamTemplates {
             }
           ],
           "template_input_params": [
-            «FOR input : specification.resources.filter[it.specifier.equals("variable")] SEPARATOR ",\n"»
+            «val variables = specification.resources.filter[it.specifier.equals("variable")].toList»
+            «Collections.sort(variables, new ResourceComparator())»
+            «FOR input : variables SEPARATOR ",\n"»
             {
               "name": "«input.name»",
               "type": "«input.attr("type")»",

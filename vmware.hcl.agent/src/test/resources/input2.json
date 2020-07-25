@@ -1,0 +1,236 @@
+{
+  "listVcenterHost": [
+    "host-6541"
+  ],
+  "listVcenterVmFilteredByHost": {
+    "host-6541": [
+      "vm-22922"
+    ]
+  },
+  "listVcenterDatacenter": [
+    "datacenter-6548",
+    "datacenter-1671",
+    "datacenter-2"
+  ],
+  "listVcenterVmFilteredByDatacenter": {
+    "datacenter-1671": [],
+    "datacenter-6548": [
+      "vm-22922"
+    ],
+    "datacenter-2": []
+  },
+  "getVcenterDatacenter": [
+    {
+      "datastore_folder": "group-s5",
+      "host_folder": "group-h4",
+      "network_folder": "group-n6",
+      "name": "IOCDCPC1",
+      "vm_folder": "group-v3",
+      "datacenter": "datacenter-2"
+    },
+    {
+      "datastore_folder": "group-s6551",
+      "host_folder": "group-h6550",
+      "network_folder": "group-n6552",
+      "name": "CAMDC2",
+      "vm_folder": "group-v6549",
+      "datacenter": "datacenter-6548"
+    },
+    {
+      "datastore_folder": "group-s1674",
+      "host_folder": "group-h1673",
+      "network_folder": "group-n1675",
+      "name": "CAMDC1",
+      "vm_folder": "group-v1672",
+      "datacenter": "datacenter-1671"
+    }
+  ],
+  "listVcenterFolder": [
+    {
+      "folder": "group-v6700",
+      "name": "ContentRunTimes",
+      "type": "VIRTUAL_MACHINE"
+    }
+  ],
+  "listVcenterVmFilteredByFolder": {
+    "group-v6700": [
+      "vm-22922"
+    ]
+  },
+  "listVcenterResourcePool": [
+    "resgroup-1677",
+    "resgroup-19615",
+    "resgroup-21945",
+    "resgroup-6565",
+    "resgroup-95"
+  ],
+  "listVcenterVmFilteredByResourcePool": {
+    "resgroup-1677": [],
+    "resgroup-95": [],
+    "resgroup-19615": [],
+    "resgroup-6565": [
+      "vm-22922"
+    ],
+    "resgroup-21945": []
+  },
+  "getVcenterResourcePool": [
+    {
+      "name": "Resources",
+      "resource_pools": [
+        "resgroup-21945"
+      ],
+      "resource_pool": "resgroup-95"
+    },
+    {
+      "name": "Resources",
+      "resource_pools": [
+        "resgroup-19615"
+      ],
+      "resource_pool": "resgroup-6565"
+    },
+    {
+      "name": "ethantao",
+      "resource_pools": [],
+      "resource_pool": "resgroup-19615"
+    },
+    {
+      "name": "Resources",
+      "resource_pools": [],
+      "resource_pool": "resgroup-1677"
+    },
+    {
+      "name": "cas-project-miguel",
+      "resource_pools": [],
+      "resource_pool": "resgroup-21945"
+    }
+  ],
+  "listVcenterVm": [
+    "vm-22922"
+  ],
+  "getVcenterVm": [
+    {
+      "cdroms": [],
+      "memory": {
+        "size_MiB": 1024,
+        "hot_add_enabled": false
+      },
+      "disks": [
+        {
+          "value": {
+            "scsi": {
+              "bus": 0,
+              "unit": 0
+            },
+            "backing": {
+              "vmdk_file": "[CAM02-RSX6-002] camc-vis232c-vm-121/camc-vis232c-vm-121.vmdk",
+              "type": "VMDK_FILE"
+            },
+            "label": "Hard disk 1",
+            "type": "SCSI",
+            "capacity": 48318382080
+          },
+          "key": "2000"
+        }
+      ],
+      "parallel_ports": [],
+      "sata_adapters": [],
+      "cpu": {
+        "hot_remove_enabled": false,
+        "count": 1,
+        "hot_add_enabled": false,
+        "cores_per_socket": 1
+      },
+      "scsi_adapters": [
+        {
+          "value": {
+            "scsi": {
+              "bus": 0,
+              "unit": 7
+            },
+            "pci_slot_number": 16,
+            "label": "SCSI controller 0",
+            "type": "LSILOGIC",
+            "sharing": "NONE"
+          },
+          "key": "1000"
+        }
+      ],
+      "power_state": "POWERED_ON",
+      "floppies": [
+        {
+          "value": {
+            "start_connected": false,
+            "backing": {
+              "type": "CLIENT_DEVICE"
+            },
+            "allow_guest_control": true,
+            "label": "Floppy drive 1",
+            "state": "NOT_CONNECTED"
+          },
+          "key": "8000"
+        }
+      ],
+      "name": "camc-vis232c-vm-121",
+      "nics": [
+        {
+          "value": {
+            "start_connected": true,
+            "pci_slot_number": 160,
+            "backing": {
+              "network_name": "VIS232",
+              "type": "STANDARD_PORTGROUP",
+              "network": "network-6557"
+            },
+            "mac_address": "00:50:56:9b:08:83",
+            "mac_type": "ASSIGNED",
+            "allow_guest_control": true,
+            "wake_on_lan_enabled": true,
+            "label": "Network adapter 1",
+            "state": "CONNECTED",
+            "type": "VMXNET3",
+            "upt_compatibility_enabled": true
+          },
+          "key": "4000"
+        }
+      ],
+      "boot": {
+        "delay": 0,
+        "retry_delay": 10000,
+        "enter_setup_mode": false,
+        "type": "BIOS",
+        "retry": false
+      },
+      "serial_ports": [],
+      "guest_OS": "UBUNTU_64",
+      "boot_devices": [],
+      "hardware": {
+        "upgrade_policy": "NEVER",
+        "upgrade_status": "NONE",
+        "version": "VMX_11"
+      },
+      "vm": "vm-22922"
+    }
+  ],
+  "listVcenterCluster": [
+    "domain-c1676",
+    "domain-c6564",
+    "domain-c94"
+  ],
+  "getVcenterCluster": [
+    {
+      "name": "CAM02",
+      "resource_pool": "resgroup-6565",
+      "cluster": "domain-c6564"
+    },
+    {
+      "name": "ICO01",
+      "resource_pool": "resgroup-95",
+      "cluster": "domain-c94"
+    },
+    {
+      "name": "CAM01",
+      "resource_pool": "resgroup-1677",
+      "cluster": "domain-c1676"
+    }
+  ]
+}

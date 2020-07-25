@@ -64,7 +64,7 @@ Reference returns hcl::Reference
 	;
 
 ResourceReference returns hcl::ResourceReference
-	:	fullyQualifiedName += ValidID ('.' fullyQualifiedName += ValidID)+
+	:	components += ValidID ('.' components += ValidID)+
 	;
 
 // TODO Add support for recursive text expressions

@@ -14,6 +14,11 @@ class Resource {
 	String specifier
 	String ^type
 	String name
+	derived id String fullyQualifiedName get {
+        newArrayList(specifier, ^type, name)
+            .filter[it !== null]
+            .join(".")
+	}
 	contains Comment comment
 	contains Value value
 }
@@ -69,5 +74,10 @@ class FunctionCall extends Reference {
 }
 
 class ResourceReference extends Reference {
-	String[] fullyQualifiedName
+	String[] components
+    derived String fullyQualifiedName get {
+        newArrayList(components.toArray())
+            .filter[it !== null]
+            .join(".")
+	}
 }

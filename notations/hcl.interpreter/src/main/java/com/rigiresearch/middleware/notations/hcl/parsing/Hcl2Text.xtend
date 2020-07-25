@@ -162,7 +162,7 @@ class Hcl2Text {
     def protected String asText(ResourceReference object, Queue<String> context) {
         val className = HclPackage.eINSTANCE.functionCall.class.canonicalName
         val qm = if (context.peek.equals(className)) "" else '"'
-        '''«qm»«FOR e : object.fullyQualifiedName SEPARATOR '.'»«e»«ENDFOR»«qm»'''
+        '''«qm»«object.fullyQualifiedName»«qm»'''
     }
 
     /**

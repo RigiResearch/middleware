@@ -202,12 +202,14 @@ public final class TerraformRepository {
         final File variables = new File(directory, "camvariables.json");
         if (!variables.exists()) {
             variables.createNewFile();
+            // FIXME This should not create a plain file. It should create a Json
+            //  object and use writeValueAsString to replace the whole file
+            Files.write(
+                variables.toPath(),
+                templates.variables(specification).getBytes(),
+                StandardOpenOption.TRUNCATE_EXISTING
+            );
         }
-        Files.write(
-            variables.toPath(),
-            templates.variables(specification).getBytes(),
-            StandardOpenOption.TRUNCATE_EXISTING
-        );
     }
 
     /**

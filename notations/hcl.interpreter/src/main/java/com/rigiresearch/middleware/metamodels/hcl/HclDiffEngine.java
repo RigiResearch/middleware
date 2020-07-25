@@ -16,7 +16,7 @@ public final class HclDiffEngine extends DefaultDiffEngine {
 
     @Override
     protected FeatureFilter createFeatureFilter() {
-        return new HclFeatureFilter();
+        return new HclDiffEngine.HclFeatureFilter();
     }
 
     /**
@@ -31,7 +31,7 @@ public final class HclDiffEngine extends DefaultDiffEngine {
             if (match.getLeft() == null || match.getRight() == null) {
                 ignore = super.isIgnoredReference(match, reference);
             } else {
-                ignore = HclFeatureFilter.handle(
+                ignore = HclDiffEngine.HclFeatureFilter.handle(
                     reference,
                     match.getLeft()
                 );

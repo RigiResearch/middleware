@@ -9,17 +9,23 @@ import com.rigiresearch.middleware.metamodels.hcl.ResourceReference;
 import com.rigiresearch.middleware.metamodels.hcl.Specification;
 import com.rigiresearch.middleware.metamodels.hcl.Text;
 import com.rigiresearch.middleware.metamodels.hcl.TextExpression;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.Getter;
 
 /**
  * Transformation to create an HCL model from collected data from vSphere.
@@ -68,7 +74,15 @@ public final class Data2Hcl {
      * These values will be passed to the evolution coordinator for comparison
      * with current values.
      */
+    @Getter
     private final Map<String, String> values;
+
+    /**
+     * Resources to import. The key is the resource fully-qualified name and the
+     * value is the vSphere id.
+     */
+    @Getter
+    private final Map<String, String> imports;
 
     /**
      * Map of previously created resources that can be reused, based on their id.
@@ -90,16 +104,9 @@ public final class Data2Hcl {
         this.data = data;
         this.spec = HclFactory.eINSTANCE.createSpecification();
         this.values = new HashMap<>(Data2Hcl.INITIAL_CAPACITY);
+        this.imports = new HashMap<>(Data2Hcl.INITIAL_CAPACITY);
         this.index = new HashMap<>(Data2Hcl.INITIAL_CAPACITY);
         this.instances = new HashMap<>(Data2Hcl.INITIAL_CAPACITY);
-    }
-
-    /**
-     * The current values for the template variables.
-     * @return A non-null map
-     */
-    public Map<String, String> variableValues() {
-        return this.values;
     }
 
     /**
@@ -261,7 +268,10 @@ public final class Data2Hcl {
             "guest_id",
             "string"
         );
-        this.values.put(guest.getName(), node.get("guest_OS").asText());
+        this.values.put(
+            guest.getName(),
+            VMwareOS.valueOf(node.get("guest_OS").asText()).getId()
+        );
         // - SCSI type
         final Resource scsi = this.variable(
             attributes,
@@ -273,7 +283,11 @@ public final class Data2Hcl {
         // - Disks
         final String datastore =
             this.vmDatastore(node.at("/disks"), datacenter, attributes);
-        node.at("/disks").forEach(
+        // Sort the disks to always process them by order of creation
+        final List<JsonNode> disks = new ArrayList<>(Data2Hcl.INITIAL_CAPACITY);
+        node.at("/disks").forEach(disks::add);
+        disks.sort(new DiskComparator());
+        disks.forEach(
             disk -> this.handleDisk(
                 resource.getName(),
                 datacenter,
@@ -290,6 +304,18 @@ public final class Data2Hcl {
         //  terraform.io/docs/providers/vsphere/r/virtual_machine.html#cdrom-options
         resource.setValue(attributes);
         this.spec.getResources().add(resource);
+        this.imports.put(Data2Hcl.qualifiedName(resource), vmid);
+    }
+
+    /**
+     * Returns the fully qualified name of a resource.
+     * @param resource The resource
+     * @return A non-null string
+     */
+    private static String qualifiedName(final Resource resource) {
+        return Stream.of(resource.getSpecifier(), resource.getType(), resource.getName())
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("."));
     }
 
     /**
@@ -700,7 +726,7 @@ public final class Data2Hcl {
     private TextExpression reference(final String... components) {
         final ResourceReference resource = HclFactory.eINSTANCE.createResourceReference();
         Arrays.asList(components)
-            .forEach(component -> resource.getFullyQualifiedName().add(component));
+            .forEach(component -> resource.getComponents().add(component));
         final TextExpression exp = HclFactory.eINSTANCE.createTextExpression();
         exp.setBefore("${");
         exp.setReference(resource);

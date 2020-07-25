@@ -132,7 +132,8 @@ public final class RuntimeAgent {
     public void handle(final JsonNode data) {
         final Data2Hcl transformation = new Data2Hcl(data);
         final Specification current = transformation.specification();
-        final Map<String, String> map = transformation.variableValues();
+        final Map<String, String> imports = transformation.getImports();
+        final Map<String, String> map = transformation.getValues();
         try {
             final ObjectNode body = RuntimeAgent.MAPPER.createObjectNode();
             boolean changed = false;
@@ -145,10 +146,14 @@ public final class RuntimeAgent {
                 );
                 changed = true;
             }
+            if (!imports.isEmpty()) {
+                body.set("imports", RuntimeAgent.MAPPER.valueToTree(imports));
+            }
             if (!this.values.equals(map)) {
                 body.set("values", RuntimeAgent.MAPPER.valueToTree(map));
                 changed = true;
             }
+            this.logValueReport(map);
             if (changed) {
                 this.postRequest(RuntimeAgent.MAPPER.writeValueAsString(body));
             }
@@ -156,8 +161,8 @@ public final class RuntimeAgent {
             RuntimeAgent.LOGGER.error("Error serializing/sending model", exception);
         } finally {
             this.specification = current;
+            this.values = map;
         }
-        this.logValueReport(transformation.variableValues());
     }
 
     /**
@@ -221,7 +226,6 @@ public final class RuntimeAgent {
                         );
                     }
                 }
-                this.values = current;
             }
         }
     }

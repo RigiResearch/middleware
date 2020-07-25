@@ -4,7 +4,7 @@ plugins {
 }
 
 repositories {
-  flatDir dirs: "${project(":notations:hcl.interpreter").projectDir}/lib"
+  mavenLocal()
   maven {
     url "https://repo.eclipse.org/content/repositories/atl-releases/"
     content {

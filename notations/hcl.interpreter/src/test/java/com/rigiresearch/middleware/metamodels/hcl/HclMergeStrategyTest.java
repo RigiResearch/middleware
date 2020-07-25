@@ -52,6 +52,7 @@ final class HclMergeStrategyTest {
         "existing-attribute",
         "existing-comment-removed",
         "existing-comment-updated",
+        "existing-resource-not-updated",
         "non-existing-attribute",
         "non-existing-comment",
         "non-existing-resource",

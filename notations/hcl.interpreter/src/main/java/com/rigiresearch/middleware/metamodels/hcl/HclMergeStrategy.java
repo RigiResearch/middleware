@@ -37,6 +37,12 @@ public final class HclMergeStrategy {
      */
     public HclMergeStrategy() {
         this.predicate = Predicates.and(
+            // Do not replace the whole specification but only resource by resource
+            Predicates.not(
+                EMFComparePredicates.onFeature(
+                    HclPackage.Literals.SPECIFICATION__RESOURCES
+                )
+            ),
             // Do not replace the whole dictionary but only element by element
             Predicates.not(
                 EMFComparePredicates.onFeature(

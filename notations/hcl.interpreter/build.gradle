@@ -1,10 +1,12 @@
 plugins {
+  id "java-library"
   id "org.xtext.builder"
   id "org.xtext.xtend"
+  id "maven-publish"
 }
 
 repositories {
-  flatDir dirs: "lib"
+  mavenLocal()
 }
 
 sourceSets {
@@ -18,14 +20,32 @@ sourceSets {
 
 dependencies {
   implementation project(":metamodels:hcl")
-  implementation name: "org.eclipse.emf.compare_3.5.3.201909101346"
-  implementation name: "org.eclipse.emf.compare.source_3.5.3.201909101346"
+  implementation "org.eclipse.emf:compare:3.5.3.201909101346"
   implementation "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
   implementation "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
   implementation "org.eclipse.xtend:org.eclipse.xtend.lib:${xtextVersion}"
   testImplementation "org.eclipse.xtext:org.eclipse.xtext.testing:${xtextVersion}"
   testImplementation "org.eclipse.xtext:org.eclipse.xtext.xbase.testing:${xtextVersion}"
 }
+
+publishing {
+  publications {
+    maven(MavenPublication) {
+      groupId "org.eclipse.emf"
+      artifactId "compare"
+      version "3.5.3.201909101346"
+      artifact source: file("./lib/org.eclipse.emf.compare_3.5.3.201909101346.jar"), classifier: null, extension: "jar"
+    }
+    maven(MavenPublication) {
+      groupId "org.eclipse.emf"
+      artifactId "compare"
+      version "3.5.3.201909101346"
+      artifact source: file("./lib/org.eclipse.emf.compare.source_3.5.3.201909101346.jar"), classifier: "sources", extension: "jar"
+    }
+  }
+}
+// TODO find out how to mix this with dependencies
+// compileJava.dependsOn(publishMavenPublicationToMavenLocal)
 
 configurations {
   mwe2 {
@@ -45,6 +65,7 @@ dependencies {
   mwe2 "org.eclipse.emf:org.eclipse.emf.codegen.ecore.xtext:${ecoreXtextVersion}"
 }
 
+// Publish to maven local
 task generateXtextLanguage(type: JavaExec) {
   main = "org.eclipse.emf.mwe2.launch.runtime.Mwe2Launcher"
   classpath = configurations.mwe2

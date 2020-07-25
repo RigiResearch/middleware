@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory;
 @RequiredArgsConstructor
 @SuppressWarnings({
     "checkstyle:ClassDataAbstractionCoupling",
-    "PMD.AvoidDuplicateLiterals"
+    "PMD.AvoidDuplicateLiterals",
+    "PMD.TooManyMethods"
 })
 public final class CamClient {
 
@@ -399,6 +400,141 @@ public final class CamClient {
     }
 
     /**
+     * Finds a template version matching with the given template id and branch.
+     * @param template The template id
+     * @param branch The repository's branch
+     * @param params Request parameters (tenant id, ICP team & namespace)
+     * @return The response's body for the matching template version
+     * @throws URISyntaxException If there's an error building the request URI
+     * @throws IOException If there's an I/O error
+     */
+    public JsonNode templateVersion(final String template, final String branch,
+        final Map<String, String> params) throws URISyntaxException, IOException {
+        final URI base  = new URI(
+            String.format(
+                "%s/cam/api/v1/templateVersions",
+                this.config.getString(CamClient.CAM_URL)
+            )
+        );
+        final HttpGet request = new HttpGet(
+            new URIBuilder()
+                .setScheme(base.getScheme())
+                .setHost(base.getHost())
+                .setPort(base.getPort())
+                .setPath(base.getPath())
+                .addParameter(CamClient.TENANT_ID, params.get(CamClient.TENANT_ID))
+                .addParameter(CamClient.ICP_TEAM, params.get(CamClient.ICP_TEAM))
+                .addParameter(CamClient.ICP_NAMESPACE, params.get(CamClient.ICP_NAMESPACE))
+                .addParameter(
+                    "filter",
+                    String.format(
+                        "{\"where\": {\"templateId\": \"%s\", \"ref\": \"%s\"}}",
+                        template,
+                        branch
+                    )
+                )
+                .build()
+        );
+        request.setHeader("Accept", CamClient.JSON);
+        request.setHeader("charset", CamClient.UTF_8);
+        request.setHeader(
+            "Authorization",
+            String.format(
+                "%s %s",
+                this.config.getString(CamClient.ACCESS_TOKEN_TYPE),
+                this.config.getString(CamClient.ACCESS_TOKEN)
+            )
+        );
+        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
+        final int code = response.getStatusLine().getStatusCode();
+        final JsonNode body =
+            CamClient.MAPPER.readTree(response.getEntity().getContent());
+        JsonNode version = CamClient.MAPPER.createObjectNode();
+        if (code == CamClient.OKAY) {
+            if (body.size() > 0) {
+                // It should only return one (name/ref must be unique)
+                version = body.get(0);
+            }
+        } else {
+            CamClient.LOGGER.error("Unexpected response code {} (#templateVersion)", code);
+            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        }
+        return version;
+    }
+
+    /**
+     * Finds templates matching with a given repository and branch. If at least
+     * one template matches the repository but not the branch, it creates a
+     * template version. If none match, it creates a template.
+     * @param repository The (remote) repository URL
+     * @param branch The repository's branch
+     * @param params Request parameters (tenant id, ICP team & namespace)
+     * @return The corresponding template
+     * @throws URISyntaxException If there's an error building the request URI
+     * @throws IOException If there's an I/O error
+     */
+    public JsonNode findOrCreateTemplate(final String repository,
+        final String branch, final Map<String, String> params)
+            throws URISyntaxException, IOException {
+        final ArrayNode templates = this.templatesForRepository(repository, params);
+        final JsonNode template;
+        if (templates.size() > 0) {
+            // TODO In case there are several matching templates, which one
+            //  should be selected? They're conceptually the same!
+            template = templates.get(0);
+            final String identifier = template.at("/id").textValue();
+            final JsonNode version = this.templateVersion(identifier, branch, params);
+            if (version == null || version.size() == 0) {
+                // There's at least one matching template but the branch is different
+                this.createTemplateVersion(identifier, branch, params);
+            }
+        } else {
+            template = this.createTemplate(
+                this.config.getString("coordinator.repository.url"),
+                this.config.getString("coordinator.repository.token"),
+                branch,
+                params
+            );
+            CamClient.LOGGER.debug("Created template {}", template.at("/name").textValue());
+        }
+        return template;
+    }
+
+    /**
+     * Finds stacks matching with a given template and branch. If at least
+     * one template matches the repository but not the branch, it creates a
+     * template version. If none match, it creates a template.
+     * @param template The template id
+     * @param branch The repository's branch
+     * @param params Request parameters (tenant id, ICP team & namespace)
+     * @return The corresponding template
+     * @throws URISyntaxException If there's an error building the request URI
+     * @throws IOException If there's an I/O error
+     */
+    public JsonNode findOrCreateStack(final String template, final String branch,
+        final Map<String, String> params) throws URISyntaxException, IOException {
+        // final JsonNode version = this.templateVersion(template, branch, params);
+        final ArrayNode stacks = this.stacksForTemplate(template, params);
+        final JsonNode stack;
+        if (stacks.size() > 0) {
+            // TODO Which stack should I use? I'm taking the first one always
+            stack = this.retrieveStack(
+                stacks.get(0).at("/id").textValue(),
+                params
+            );
+        } else {
+            stack = this.createStack(
+                String.format("%s-%s-imported", branch, template),
+                "Imported resources from VMware vSphere",
+                template,
+                this.config.getString("cam.vsphere.connection"),
+                params
+            );
+        }
+        return stack;
+    }
+
+    /**
      * Creates a Stack.
      * @param name The stack's name
      * @param description A description
@@ -529,11 +665,43 @@ public final class CamClient {
         final int code = response.getStatusLine().getStatusCode();
         final JsonNode body =
             CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
+        if (code == CamClient.OKAY) {
+            CamClient.LOGGER.info("Started a Terraform plan");
+        } else {
             CamClient.LOGGER.error("Unexpected response code {} (#performPlan)", code);
             CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
         }
         return body;
+    }
+
+    /**
+     * Waits until an action finishes.
+     * Delay for retry is 5s.
+     * @param action The type of action
+     * @param stack The stack id
+     * @param params Request parameters (tenant id, ICP team & namespace)
+     * @return The stack's data when the action's status changed from IN_PROGRESS
+     * @throws IOException If there's an I/O error
+     * @throws URISyntaxException If there's an error building the request URI
+     */
+    public JsonNode waitForActionOnStack(final String action, final String stack,
+        final Map<String, String> params) throws IOException, URISyntaxException {
+        JsonNode retrieved;
+        final long delay = 5000L;
+        do {
+            CamClient.LOGGER.debug("Waiting for {} to finish", action);
+            try {
+                Thread.sleep(delay);
+            } catch (final InterruptedException exception) { }
+            retrieved = this.retrieveStack(stack, params);
+        } while (action.equals(retrieved.at("/action").textValue())
+            && "IN_PROGRESS".equals(retrieved.at("/status").textValue()));
+        CamClient.LOGGER.info(
+            "{} action ended with status {}",
+            action,
+            retrieved.at("/status").textValue()
+        );
+        return retrieved;
     }
 
     /**
@@ -579,7 +747,9 @@ public final class CamClient {
         final int code = response.getStatusLine().getStatusCode();
         final JsonNode body =
             CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
+        if (code == CamClient.OKAY) {
+            CamClient.LOGGER.info("Started a Terraform apply");
+        } else {
             CamClient.LOGGER.error("Unexpected response code {} (#performApply)", code);
             CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
         }
@@ -636,19 +806,20 @@ public final class CamClient {
     }
 
     /**
-     * Retrieves a list of stacks for a particular template.
+     * Retrieves information about a Template.
      * @param template The template's id
      * @param params Request parameters (tenant id, ICP team & namespace)
      * @return The response's body
      * @throws URISyntaxException If there's an error building the request URI
      * @throws IOException If there's an I/O error
      */
-    public ArrayNode stacksForTemplate(final String template,
+    public JsonNode retrieveTemplate(final String template,
         final Map<String, String> params) throws URISyntaxException, IOException {
         final URI base = new URI(
             String.format(
-                "%s/cam/api/v1/stacks",
-                this.config.getString(CamClient.CAM_URL)
+                "%s/cam/api/v1/templates/%s",
+                this.config.getString(CamClient.CAM_URL),
+                template
             )
         );
         final HttpGet request = new HttpGet(
@@ -676,21 +847,130 @@ public final class CamClient {
         final int code = response.getStatusLine().getStatusCode();
         final JsonNode body =
             CamClient.MAPPER.readTree(response.getEntity().getContent());
-        final ArrayNode elements = CamClient.MAPPER.createArrayNode();
-        if (code == CamClient.OKAY) {
-            for (final JsonNode tmp : body) {
-                if (tmp.at("/templateId").textValue().equals(template)) {
-                    elements.add(tmp);
-                }
-            }
-        } else {
+        if (code != CamClient.OKAY) {
+            CamClient.LOGGER.error("Unexpected response code {} (#retrieveTemplate)", code);
+            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        }
+        return body;
+    }
+
+    /**
+     * Retrieves a list of stacks for a particular template.
+     * @param template The template's id
+     * @param params Request parameters (tenant id, ICP team & namespace)
+     * @return The response's body
+     * @throws URISyntaxException If there's an error building the request URI
+     * @throws IOException If there's an I/O error
+     */
+    public ArrayNode stacksForTemplate(final String template,
+        final Map<String, String> params) throws URISyntaxException, IOException {
+        final URI base = new URI(
+            String.format(
+                "%s/cam/api/v1/stacks",
+                this.config.getString(CamClient.CAM_URL)
+            )
+        );
+        final HttpGet request = new HttpGet(
+            new URIBuilder()
+                .setScheme(base.getScheme())
+                .setHost(base.getHost())
+                .setPort(base.getPort())
+                .setPath(base.getPath())
+                .addParameter(CamClient.TENANT_ID, params.get(CamClient.TENANT_ID))
+                .addParameter(CamClient.ICP_TEAM, params.get(CamClient.ICP_TEAM))
+                .addParameter(CamClient.ICP_NAMESPACE, params.get(CamClient.ICP_NAMESPACE))
+                .addParameter(
+                    "filter",
+                    String.format(
+                        "{\"where\": {\"templateId\": \"%s\"}}",
+                        template
+                    )
+                )
+                .build()
+        );
+        request.setHeader("Accept", CamClient.JSON);
+        request.setHeader("charset", CamClient.UTF_8);
+        request.setHeader(
+            "Authorization",
+            String.format(
+                "%s %s",
+                this.config.getString(CamClient.ACCESS_TOKEN_TYPE),
+                this.config.getString(CamClient.ACCESS_TOKEN)
+            )
+        );
+        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
+        final int code = response.getStatusLine().getStatusCode();
+        final ArrayNode body =
+            (ArrayNode) CamClient.MAPPER.readTree(response.getEntity().getContent());
+        if (code != CamClient.OKAY) {
+            CamClient.LOGGER.error("Unexpected response code {} (#stacksForTemplate)", code);
+            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        }
+        return body;
+    }
+
+    /**
+     * Creates a template version.
+     * @param template The template's id
+     * @param branch The new version (A.K.A. the source repository's branch)
+     * @param params Request parameters (tenant id, ICP team & namespace)
+     * @return The response's body
+     * @throws URISyntaxException If there's an error building the request URI
+     * @throws IOException If there's an I/O error
+     */
+    public JsonNode createTemplateVersion(final String template, final String branch,
+        final Map<String, String> params) throws URISyntaxException, IOException {
+        final URI base = new URI(
+            String.format(
+                "%s/cam/api/v1/templateVersions",
+                this.config.getString(CamClient.CAM_URL)
+            )
+        );
+        final HttpPost request = new HttpPost(
+            new URIBuilder()
+                .setScheme(base.getScheme())
+                .setHost(base.getHost())
+                .setPort(base.getPort())
+                .setPath(base.getPath())
+                .addParameter(CamClient.TENANT_ID, params.get(CamClient.TENANT_ID))
+                .addParameter(CamClient.ICP_TEAM, params.get(CamClient.ICP_TEAM))
+                .addParameter(CamClient.ICP_NAMESPACE, params.get(CamClient.ICP_NAMESPACE))
+                .build()
+        );
+        request.setHeader("Content-Type", CamClient.JSON);
+        request.setHeader("Accept", CamClient.JSON);
+        request.setHeader("charset", CamClient.UTF_8);
+        request.setHeader(
+            "Authorization",
+            String.format(
+                "%s %s",
+                this.config.getString(CamClient.ACCESS_TOKEN_TYPE),
+                this.config.getString(CamClient.ACCESS_TOKEN)
+            )
+        );
+        final ObjectNode input = CamClient.MAPPER.createObjectNode();
+        input.set("name", CamClient.MAPPER.valueToTree(branch));
+        input.set("ref", CamClient.MAPPER.valueToTree(branch));
+        input.set("enabled", CamClient.MAPPER.valueToTree("true"));
+        input.set("templateId", CamClient.MAPPER.valueToTree(template));
+        request.setEntity(
+            new StringEntity(
+                CamClient.MAPPER.writeValueAsString(input),
+                CamClient.UTF_8
+            )
+        );
+        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
+        final int code = response.getStatusLine().getStatusCode();
+        final JsonNode body =
+            CamClient.MAPPER.readTree(response.getEntity().getContent());
+        if (code != CamClient.OKAY) {
             CamClient.LOGGER.error(
-                "Unexpected response code {} (#stacksForTemplate)",
+                "Unexpected response code {} (#createTemplateVersion)",
                 code
             );
             CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
         }
-        return elements;
+        return body;
     }
 
 }

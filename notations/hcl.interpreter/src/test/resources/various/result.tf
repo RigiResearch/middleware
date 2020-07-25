@@ -8,3 +8,8 @@ variable "allow_unverified_ssl" {
   # Another comment
   same        = 1
 }
+
+# Another resource
+variable "name" {
+  attr = "value"
+}
