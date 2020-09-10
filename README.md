@@ -7,6 +7,7 @@ A middleware for continuous software evolution.
 ### Build from the sources
 
 ```bash
+./gradlew publishMavenPublicationToMavenLocal # only once
 ./gradlew build
 ```
 You can optionally skip the execution of static analysis and tests:
