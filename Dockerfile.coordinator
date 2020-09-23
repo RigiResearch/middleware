@@ -1,0 +1,17 @@
+FROM adoptopenjdk/openjdk11-openj9:jdk-11.0.8_10_openj9-0.21.0-alpine-slim
+
+RUN apk update && apk add unzip
+
+RUN mkdir -p /home/app
+WORKDIR /home/app
+
+COPY coordinator/build/distributions/coordinator-0.1.0.zip .
+
+RUN unzip coordinator-0.1.0.zip -d .
+RUN rm coordinator-0.1.0.zip
+
+ENV COORDINATOR_PORT "5050"
+ENV REPOSITORY_URL "https://default.repository.url/repo"
+ENV REPOSITORY_TOKEN "<repository-token>"
+
+ENTRYPOINT ["sh", "coordinator-0.1.0/bin/coordinator"]

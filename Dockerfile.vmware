@@ -1,0 +1,24 @@
+FROM adoptopenjdk/openjdk11-openj9:jdk-11.0.8_10_openj9-0.21.0-alpine-slim
+
+RUN apk update && apk add unzip
+
+RUN mkdir -p /home/app
+WORKDIR /home/app
+
+COPY vmware.hcl.agent/build/distributions/vmware.hcl.agent-0.1.0.zip .
+
+RUN unzip vmware.hcl.agent-0.1.0.zip -d .
+RUN rm vmware.hcl.agent-0.1.0.zip
+
+# The coordinator REST endpoint
+ENV COORDINATOR_URL "http://localhost:5050"
+# vSphere authentication
+ENV API_BASE_URL "http://default.vsphere.url/rest"
+ENV API_AUTH_USERNAME ""
+ENV API_AUTH_PASSWORD ""
+# How often Historian requests an authentication token (every hour)
+ENV API_AUTH_TOKEN_PERIODICITY "0 * * * *"
+# How often Historian collects data from vSphere (every 5 minutes)
+ENV API_REQUEST_PERIODICITY "*/5 * * * *"
+
+ENTRYPOINT ["sh", "vmware.hcl.agent-0.1.0/bin/vmware.hcl.agent"]

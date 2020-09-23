@@ -8,12 +8,14 @@ import org.eclipse.emf.codegen.ecore.genmodel.GenModelPackage;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.xcore.XcorePackage;
 import org.eclipse.emf.ecore.xcore.XcoreStandaloneSetup;
 import org.eclipse.emf.mwe.utils.StandaloneSetup;
 import org.eclipse.xtext.resource.XtextResource;
@@ -63,6 +65,10 @@ public class ExportXcoreTask extends DefaultTask {
     @TaskAction
     public final void generate() throws IOException {
         new StandaloneSetup().setPlatformUri("./");
+        EPackage.Registry.INSTANCE.put(
+            XcorePackage.eINSTANCE.getNsURI(),
+            XcorePackage.eINSTANCE
+        );
         final Injector injector = new XcoreStandaloneSetup()
             .createInjectorAndDoEMFRegistration();
         final XtextResourceSet set =
