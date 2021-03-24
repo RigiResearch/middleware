@@ -5,9 +5,6 @@ plugins {
 repositories {
   maven {
     url "https://jitpack.io"
-    content {
-      includeGroup "com.github.vmware"
-    }
   }
 }
 
@@ -17,7 +14,7 @@ dependencies {
 
   // FIXME when vmware/xpath-for-json#1 is resolved.
   //  Actual dependency is "com.vmware.xpath:xpath:1.0.0"
-  implementation ("com.github.vmware:xpath-for-json:master-SNAPSHOT") {
+  implementation ("com.github.vmware:xpath-for-json:1.0.1") {
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   }
