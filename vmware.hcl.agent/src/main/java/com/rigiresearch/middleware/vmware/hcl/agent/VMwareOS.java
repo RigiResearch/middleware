@@ -10,6 +10,7 @@ import lombok.Getter;
  * @version $Id$
  * @since 0.1.0
  */
+@SuppressWarnings("checkstyle:JavadocVariable")
 public enum VMwareOS {
     ASIANUX_3("asianux3Guest"),
     ASIANUX_3_64("asianux3_64Guest"),

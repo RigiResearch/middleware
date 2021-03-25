@@ -11,10 +11,15 @@ import java.util.Comparator;
  */
 public final class DiskComparator implements Comparator<JsonNode> {
 
+    /**
+     * An attribute used for comparison.
+     */
+    private static final String KEY = "/key";
+
     @Override
     public int compare(final JsonNode first, final JsonNode second) {
-        return Integer.valueOf(first.at("/key").textValue())
-            .compareTo(Integer.valueOf(second.at("/key").textValue()));
+        return Integer.valueOf(first.at(DiskComparator.KEY).textValue())
+            .compareTo(Integer.valueOf(second.at(DiskComparator.KEY).textValue()));
     }
 
 }

@@ -307,10 +307,9 @@ public class Node implements Serializable, Comparable<Node> {
      * @param type The parameter type
      * @param <T> The type of the parameter (e.g., {@link Input})
      * @return The parameter
-     * @throws IllegalArgumentException If the input does not exist in this node
      */
     public <T extends Parameter> T getParameter(final boolean merge,
-        final String param, final Class<T> type) throws IllegalArgumentException {
+        final String param, final Class<T> type) {
         final Optional<T> parameter = this.getParameters(merge)
             .stream()
             .filter(type::isInstance)

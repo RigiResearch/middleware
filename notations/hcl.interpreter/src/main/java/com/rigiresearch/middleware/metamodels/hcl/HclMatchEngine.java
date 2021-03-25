@@ -14,12 +14,12 @@ public final class HclMatchEngine extends DefaultMatchEngine {
 
     /**
      * Default constructor.
-     * @param matcher
-     * @param comparisonFactory
+     * @param matcher The matcher object
+     * @param factory The comparison factory
      */
     public HclMatchEngine(final IEObjectMatcher matcher,
-        final IComparisonFactory comparisonFactory) {
-        super(matcher, comparisonFactory);
+        final IComparisonFactory factory) {
+        super(matcher, factory);
     }
 
 }

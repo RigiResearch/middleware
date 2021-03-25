@@ -137,15 +137,15 @@ public final class ResourceCopy {
      */
     private void writeToFile(final InputStream input, final File target)
         throws IOException {
-        final OutputStream output = Files.newOutputStream(target.toPath());
-        final byte[] buffer = new byte[ResourceCopy.BUFFER_SIZE];
-        int length = input.read(buffer);
-        while (length > 0) {
-            output.write(buffer, 0, length);
-            length = input.read(buffer);
+        try (OutputStream output = Files.newOutputStream(target.toPath())) {
+            final byte[] buffer = new byte[ResourceCopy.BUFFER_SIZE];
+            int length = input.read(buffer);
+            while (length > 0) {
+                output.write(buffer, 0, length);
+                length = input.read(buffer);
+            }
+            input.close();
         }
-        input.close();
-        output.close();
     }
 
 }

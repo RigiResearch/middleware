@@ -22,7 +22,7 @@ import lombok.ToString;
 )
 @EqualsAndHashCode(callSuper = false)
 @Getter
-@ToString(of = {"inputs"})
+@ToString(of = "inputs")
 public final class Augmentation extends Property implements Comparable<Property> {
 
     /**

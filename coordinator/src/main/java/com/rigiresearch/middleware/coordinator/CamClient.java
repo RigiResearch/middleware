@@ -182,33 +182,34 @@ public final class CamClient {
                     )
                 )
             );
-            final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-            final int code = response.getStatusLine().getStatusCode();
-            if (code == CamClient.OKAY) {
-                CamClient.LOGGER.info(
-                    "Collected authentication token (CAM)"
-                );
-                final JsonNode node =
-                    CamClient.MAPPER.readTree(response.getEntity().getContent());
-                this.config.setProperty(
-                    CamClient.ACCESS_TOKEN,
-                    node.at("/access_token").textValue()
-                );
-                this.config.setProperty(
-                    CamClient.ACCESS_TOKEN_EXP,
-                    node.at("/expires_in").longValue()
-                );
-                this.config.setProperty(
-                    CamClient.ACCESS_TOKEN_TYPE,
-                    node.at("/token_type").textValue()
-                );
-                CamClient.LOGGER.debug(
-                    "Collected {} token {} (CAM)",
-                    this.config.getString(CamClient.ACCESS_TOKEN_TYPE),
-                    this.config.getString(CamClient.ACCESS_TOKEN)
-                );
-            } else {
-                CamClient.LOGGER.error("Unexpected response code {} (#authenticate)", code);
+            try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+                final int code = response.getStatusLine().getStatusCode();
+                if (code == CamClient.OKAY) {
+                    CamClient.LOGGER.info(
+                        "Collected authentication token (CAM)"
+                    );
+                    final JsonNode node =
+                        CamClient.MAPPER.readTree(response.getEntity().getContent());
+                    this.config.setProperty(
+                        CamClient.ACCESS_TOKEN,
+                        node.at("/access_token").textValue()
+                    );
+                    this.config.setProperty(
+                        CamClient.ACCESS_TOKEN_EXP,
+                        node.at("/expires_in").longValue()
+                    );
+                    this.config.setProperty(
+                        CamClient.ACCESS_TOKEN_TYPE,
+                        node.at("/token_type").textValue()
+                    );
+                    CamClient.LOGGER.debug(
+                        "Collected {} token {} (CAM)",
+                        this.config.getString(CamClient.ACCESS_TOKEN_TYPE),
+                        this.config.getString(CamClient.ACCESS_TOKEN)
+                    );
+                } else {
+                    CamClient.LOGGER.error("Unexpected response code {} (#authenticate)", code);
+                }
             }
         } catch (final IOException exception) {
             CamClient.LOGGER.error("Authentication error (CAM)", exception);
@@ -220,6 +221,7 @@ public final class CamClient {
      * @return A map with the collected values
      * @throws IOException If there's an I/O error
      */
+    @SuppressWarnings("checkstyle:ExecutableStatementCount")
     public Map<String, String> requestParameters() throws IOException {
         final Map<String, String> map = new HashMap<>(CamClient.INITIAL_CAPACITY);
         final HttpGet request = new HttpGet(
@@ -238,25 +240,26 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code == CamClient.OKAY) {
-            map.put(CamClient.TENANT_ID, body.at("/id").textValue());
-            JsonNode namespace = null;
-            // TODO Don't use the default namespace but let the user specify it
-            for (final JsonNode tmp : body.at("/namespaces")) {
-                if ("default".equals(tmp.at("/uid").textValue())) {
-                    namespace = tmp;
-                    break;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            final JsonNode body =
+                CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code == CamClient.OKAY) {
+                map.put(CamClient.TENANT_ID, body.at("/id").textValue());
+                JsonNode namespace = null;
+                // TODO Don't use the default namespace but let the user specify it
+                for (final JsonNode tmp : body.at("/namespaces")) {
+                    if ("default".equals(tmp.at("/uid").textValue())) {
+                        namespace = tmp;
+                        break;
+                    }
                 }
+                map.put(CamClient.ICP_TEAM, namespace.at("/teamId").textValue());
+                map.put(CamClient.ICP_NAMESPACE, namespace.at("/uid").textValue());
+            } else {
+                CamClient.LOGGER.error("Unexpected response code {} (#requestParameters)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
             }
-            map.put(CamClient.ICP_TEAM, namespace.at("/teamId").textValue());
-            map.put(CamClient.ICP_NAMESPACE, namespace.at("/uid").textValue());
-        } else {
-            CamClient.LOGGER.error("Unexpected response code {} (#requestParameters)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
         }
         CamClient.LOGGER.debug("Collected CAM parameters {}", map);
         return map;
@@ -325,13 +328,14 @@ public final class CamClient {
                 CamClient.UTF_8
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
-            CamClient.LOGGER.error("Unexpected response code {} (#createTemplate)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code != CamClient.OKAY) {
+                CamClient.LOGGER.error("Unexpected response code {} (#createTemplate)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -376,25 +380,26 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code == CamClient.OKAY) {
-            for (final JsonNode template : body) {
-                // TODO Validate that template_provider is vSphere?
-                final JsonNode url =
-                    template.at("/manifest/template_source/github/url");
-                if (!url.isMissingNode() && url.textValue().equals(repository)) {
-                    elements.add(template);
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            final JsonNode body =
+                CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code == CamClient.OKAY) {
+                for (final JsonNode template : body) {
+                    // TODO Validate that template_provider is vSphere?
+                    final JsonNode url =
+                        template.at("/manifest/template_source/github/url");
+                    if (!url.isMissingNode() && url.textValue().equals(repository)) {
+                        elements.add(template);
+                    }
                 }
+            } else {
+                CamClient.LOGGER.error(
+                    "Unexpected response code {} (#templatesForRepository)",
+                    code
+                );
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
             }
-        } else {
-            CamClient.LOGGER.error(
-                "Unexpected response code {} (#templatesForRepository)",
-                code
-            );
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
         }
         return elements;
     }
@@ -445,19 +450,21 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        JsonNode version = CamClient.MAPPER.createObjectNode();
-        if (code == CamClient.OKAY) {
-            if (body.size() > 0) {
-                // It should only return one (name/ref must be unique)
-                version = body.get(0);
+        JsonNode version;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            final JsonNode body =
+                CamClient.MAPPER.readTree(response.getEntity().getContent());
+            version = CamClient.MAPPER.createObjectNode();
+            if (code == CamClient.OKAY) {
+                if (body.size() > 0) {
+                    // It should only return one (name/ref must be unique)
+                    version = body.get(0);
+                }
+            } else {
+                CamClient.LOGGER.error("Unexpected response code {} (#templateVersion)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
             }
-        } else {
-            CamClient.LOGGER.error("Unexpected response code {} (#templateVersion)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
         }
         return version;
     }
@@ -546,6 +553,7 @@ public final class CamClient {
      * @throws URISyntaxException If there's an error building the request URI
      */
     @SuppressWarnings({
+        "checkstyle:ExecutableStatementCount",
         "checkstyle:ParameterNumber",
         "PMD.UseObjectForClearerAPI"
     })
@@ -593,13 +601,14 @@ public final class CamClient {
                 CamClient.UTF_8
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
-            CamClient.LOGGER.error("Unexpected response code {} (#createStack)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code != CamClient.OKAY) {
+                CamClient.LOGGER.error("Unexpected response code {} (#createStack)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -661,15 +670,16 @@ public final class CamClient {
                 CamClient.UTF_8
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code == CamClient.OKAY) {
-            CamClient.LOGGER.info("Started a Terraform plan");
-        } else {
-            CamClient.LOGGER.error("Unexpected response code {} (#performPlan)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code == CamClient.OKAY) {
+                CamClient.LOGGER.info("Started a Terraform plan");
+            } else {
+                CamClient.LOGGER.error("Unexpected response code {} (#performPlan)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -743,15 +753,16 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code == CamClient.OKAY) {
-            CamClient.LOGGER.info("Started a Terraform apply");
-        } else {
-            CamClient.LOGGER.error("Unexpected response code {} (#performApply)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code == CamClient.OKAY) {
+                CamClient.LOGGER.info("Started a Terraform apply");
+            } else {
+                CamClient.LOGGER.error("Unexpected response code {} (#performApply)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -794,13 +805,14 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
-            CamClient.LOGGER.error("Unexpected response code {} (#retrieveStack)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code != CamClient.OKAY) {
+                CamClient.LOGGER.error("Unexpected response code {} (#retrieveStack)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -843,13 +855,14 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
-            CamClient.LOGGER.error("Unexpected response code {} (#retrieveTemplate)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code != CamClient.OKAY) {
+                CamClient.LOGGER.error("Unexpected response code {} (#retrieveTemplate)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -898,13 +911,14 @@ public final class CamClient {
                 this.config.getString(CamClient.ACCESS_TOKEN)
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final ArrayNode body =
-            (ArrayNode) CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
-            CamClient.LOGGER.error("Unexpected response code {} (#stacksForTemplate)", code);
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final ArrayNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = (ArrayNode) CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code != CamClient.OKAY) {
+                CamClient.LOGGER.error("Unexpected response code {} (#stacksForTemplate)", code);
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }
@@ -959,16 +973,17 @@ public final class CamClient {
                 CamClient.UTF_8
             )
         );
-        final CloseableHttpResponse response = CamClient.CLIENT.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        final JsonNode body =
-            CamClient.MAPPER.readTree(response.getEntity().getContent());
-        if (code != CamClient.OKAY) {
-            CamClient.LOGGER.error(
-                "Unexpected response code {} (#createTemplateVersion)",
-                code
-            );
-            CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+        final JsonNode body;
+        try (CloseableHttpResponse response = CamClient.CLIENT.execute(request)) {
+            final int code = response.getStatusLine().getStatusCode();
+            body = CamClient.MAPPER.readTree(response.getEntity().getContent());
+            if (code != CamClient.OKAY) {
+                CamClient.LOGGER.error(
+                    "Unexpected response code {} (#createTemplateVersion)",
+                    code
+                );
+                CamClient.LOGGER.error(CamClient.MAPPER.writeValueAsString(body));
+            }
         }
         return body;
     }

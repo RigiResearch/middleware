@@ -115,11 +115,12 @@ public final class SerializationParser {
     public EList<EObject> asEObjects(final String xml, final URI uri)
         throws IOException {
         final XMIResource resource = new XMIResourceImpl();
-        final URIConverter.ReadableInputStream stream =
-            new URIConverter.ReadableInputStream(new StringReader(xml));
-        resource.load(stream, this.params);
-        resource.setURI(uri);
-        return resource.getContents();
+        try (URIConverter.ReadableInputStream stream =
+                 new URIConverter.ReadableInputStream(new StringReader(xml))) {
+            resource.load(stream, this.params);
+            resource.setURI(uri);
+            return resource.getContents();
+        }
     }
 
 }

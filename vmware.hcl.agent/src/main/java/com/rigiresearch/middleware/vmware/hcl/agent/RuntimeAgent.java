@@ -236,22 +236,24 @@ public final class RuntimeAgent {
      * @throws IOException If there's an I/O error
      */
     private void postRequest(final String body) throws IOException {
-        final CloseableHttpClient client = HttpClients.createDefault();
-        final HttpPost request = new HttpPost(this.config.getString("coordinator.url"));
-        final String type = "application/json";
-        request.setHeader("Accept", type);
-        request.setHeader("Content-Type", type);
-        request.setEntity(new StringEntity(body));
-        final CloseableHttpResponse response = client.execute(request);
-        final int code = response.getStatusLine().getStatusCode();
-        if (code == RuntimeAgent.OKAY) {
-            RuntimeAgent.LOGGER.info(
-                "Sent request to the evolution coordinator"
-            );
-        } else {
-            RuntimeAgent.LOGGER.error(
-                String.format("Unexpected response code %d", code)
-            );
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(this.config.getString("coordinator.url"));
+            final String type = "application/json";
+            request.setHeader("Accept", type);
+            request.setHeader("Content-Type", type);
+            request.setEntity(new StringEntity(body));
+            try (CloseableHttpResponse response = client.execute(request)) {
+                final int code = response.getStatusLine().getStatusCode();
+                if (code == RuntimeAgent.OKAY) {
+                    RuntimeAgent.LOGGER.info(
+                        "Sent request to the evolution coordinator"
+                    );
+                } else {
+                    RuntimeAgent.LOGGER.error(
+                        String.format("Unexpected response code %d", code)
+                    );
+                }
+            }
         }
     }
 

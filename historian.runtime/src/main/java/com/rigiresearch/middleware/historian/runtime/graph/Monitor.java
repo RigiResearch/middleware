@@ -24,7 +24,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
  * @version $Id$
  * @since 0.1.0
  */
-@ToString(of = {"identifier"}, callSuper = true)
+@ToString(of = "identifier", callSuper = true)
 public final class Monitor extends Node {
 
     /**

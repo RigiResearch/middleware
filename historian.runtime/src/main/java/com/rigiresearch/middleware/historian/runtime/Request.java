@@ -124,15 +124,16 @@ public final class Request {
      * @throws UnexpectedResponseCodeException If the response code is different than 200
      */
     public String data() throws IOException, UnexpectedResponseCodeException {
-        final CloseableHttpResponse response = this.response();
-        if (response.getStatusLine().getStatusCode() != Request.OK_CODE) {
-            throw new UnexpectedResponseCodeException(
-                "Unexpected response code '%s' from URL '%s'.",
-                response.getStatusLine().getStatusCode(),
-                this.url
-            );
+        try (CloseableHttpResponse response = this.response()) {
+            if (response.getStatusLine().getStatusCode() != Request.OK_CODE) {
+                throw new UnexpectedResponseCodeException(
+                    "Unexpected response code '%s' from URL '%s'.",
+                    response.getStatusLine().getStatusCode(),
+                    this.url
+                );
+            }
+            return this.asString(response.getEntity().getContent());
         }
-        return this.asString(response.getEntity().getContent());
     }
 
     /**
