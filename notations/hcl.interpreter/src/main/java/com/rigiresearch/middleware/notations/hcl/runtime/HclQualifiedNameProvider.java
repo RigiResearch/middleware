@@ -1,6 +1,6 @@
 package com.rigiresearch.middleware.notations.hcl.runtime;
 
-import com.rigiresearch.middleware.metamodels.hcl.Resource;
+import com.rigiresearch.middleware.metamodels.hcl.HclMatchEngineQualifiedNameConverter;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider;
 import org.eclipse.xtext.naming.IQualifiedNameConverter;
@@ -18,50 +18,32 @@ public final class HclQualifiedNameProvider
     /**
      * A qualified name converter.
      */
-    private final IQualifiedNameConverter converter;
+    private final IQualifiedNameConverter xconverter;
+
+    /**
+     * An HCL qualified name converter.
+     */
+    private final HclMatchEngineQualifiedNameConverter converter;
 
     /**
      * Default constructor.
      */
     public HclQualifiedNameProvider() {
         super();
-        this.converter = new IQualifiedNameConverter.DefaultImpl();
+        this.xconverter = new IQualifiedNameConverter.DefaultImpl();
+        this.converter = new HclMatchEngineQualifiedNameConverter();
     }
 
     @Override
     public QualifiedName getFullyQualifiedName(final EObject eobject) {
         final QualifiedName name;
-        if (eobject instanceof Resource) {
-            final Resource resource = (Resource) eobject;
-            name = this.qualifiedName(
-                resource.getSpecifier(),
-                resource.getType(),
-                resource.getName()
-            );
-        } else {
+        final String identifier = this.converter.fullyQualifiedName(eobject);
+        if (identifier == null) {
             name = this.getOrComputeFullyQualifiedName(eobject);
+        } else {
+            name = this.xconverter.toQualifiedName(identifier);
         }
         return name;
-    }
-
-    /**
-     * Creates a qualified name our of various components.
-     * Skips null components.
-     * @param components The parts of the qualified name
-     * @return A non-null qualified name
-     */
-    private QualifiedName qualifiedName(final String... components) {
-        final String separator = ".";
-        final StringBuilder builder = new StringBuilder(components.length);
-        for (int position = 0; position < components.length; position += 1) {
-            if (components[position] != null) {
-                builder.append(components[position]);
-                if (position < components.length - 1) {
-                    builder.append(separator);
-                }
-            }
-        }
-        return this.converter.toQualifiedName(builder.toString());
     }
 
 }
