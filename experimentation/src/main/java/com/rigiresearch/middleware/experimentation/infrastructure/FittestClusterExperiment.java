@@ -1,13 +1,17 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
 import io.jenetics.IntegerGene;
+import io.jenetics.Mutator;
+import io.jenetics.SinglePointCrossover;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.EvolutionStatistics;
+import io.jenetics.engine.Limits;
 import io.jenetics.stat.DoubleMomentStatistics;
+import io.jenetics.stat.MinMax;
+import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
 import java.security.SecureRandom;
-import java.util.concurrent.Executor;
 
 /**
  * The experiment setup.
@@ -23,28 +27,25 @@ public final class FittestClusterExperiment {
     private final Engine<IntegerGene, Double> engine;
 
     /**
-     * The maximum number of iterations allowed.
+     * The configuration parameters.
      */
-    private final long generations;
-
+    private final ExperimentConfig config;
     /**
      * Default constructor.
-     * @param generations The maximum number of iterations allowed
-     * @param executor The executor service to use
+     * @param config Configuration parameters
      */
-    public FittestClusterExperiment(final long generations, final Executor executor) {
-        this.generations = generations;
+    public FittestClusterExperiment(final ExperimentConfig config) {
+        this.config = config;
         this.engine = Engine.builder(new FittestClusterProblem())
             .minimizing()
             // Default value
-            // .alterers(new SinglePointCrossover<>(0.2), new Mutator<>(0.15))
-            // .offspringFraction(0.6)
-            // .offspringSelector(new TruncationSelector<>(3))
-            // .survivorsSelector(new TruncationSelector<>(3))
-            // A single thread to create only one cluster at a time
-            .executor(executor)
-            // .maximalPhenotypeAge(70L)
-            // .populationSize(50)
+            .alterers(
+                new SinglePointCrossover<>(this.config.getCrossover()),
+                new Mutator<>(this.config.getMutation())
+            )
+            .executor(config.getExecutor())
+            .populationSize(config.getPopulation())
+            .minimizing()
             .build();
     }
 
@@ -57,10 +58,13 @@ public final class FittestClusterExperiment {
         RandomRegistry.random(new SecureRandom(seed));
         final EvolutionStatistics<Double, DoubleMomentStatistics> statistics =
             EvolutionStatistics.ofNumber();
-        final EvolutionResult<IntegerGene, Double> result = this.engine.stream()
-            .limit(this.generations)
+        final ISeq<EvolutionResult<IntegerGene, Double>> result = this.engine.stream()
+            .limit(Limits.bySteadyFitness(this.config.getStop()))
+            .limit(Limits.byFixedGeneration(this.config.getGenerations()))
             .peek(statistics)
-            .collect(EvolutionResult.toBestEvolutionResult());
+            .flatMap(MinMax.toStrictlyIncreasing())
+            .collect(ISeq.toISeq(this.config.getResults()));
+        // .collect(EvolutionResult.toBestEvolutionResult());
         return new ExperimentResult(result, statistics);
     }
 

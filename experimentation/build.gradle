@@ -49,5 +49,5 @@ application {
 }
 
 java {
-    targetCompatibility JavaVersion.toVersion("9")
+    targetCompatibility JavaVersion.toVersion("11")
 }

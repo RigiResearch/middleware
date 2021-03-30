@@ -4,6 +4,7 @@ import io.jenetics.IntegerGene;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.EvolutionStatistics;
 import io.jenetics.stat.DoubleMomentStatistics;
+import io.jenetics.util.ISeq;
 import lombok.Value;
 
 /**
@@ -18,7 +19,7 @@ public class ExperimentResult {
     /**
      * The evolution result.
      */
-    EvolutionResult<IntegerGene, Double> result;
+    ISeq<EvolutionResult<IntegerGene, Double>> result;
 
     /**
      * Summary statistics drawn from the evolution process.

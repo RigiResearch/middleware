@@ -1,11 +1,11 @@
 package com.rigiresearch.middleware.experimentation;
 
+import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentConfig;
 import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentResult;
 import com.rigiresearch.middleware.experimentation.infrastructure.FittestClusterExperiment;
-import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import io.jenetics.IntegerGene;
-import io.jenetics.Phenotype;
-import java.io.IOException;
+import io.jenetics.engine.EvolutionResult;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -26,6 +26,41 @@ public final class Application {
         LoggerFactory.getLogger(Application.class);
 
     /**
+     * The size of the thread pool size.
+     */
+    private static final int THREADS = 5;
+
+    /**
+     * The number of generations.
+     */
+    private static final long GENERATIONS = 10L;
+
+    /**
+     * The size of the initial population.
+     */
+    private static final int POPULATION = 10;
+
+    /**
+     * The number of subsequent steady fitness values to stop.
+     */
+    private static final int STEADY_GENERATIONS = 5;
+
+    /**
+     * The number of (best) results to collect.
+     */
+    private static final int NUM_RESULTS = 50;
+
+    /**
+     * The chromosome crossover probability.
+     */
+    private static final double CROSSOVER_PROBABILITY = 0.5;
+
+    /**
+     * The chromosome mutation probability.
+     */
+    private static final double MUTATION_PROBABILITY = 0.05;
+
+    /**
      * Default constructor.
      */
     private Application() {
@@ -34,36 +69,40 @@ public final class Application {
 
     /**
      * Run this application.
-     * @param generations The maximum number of iterations to perform
      */
-    public void run(final long generations) {
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
-        final ExperimentResult result = new FittestClusterExperiment(generations, executor)
-            .run("HW".getBytes());
+    public void run() {
+        final ExecutorService executor = Executors.newFixedThreadPool(Application.THREADS);
+        final ExperimentResult result = new FittestClusterExperiment(
+            new ExperimentConfig(
+                Application.GENERATIONS,
+                Application.POPULATION,
+                Application.STEADY_GENERATIONS,
+                Application.NUM_RESULTS,
+                Application.CROSSOVER_PROBABILITY,
+                Application.MUTATION_PROBABILITY,
+                executor
+            )
+        ).run("SEED".getBytes());
         executor.shutdown();
-        final Phenotype<IntegerGene, Double> phenotype = result.getResult().bestPhenotype();
-        Application.LOGGER.info("\n{}", result.getStatistics());
-        Application.LOGGER.info(
-            "Fitness: {}, Genotype: {}",
-            phenotype.fitness(),
-            phenotype.genotype()
-        );
+        final Optional<EvolutionResult<IntegerGene, Double>> phenotype = result.getResult()
+            .stream()
+            .findFirst();
+        if (phenotype.isPresent()) {
+            Application.LOGGER.info("\n{}", result.getStatistics());
+            Application.LOGGER.info(
+                "Fitness: {}, Genotype: {}",
+                phenotype.get().bestPhenotype().fitness(),
+                phenotype.get().bestPhenotype().genotype()
+            );
+        }
     }
 
     /**
      * The main entry point.
      * @param args The application arguments
-     * @throws HclParsingException If there is a problem interpreting the template
-     * @throws IOException If the template file is not found
      */
-    public static void main(final String... args) throws HclParsingException, IOException {
-        final long generations;
-        if (args.length == 1) {
-            generations = Long.parseLong(args[0]);
-        } else {
-            generations = 5L;
-        }
-        new Application().run(generations);
+    public static void main(final String... args) {
+        new Application().run();
     }
 
 }
