@@ -1,0 +1,53 @@
+plugins {
+    id "application"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url "https://repo.eclipse.org/content/repositories/atl-releases/"
+        content {
+            includeGroup "org.eclipse.m2m.atl"
+        }
+    }
+    maven {
+        url "https://packages.atlassian.com/3rdparty/"
+        content {
+            includeGroup "org.ow2.asm"
+        }
+    }
+}
+
+ext {
+    jeneticsVersion = "6.0.1"
+    jgraphVersion = "1.4.0"
+    kubernetesClientVersion = "5.0.0"
+    stVersion = "4.3.1"
+    terraformClientVersion = "1.0.0"
+}
+
+dependencies {
+    implementation project(":metamodels")
+    implementation project(":metamodels:hcl")
+    implementation project(":notations:hcl.interpreter")
+
+    implementation "io.kubernetes:client-java:$kubernetesClientVersion"
+    implementation "com.microsoft.terraform:terraform-client:$terraformClientVersion"
+    implementation "org.jgrapht:jgrapht-core:$jgraphVersion"
+    implementation "io.jenetics:jenetics:$jeneticsVersion"
+    implementation("org.antlr:ST4:$stVersion") {
+        // Use Xtext's antlr dependency instead
+        exclude group: "org.antlr", module: "antlr-runtime"
+    }
+    // generation
+    implementation 'it.unimi.dsi:fastutil:8.3.1'
+}
+
+application {
+    mainClassName = "com.rigiresearch.middleware.experimentation.Application"
+}
+
+java {
+    targetCompatibility JavaVersion.toVersion("9")
+}

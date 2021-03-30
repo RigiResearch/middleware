@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: encoder-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: encoder
+  template:
+    metadata:
+      labels:
+        app: encoder
+    spec:
+      containers:
+        - image: jachinte/encoder-grpc
+          name: encoder-grpc
+          ports:
+            - containerPort: 50051
+        - image: jachinte/encoder-rest
+          name: encoder-rest
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: encoder-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: encoder
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
