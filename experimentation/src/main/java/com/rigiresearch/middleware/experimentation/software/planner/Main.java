@@ -1,12 +1,12 @@
 package com.rigiresearch.middleware.experimentation.software.planner;
 
-import com.rigiresearch.cexperimentation.planner.generation.Chromosome;
-import com.rigiresearch.cexperimentation.planner.generation.Constraint;
-import com.rigiresearch.cexperimentation.planner.generation.ExclusionConstraint;
-import com.rigiresearch.cexperimentation.planner.generation.GeneticGeneration;
-import com.rigiresearch.cexperimentation.planner.generation.PositionConstraint;
-import com.rigiresearch.cexperimentation.planner.generation.PrecedenceConstraint;
-import com.rigiresearch.cexperimentation.planner.generation.UniqueConstraint;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.Chromosome;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.Constraint;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.ExclusionConstraint;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.GeneticGeneration;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.PositionConstraint;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.PrecedenceConstraint;
+import com.rigiresearch.middleware.experimentation.software.planner.generation.UniqueConstraint;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.io.BufferedReader;
 import java.io.File;
