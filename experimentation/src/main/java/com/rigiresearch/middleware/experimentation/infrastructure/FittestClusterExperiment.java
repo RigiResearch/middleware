@@ -11,6 +11,7 @@ import io.jenetics.stat.DoubleMomentStatistics;
 import io.jenetics.stat.MinMax;
 import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
+import java.io.IOException;
 import java.security.SecureRandom;
 
 /**
@@ -33,8 +34,10 @@ public final class FittestClusterExperiment {
     /**
      * Default constructor.
      * @param config Configuration parameters
+     * @throws IOException If there is a problem creating the results directory
      */
-    public FittestClusterExperiment(final ExperimentConfig config) {
+    public FittestClusterExperiment(final ExperimentConfig config)
+        throws IOException {
         this.config = config;
         this.engine = Engine.builder(new FittestClusterProblem())
             .minimizing()

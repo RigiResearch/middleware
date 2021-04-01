@@ -5,6 +5,7 @@ import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentResu
 import com.rigiresearch.middleware.experimentation.infrastructure.FittestClusterExperiment;
 import io.jenetics.IntegerGene;
 import io.jenetics.engine.EvolutionResult;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,7 +29,7 @@ public final class Application {
     /**
      * The size of the thread pool size.
      */
-    private static final int THREADS = 5;
+    private static final int THREADS = 1;
 
     /**
      * The number of generations.
@@ -69,8 +70,9 @@ public final class Application {
 
     /**
      * Run this application.
+     * @throws IOException If there is a problem creating the results directory
      */
-    public void run() {
+    public void run() throws IOException {
         final ExecutorService executor = Executors.newFixedThreadPool(Application.THREADS);
         final ExperimentResult result = new FittestClusterExperiment(
             new ExperimentConfig(
@@ -100,8 +102,9 @@ public final class Application {
     /**
      * The main entry point.
      * @param args The application arguments
+     * @throws IOException If there is a problem creating the results directory
      */
-    public static void main(final String... args) {
+    public static void main(final String... args) throws IOException {
         new Application().run();
     }
 

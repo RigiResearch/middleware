@@ -2,16 +2,16 @@ package com.rigiresearch.middleware.experimentation.infrastructure;
 
 import com.microsoft.terraform.TerraformClient;
 import com.microsoft.terraform.TerraformOptions;
-import com.rigiresearch.middleware.metamodels.hcl.Specification;
-import com.rigiresearch.middleware.notations.hcl.parsing.HclParser;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
@@ -30,14 +30,14 @@ public final class Deployment {
     private static final Logger LOGGER = LoggerFactory.getLogger(Deployment.class);
 
     /**
-     * An HCL parser.
+     * The directory where results results are stored.
      */
-    private static final HclParser PARSER = new HclParser();
+    private static final String DIRECTORY = "deployments";
 
     /**
      * The base deployment specification.
      */
-    private final Specification specification;
+    private final String specification;
 
     /**
      * The chromosome data.
@@ -52,14 +52,12 @@ public final class Deployment {
      */
     public Deployment(final int[] data) throws HclParsingException, IOException {
         this.data = data;
-        this.specification = Deployment.PARSER.parse(
-            new String(
-                Objects.requireNonNull(
-                    Thread.currentThread()
-                        .getContextClassLoader()
-                        .getResourceAsStream("templates/main.tf")
-                ).readAllBytes()
-            )
+        this.specification = new String(
+            Objects.requireNonNull(
+                Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream("templates/main.tf")
+            ).readAllBytes()
         );
     }
 
@@ -68,8 +66,7 @@ public final class Deployment {
      * @return The contents of the main file
      */
     public String main() {
-        // The template can be manipulated before rendering
-        return Deployment.PARSER.parse(this.specification);
+        return this.specification;
     }
 
     /**
@@ -115,7 +112,7 @@ public final class Deployment {
      */
     private void save0(final String name, final String content) throws IOException {
         final File directory = new File(
-            new File("deployment"),
+            new File(Deployment.DIRECTORY),
             this.identifier()
         );
         directory.mkdirs();
@@ -131,17 +128,22 @@ public final class Deployment {
     /**
      * Perform this deployment.
      * @return This object
+     * @throws IOException If the output or error files cannot be created
      */
-    public Future<Deployment> deploy() {
-        final File current = new File(String.format("deployment/%s", this.identifier()));
+    public Future<Deployment> deploy() throws IOException {
+        final File current = new File(
+            String.format("%s/%s", Deployment.DIRECTORY, this.identifier())
+        );
+        current.createNewFile();
         final TerraformOptions options = new TerraformOptions();
         final TerraformClient client = new TerraformClient(options);
-        client.setOutputListener(Deployment.LOGGER::debug);
-        client.setErrorListener(Deployment.LOGGER::error);
+        // client.setOutputListener(Deployment.LOGGER::debug);
+        // client.setErrorListener(Deployment.LOGGER::error);
+        client.setOutputListener(this.listener(new File(current, "output.txt"), false));
+        client.setErrorListener(this.listener(new File(current, "error.txt"), true));
         client.setWorkingDirectory(current);
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Deployment.LOGGER.debug(client.version().get());
                 client.plan().get();
                 client.apply().get();
                 // TODO deploy the case study and run performance tests
@@ -152,6 +154,40 @@ public final class Deployment {
             }
             return this;
         });
+    }
+
+    /**
+     * Saves content to a file.
+     * @param file The target file
+     * @param error Whether this listener is for errors
+     * @return A non-null string consumer
+     */
+    private Consumer<String> listener(final File file, final boolean error) {
+        try {
+            // FIXME the content is not being written
+            file.getParentFile().mkdirs();
+            file.createNewFile();
+            final FileWriter writer = new FileWriter(file);
+            return content -> {
+                if (error) {
+                    throw new IllegalStateException(
+                        String.format("Terraform error:\n%s", content)
+                    );
+                }
+                try {
+                    writer.append(content);
+                    writer.flush();
+                } catch (final IOException exception) {
+                    Deployment.LOGGER
+                        .error(exception.getLocalizedMessage(), exception);
+                    throw new IllegalStateException(exception);
+                }
+            };
+        } catch (final IOException exception) {
+            Deployment.LOGGER
+                .error(exception.getLocalizedMessage(), exception);
+            throw new IllegalStateException(exception);
+        }
     }
 
     /**

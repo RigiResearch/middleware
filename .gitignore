@@ -35,6 +35,7 @@ Thumbs.db
 **/xtext-gen/*
 **/xcore-gen/*
 **/src-gen/*
+deployments/
 
 ### Allow libraries ###
 !**/lib/*.jar
