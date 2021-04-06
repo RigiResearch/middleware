@@ -118,14 +118,14 @@ public final class FittestClusterProblem
             final String id =
                 String.format("%d-%d-%d-%d", data[0], data[1], data[2], data[3]);
             this.scores.computeIfAbsent(id, key -> {
-                final double score;
+                final Deployment.Score score;
                 try {
                     score = new Deployment(data)
                         .save()
                         .deploy()
                         .get(FittestClusterProblem.TIMEOUT, TimeUnit.MINUTES)
                         .score();
-                    this.memoize(key, score);
+                    this.memoize(key, score.getValue());
                 } catch (final IOException | HclParsingException |
                     InterruptedException | ExecutionException |
                     TimeoutException exception) {
@@ -133,7 +133,7 @@ public final class FittestClusterProblem
                         .error(exception.getLocalizedMessage(), exception);
                     throw new IllegalStateException(exception);
                 }
-                return score;
+                return score.getValue();
             });
             return this.scores.get(id);
         };

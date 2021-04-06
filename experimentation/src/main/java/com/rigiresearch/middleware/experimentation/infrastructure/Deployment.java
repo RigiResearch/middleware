@@ -4,7 +4,6 @@ import com.microsoft.terraform.TerraformClient;
 import com.microsoft.terraform.TerraformOptions;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -12,6 +11,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
@@ -35,6 +36,11 @@ public final class Deployment {
     private static final String DIRECTORY = "deployments";
 
     /**
+     * Regex to match ANSI color codes.
+     */
+    private static final Pattern ANSI_REGREX = Pattern.compile("\\u001b[^m]*?m");
+
+    /**
      * The base deployment specification.
      */
     private final String specification;
@@ -43,6 +49,11 @@ public final class Deployment {
      * The chromosome data.
      */
     private final int[] data;
+
+    /**
+     * Whether an error happened while performing the deployment.
+     */
+    private boolean erroneous;
 
     /**
      * Default constructor.
@@ -134,20 +145,21 @@ public final class Deployment {
         final File current = new File(
             String.format("%s/%s", Deployment.DIRECTORY, this.identifier())
         );
-        current.createNewFile();
         final TerraformOptions options = new TerraformOptions();
         final TerraformClient client = new TerraformClient(options);
-        // client.setOutputListener(Deployment.LOGGER::debug);
-        // client.setErrorListener(Deployment.LOGGER::error);
         client.setOutputListener(this.listener(new File(current, "output.txt"), false));
         client.setErrorListener(this.listener(new File(current, "error.txt"), true));
         client.setWorkingDirectory(current);
         return CompletableFuture.supplyAsync(() -> {
             try {
-                client.plan().get();
-                client.apply().get();
-                // TODO deploy the case study and run performance tests
-                client.destroy().get();
+                if (client.version().get() != null
+                    && client.plan().get()
+                    && client.apply().get()) {
+                    // TODO deploy the case study and run performance tests
+                    client.destroy().get();
+                } else {
+                    this.erroneous = true;
+                }
                 client.close();
             } catch (final Exception exception) {
                 throw new IllegalStateException(exception);
@@ -163,31 +175,27 @@ public final class Deployment {
      * @return A non-null string consumer
      */
     private Consumer<String> listener(final File file, final boolean error) {
-        try {
-            // FIXME the content is not being written
-            file.getParentFile().mkdirs();
-            file.createNewFile();
-            final FileWriter writer = new FileWriter(file);
-            return content -> {
-                if (error) {
-                    throw new IllegalStateException(
-                        String.format("Terraform error:\n%s", content)
-                    );
-                }
-                try {
-                    writer.append(content);
-                    writer.flush();
-                } catch (final IOException exception) {
-                    Deployment.LOGGER
-                        .error(exception.getLocalizedMessage(), exception);
-                    throw new IllegalStateException(exception);
-                }
-            };
-        } catch (final IOException exception) {
-            Deployment.LOGGER
-                .error(exception.getLocalizedMessage(), exception);
-            throw new IllegalStateException(exception);
-        }
+        return content -> {
+            if (error) {
+                Deployment.LOGGER.error(
+                    "[{}] {}", file.getParentFile().getName(), content);
+            }
+            content = Deployment.ANSI_REGREX.matcher(content).replaceAll("");
+            try {
+                Files.write(
+                    file.toPath(),
+                    String.format("%s\n", content).getBytes(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND,
+                    StandardOpenOption.WRITE
+                );
+            } catch (final IOException exception) {
+                Deployment.LOGGER
+                    .error(exception.getLocalizedMessage(), exception);
+                throw new IllegalStateException(exception);
+            }
+        };
+
     }
 
     /**
@@ -195,8 +203,14 @@ public final class Deployment {
      * measured service latency.
      * @return A positive number
      */
-    public double score() {
-        return 0.0;
+    public Deployment.Score score() {
+        final double value;
+        if (this.erroneous) {
+            value = Double.MAX_VALUE;
+        } else {
+            value = 0.0;
+        }
+        return new Deployment.Score(this.erroneous, value);
     }
 
     /**
@@ -211,6 +225,25 @@ public final class Deployment {
             this.data[2],
             this.data[3]
         );
+    }
+
+    /**
+     * A deployment score.
+     */
+    @Value
+    public static class Score {
+
+        /**
+         * Whether there was an error during the deployment and a score could
+         * not be computed.
+         */
+        boolean error;
+
+        /**
+         * The deployment score. If there was an error, it is {@code Double.MAX_VALUE}.
+         */
+        double value;
+
     }
 
 }
