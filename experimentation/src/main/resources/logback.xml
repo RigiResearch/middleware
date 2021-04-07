@@ -16,5 +16,5 @@
   <root level="info">
     <appender-ref ref="STDOUT"/>
   </root>
-  <logger name="com.rigiresearch" level="info"/>
+  <logger name="com.rigiresearch" level="debug"/>
 </configuration>

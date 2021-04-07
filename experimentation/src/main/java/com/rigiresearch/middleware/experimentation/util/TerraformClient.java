@@ -8,11 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +24,7 @@ import org.zeroturnaround.exec.stream.slf4j.Slf4jOutputStream;
  * @since 0.1.0
  */
 @RequiredArgsConstructor
-public final class TerraformClient {
+public final class TerraformClient implements AutoCloseable {
 
     /**
      * The logger.
@@ -60,12 +58,18 @@ public final class TerraformClient {
     private final OutputStream error;
 
     /**
+     * Callbacks to close open resources.
+     */
+    private final List<Runnable> callbacks;
+
+    /**
      * Default constructor.
      * @param directory The working directory
      * @throws IOException If there is an I/O error
      */
     public TerraformClient(final File directory) throws IOException {
         this.directory = directory;
+        this.callbacks = new ArrayList<>();
         this.output = this.stream("output.txt");
         this.error = this.stream("error.txt");
     }
@@ -80,6 +84,12 @@ public final class TerraformClient {
         // Do not close this file stream
         final FileOutputStream out =
             new FileOutputStream(new File(this.directory, filename));
+        this.callbacks.add(() -> {
+            try {
+                out.close();
+            } catch (final IOException ignored) {
+            }
+        });
         return new Slf4jOutputStream(TerraformClient.LOGGER) {
             @Override
             protected void processLine(final String line) {
@@ -152,7 +162,25 @@ public final class TerraformClient {
      */
     public boolean apply(final long timeout, final TimeUnit unit)
         throws InterruptedException, IOException, TimeoutException {
-        return this.run("apply", timeout, unit) == 0;
+        final List<String> args = new ArrayList<>(1);
+        args.add("-auto-approve");
+        return this.run("apply", args, timeout, unit) == 0;
+    }
+
+    /**
+     * Runs the "destroy" command.
+     * @param timeout The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws InterruptedException If the command is interrupted
+     * @throws TimeoutException If the command takes longer than expected to finish
+     * @throws IOException If there is an I/O error
+     */
+    public boolean destroy(final long timeout, final TimeUnit unit)
+        throws InterruptedException, IOException, TimeoutException {
+        final List<String> args = new ArrayList<>(1);
+        args.add("-auto-approve");
+        return this.run("destroy", args, timeout, unit) == 0;
     }
 
     /**
@@ -167,7 +195,7 @@ public final class TerraformClient {
      */
     private int run(final String command, final long time, final TimeUnit unit)
         throws InterruptedException, TimeoutException, IOException {
-        return this.run(command, Collections.emptyMap(), time, unit);
+        return this.run(command, Collections.emptyList(), time, unit);
     }
 
     /**
@@ -181,18 +209,13 @@ public final class TerraformClient {
      * @throws TimeoutException If the command takes longer than expected to finish
      * @throws IOException If there is an I/O error
      */
-    private int run(final String command, final Map<String, String> args,
+    private int run(final String command, final List<String> args,
         final long time, final TimeUnit unit)
         throws InterruptedException, TimeoutException, IOException {
-        final List<String> commands = new ArrayList<>(args.size() + 1);
+        final List<String> commands = new ArrayList<>(args.size() + 2);
         commands.add(TerraformClient.EXECUTABLE);
         commands.add(command);
-        commands.addAll(
-            args.entrySet()
-                .stream()
-                .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
-                .collect(Collectors.toList())
-        );
+        commands.addAll(args);
         final String formatted = String.format("\n$ %s\n", String.join(" ", commands));
         this.output.write(formatted.getBytes());
         this.output.flush();
@@ -204,6 +227,11 @@ public final class TerraformClient {
             .timeout(time, unit)
             .execute()
             .getExitValue();
+    }
+
+    @Override
+    public void close() {
+        this.callbacks.forEach(Runnable::run);
     }
 
 }

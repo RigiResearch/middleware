@@ -141,15 +141,14 @@ public final class Deployment {
     public Future<Deployment> deploy() throws IOException {
         final String id = this.identifier();
         final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
-        final TerraformClient client = new TerraformClient(current);
         return CompletableFuture.supplyAsync(() -> {
-            try {
+            try (TerraformClient client = new TerraformClient(current)) {
                 if (client.version(10L, TimeUnit.SECONDS)
                     && client.init(2L, TimeUnit.MINUTES)
                     && client.plan(2L, TimeUnit.MINUTES)) {
-                    // && client.apply(vars, 2L, TimeUnit.MINUTES)) {
-                    // TODO Compute and download application metrics
-                    Deployment.LOGGER.info("{} Init and plan executed successfully", id);
+                    // TODO Apply changes and then compute application metrics
+                    // && client.apply(10L, TimeUnit.MINUTES)) {
+                    client.destroy(5L, TimeUnit.MINUTES);
                 } else {
                     this.erroneous = true;
                     Deployment.LOGGER.info("{} There was an error running init/plan", id);
@@ -166,14 +165,14 @@ public final class Deployment {
      * measured service latency.
      * @return A positive number
      */
-    public Score score() {
+    public Deployment.Score score() {
         final double value;
         if (this.erroneous) {
             value = Double.MAX_VALUE;
         } else {
             value = 0.0;
         }
-        return new Score(this.erroneous, value);
+        return new Deployment.Score(this.erroneous, value);
     }
 
     /**
