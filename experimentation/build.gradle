@@ -20,6 +20,7 @@ repositories {
 }
 
 ext {
+    execLibVersion = "1.12"
     jeneticsVersion = "6.0.1"
     jgraphVersion = "1.4.0"
     kubernetesClientVersion = "5.0.0"
@@ -33,7 +34,7 @@ dependencies {
     implementation project(":notations:hcl.interpreter")
 
     implementation "io.kubernetes:client-java:$kubernetesClientVersion"
-    implementation "com.microsoft.terraform:terraform-client:$terraformClientVersion"
+    implementation "org.zeroturnaround:zt-exec:$execLibVersion"
     implementation "org.jgrapht:jgrapht-core:$jgraphVersion"
     implementation "io.jenetics:jenetics:$jeneticsVersion"
     implementation("org.antlr:ST4:$stVersion") {

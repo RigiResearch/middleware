@@ -105,6 +105,13 @@ public final class Application {
      * @throws IOException If there is a problem creating the results directory
      */
     public static void main(final String... args) throws IOException {
+        final String url = System.getenv("TF_VAR_os_auth_url");
+        if (url == null || url.isEmpty()) {
+            Application.LOGGER.error(
+                "You must source OpenStack RC file as well as RKE's environment variables"
+            );
+            System.exit(1);
+        }
         new Application().run();
     }
 

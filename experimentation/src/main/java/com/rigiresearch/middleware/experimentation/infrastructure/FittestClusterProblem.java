@@ -40,24 +40,20 @@ public final class FittestClusterProblem
     private static final long TIMEOUT = 10L;
 
     /**
-     * The number of virtual nodes realizing the cluster, including 2, 4, and 6.
+     * The number of worker nodes realizing the cluster (1 node is always
+     * reserved for the master node, totalling up to 6 nodes).
      */
-    private static final IntRange NODE = IntRange.of(1, 3);
+    private static final IntRange NODE = IntRange.of(1, 5);
 
     /**
-     * The amount of memory in Gb.
+     * The amount of memory in Gb, including 2, 4, 6 and 8.
      */
-    private static final IntRange MEMORY = IntRange.of(1, 5);
+    private static final IntRange MEMORY = IntRange.of(1, 4);
 
     /**
-     * The number of CPU cores, including 2, 4 or 6 cores.
+     * The number of CPU cores, including 2, 4, 6 and 8 cores.
      */
-    private static final IntRange CPU = IntRange.of(1, 3);
-
-    /**
-     * The network speed, including 10Mb, 100Mb and 1Gb.
-     */
-    private static final IntRange NETWORK = IntRange.of(1, 3);
+    private static final IntRange CPU = IntRange.of(1, 4);
 
     /**
      * Initial map capacity.
@@ -65,7 +61,7 @@ public final class FittestClusterProblem
     private static final int INITIAL_CAPACITY = 100;
 
     /**
-     * The directory where results arre written.
+     * The directory where results are written.
      */
     private static final String DIRECTORY = "deployments/data";
 
@@ -104,7 +100,7 @@ public final class FittestClusterProblem
                     map.put(parts[0], Double.parseDouble(parts[1]));
                 });
             FittestClusterProblem.LOGGER
-                .info("Load {} previously memoized results", map.size());
+                .info("Loaded {} previously memoized results", map.size());
         } else {
             FittestClusterProblem.LOGGER
                 .debug("There are no memoized results to load");
@@ -115,17 +111,22 @@ public final class FittestClusterProblem
     @Override
     public Function<int[], Double> fitness() {
         return data -> {
-            final String id =
-                String.format("%d-%d-%d-%d", data[0], data[1], data[2], data[3]);
-            this.scores.computeIfAbsent(id, key -> {
-                final Deployment.Score score;
+            final String id = String.format("%d-%d-%d", data[0], data[1], data[2]);
+            final double score;
+            if (this.scores.containsKey(id)) {
+                score = this.scores.get(id);
+            } else {
                 try {
-                    score = new Deployment(data)
+                    final Deployment.Score tmp = new Deployment(data)
                         .save()
                         .deploy()
                         .get(FittestClusterProblem.TIMEOUT, TimeUnit.MINUTES)
                         .score();
-                    this.memoize(key, score.getValue());
+                    score = tmp.getValue();
+                    this.memoize(id, score);
+                    synchronized (this.scores) {
+                        this.scores.put(id, tmp.getValue());
+                    }
                 } catch (final IOException | HclParsingException |
                     InterruptedException | ExecutionException |
                     TimeoutException exception) {
@@ -133,9 +134,8 @@ public final class FittestClusterProblem
                         .error(exception.getLocalizedMessage(), exception);
                     throw new IllegalStateException(exception);
                 }
-                return score.getValue();
-            });
-            return this.scores.get(id);
+            }
+            return score;
         };
     }
 
@@ -144,8 +144,7 @@ public final class FittestClusterProblem
         return Codecs.ofVector(
             FittestClusterProblem.NODE,
             FittestClusterProblem.MEMORY,
-            FittestClusterProblem.CPU,
-            FittestClusterProblem.NETWORK
+            FittestClusterProblem.CPU
         );
     }
 

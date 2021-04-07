@@ -1,7 +1,6 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
-import com.microsoft.terraform.TerraformClient;
-import com.microsoft.terraform.TerraformOptions;
+import com.rigiresearch.middleware.experimentation.util.TerraformClient;
 import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.File;
 import java.io.IOException;
@@ -10,8 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +34,9 @@ public final class Deployment {
     private static final String DIRECTORY = "deployments";
 
     /**
-     * Regex to match ANSI color codes.
+     * An empty string.
      */
-    private static final Pattern ANSI_REGREX = Pattern.compile("\\u001b[^m]*?m");
+    private static final String EMPTY = "";
 
     /**
      * The base deployment specification.
@@ -91,7 +89,7 @@ public final class Deployment {
                 Objects.requireNonNull(
                     Thread.currentThread()
                         .getContextClassLoader()
-                        .getResourceAsStream("templates/inputs.tf.st")
+                        .getResourceAsStream("templates/terraform.tfvars.st")
                 ).readAllBytes()
             ),
             '#',
@@ -100,7 +98,6 @@ public final class Deployment {
         template.add("nodes", this.data[0]);
         template.add("memory", String.format("\"%dg\"", this.data[1]));
         template.add("cpus", this.data[2]);
-        template.add("network", String.format("\"%dMb\"", this.data[3]));
         return template.render();
     }
 
@@ -111,7 +108,7 @@ public final class Deployment {
      */
     public Deployment save() throws IOException {
         this.save0("main.tf", this.main());
-        this.save0("inputs.tf", this.inputs());
+        this.save0("terraform.tfvars", this.inputs());
         return this;
     }
 
@@ -142,25 +139,21 @@ public final class Deployment {
      * @throws IOException If the output or error files cannot be created
      */
     public Future<Deployment> deploy() throws IOException {
-        final File current = new File(
-            String.format("%s/%s", Deployment.DIRECTORY, this.identifier())
-        );
-        final TerraformOptions options = new TerraformOptions();
-        final TerraformClient client = new TerraformClient(options);
-        client.setOutputListener(this.listener(new File(current, "output.txt"), false));
-        client.setErrorListener(this.listener(new File(current, "error.txt"), true));
-        client.setWorkingDirectory(current);
+        final String id = this.identifier();
+        final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
+        final TerraformClient client = new TerraformClient(current);
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (client.version().get() != null
-                    && client.plan().get()
-                    && client.apply().get()) {
-                    // TODO deploy the case study and run performance tests
-                    client.destroy().get();
+                if (client.version(10L, TimeUnit.SECONDS)
+                    && client.init(2L, TimeUnit.MINUTES)
+                    && client.plan(2L, TimeUnit.MINUTES)) {
+                    // && client.apply(vars, 2L, TimeUnit.MINUTES)) {
+                    // TODO Compute and download application metrics
+                    Deployment.LOGGER.info("{} Init and plan executed successfully", id);
                 } else {
                     this.erroneous = true;
+                    Deployment.LOGGER.info("{} There was an error running init/plan", id);
                 }
-                client.close();
             } catch (final Exception exception) {
                 throw new IllegalStateException(exception);
             }
@@ -169,48 +162,18 @@ public final class Deployment {
     }
 
     /**
-     * Saves content to a file.
-     * @param file The target file
-     * @param error Whether this listener is for errors
-     * @return A non-null string consumer
-     */
-    private Consumer<String> listener(final File file, final boolean error) {
-        return content -> {
-            if (error) {
-                Deployment.LOGGER.error(
-                    "[{}] {}", file.getParentFile().getName(), content);
-            }
-            content = Deployment.ANSI_REGREX.matcher(content).replaceAll("");
-            try {
-                Files.write(
-                    file.toPath(),
-                    String.format("%s\n", content).getBytes(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND,
-                    StandardOpenOption.WRITE
-                );
-            } catch (final IOException exception) {
-                Deployment.LOGGER
-                    .error(exception.getLocalizedMessage(), exception);
-                throw new IllegalStateException(exception);
-            }
-        };
-
-    }
-
-    /**
      * Measure the execution and assign a score to the deployment based on the
      * measured service latency.
      * @return A positive number
      */
-    public Deployment.Score score() {
+    public Score score() {
         final double value;
         if (this.erroneous) {
             value = Double.MAX_VALUE;
         } else {
             value = 0.0;
         }
-        return new Deployment.Score(this.erroneous, value);
+        return new Score(this.erroneous, value);
     }
 
     /**
@@ -218,13 +181,7 @@ public final class Deployment {
      * @return A non-null, non-empty string
      */
     public String identifier() {
-        return String.format(
-            "%d-%d-%d-%d",
-            this.data[0],
-            this.data[1],
-            this.data[2],
-            this.data[3]
-        );
+        return String.format("%d-%d-%d", this.data[0], this.data[1], this.data[2]);
     }
 
     /**
