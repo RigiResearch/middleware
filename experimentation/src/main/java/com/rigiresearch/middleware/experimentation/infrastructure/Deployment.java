@@ -136,9 +136,8 @@ public final class Deployment {
     /**
      * Perform this deployment.
      * @return This object
-     * @throws IOException If the output or error files cannot be created
      */
-    public Future<Deployment> deploy() throws IOException {
+    public Future<Deployment> deploy() {
         final String id = this.identifier();
         final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
         return CompletableFuture.supplyAsync(() -> {
