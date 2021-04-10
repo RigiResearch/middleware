@@ -2,10 +2,10 @@
 <graph xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
   <!--Metrics-->
   <metric name="latency">
-    <input name="demand"/>
-    <input name="vCPUs"/>
-    <input name="RAM"/>
-    <input name="nodes"/>
+    <dependency node="demand"/>
+    <dependency node="vCPUs"/>
+    <dependency node="RAM"/>
+    <dependency node="nodes"/>
     <metadata>
       <!--The equation is approximated during knowledge reification-->
       <!--<property name="equation" value=""/>-->
@@ -13,10 +13,10 @@
     </metadata>
   </metric>
   <metric name="throughput">
-    <input name="demand"/>
-    <input name="vCPUs"/>
-    <input name="RAM"/>
-    <input name="nodes"/>
+    <dependency node="demand"/>
+    <dependency node="vCPUs"/>
+    <dependency node="RAM"/>
+    <dependency node="nodes"/>
     <metadata>
       <!--The equation is approximated during knowledge reification-->
       <!--<property name="equation" value=""/>-->
@@ -24,10 +24,10 @@
     </metadata>
   </metric>
   <metric name="utilization">
-    <input name="demand"/>
-    <input name="vCPUs"/>
-    <input name="RAM"/>
-    <input name="nodes"/>
+    <dependency node="demand"/>
+    <dependency node="vCPUs"/>
+    <dependency node="RAM"/>
+    <dependency node="nodes"/>
     <metadata>
       <!--The equation is approximated during knowledge reification-->
       <!--<property name="equation" value=""/>-->
@@ -37,18 +37,18 @@
 
   <!--Functions-->
   <function name="cost">
-    <input name="vCPUs"/>
-    <input name="RAM"/>
-    <input name="nodes"/>
+    <dependency node="vCPUs"/>
+    <dependency node="RAM"/>
+    <dependency node="nodes"/>
     <metadata>
       <property name="equation" value="nodes * (2*vCPUs + 1*RAM)"/>
     </metadata>
   </function>
   <function name="objective">
-    <input name="cost"/>
-    <input name="latency"/>
-    <input name="throughput"/>
-    <input name="utilization"/>
+    <dependency node="cost"/>
+    <dependency node="latency"/>
+    <dependency node="throughput"/>
+    <dependency node="utilization"/>
     <metadata>
       <property name="equation" value="0.6*latency + 0.1*throughput + 0.1*(1 - utilization) + 0.2*(1 - cost)"/>
       <property name="type" value="minimize"/>
@@ -58,25 +58,25 @@
   <!--Variables-->
   <variable name="demand">
     <metadata>
-      <property name="C1" value="demand > 0"/>
+      <property name="demand_min" value="0"/>
     </metadata>
   </variable>
   <variable name="vCPUs">
     <metadata>
-      <property name="vCPUs_C1" value="vCPUs >= 1"/>
-      <property name="vCPUs_C2" value="vCPUs <= 6"/>
+      <property name="vCPUs_min" value="1"/>
+      <property name="vCPUs_max" value="6"/>
     </metadata>
   </variable>
   <variable name="RAM">
     <metadata>
-      <property name="RAM_C1" value="RAM >= 1"/>
-      <property name="RAM_C2" value="RAM <= 8"/>
+      <property name="RAM_min" value="1"/>
+      <property name="RAM_max" value="8"/>
     </metadata>
   </variable>
   <variable name="nodes">
     <metadata>
-      <property name="nodes_C1" value="nodes >= 1"/>
-      <property name="nodes_C2" value="nodes <= 6"/>
+      <property name="nodes_min" value="1"/>
+      <property name="nodes_max" value="6"/>
     </metadata>
   </variable>
 </graph>

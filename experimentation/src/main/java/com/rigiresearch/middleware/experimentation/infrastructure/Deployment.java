@@ -34,11 +34,6 @@ public final class Deployment {
     private static final String DIRECTORY = "deployments";
 
     /**
-     * An empty string.
-     */
-    private static final String EMPTY = "";
-
-    /**
      * The base deployment specification.
      */
     private final String specification;

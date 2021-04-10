@@ -11,5 +11,13 @@
         </xml-elements>
       </java-attributes>
     </java-type>
+    <java-type name="Node">
+      <java-attributes>
+        <xml-elements java-attribute="parameters">
+          <xml-element name="dependency"
+            type="com.rigiresearch.middleware.experimentation.graph.NodeDependency"/>
+        </xml-elements>
+      </java-attributes>
+    </java-type>
   </java-types>
 </xml-bindings>

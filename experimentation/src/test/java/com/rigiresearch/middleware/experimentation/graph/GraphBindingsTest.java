@@ -2,7 +2,6 @@ package com.rigiresearch.middleware.experimentation.graph;
 
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.GraphParser;
-import com.rigiresearch.middleware.graph.Input;
 import com.rigiresearch.middleware.graph.Node;
 import com.rigiresearch.middleware.graph.Property;
 import java.io.BufferedReader;
@@ -102,8 +101,8 @@ final class GraphBindingsTest {
             "cost",
             new HashSet<>(
                 Arrays.asList(
-                    new Input("cores", null),
-                    new Input("demand", null)
+                    new NodeDependency(cores),
+                    new NodeDependency(demand)
                 )
             ),
             Collections.singleton(new Property("equation", "1*cores"))
@@ -112,8 +111,8 @@ final class GraphBindingsTest {
             "latency",
             new HashSet<>(
                 Arrays.asList(
-                    new Input("cores", null),
-                    new Input("demand", null)
+                    new NodeDependency(cores),
+                    new NodeDependency(demand)
                 )
             ),
             Collections.singleton(new Property("type", "minimize"))
