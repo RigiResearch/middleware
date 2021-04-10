@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graph xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
+  <!--Metrics-->
+  <metric name="latency">
+    <input name="demand"/>
+    <input name="vCPUs"/>
+    <input name="RAM"/>
+    <input name="nodes"/>
+    <metadata>
+      <!--The equation is approximated during knowledge reification-->
+      <!--<property name="equation" value=""/>-->
+      <property name="type" value="minimize"/>
+    </metadata>
+  </metric>
+  <metric name="throughput">
+    <input name="demand"/>
+    <input name="vCPUs"/>
+    <input name="RAM"/>
+    <input name="nodes"/>
+    <metadata>
+      <!--The equation is approximated during knowledge reification-->
+      <!--<property name="equation" value=""/>-->
+      <property name="type" value="maximize"/>
+    </metadata>
+  </metric>
+  <metric name="utilization">
+    <input name="demand"/>
+    <input name="vCPUs"/>
+    <input name="RAM"/>
+    <input name="nodes"/>
+    <metadata>
+      <!--The equation is approximated during knowledge reification-->
+      <!--<property name="equation" value=""/>-->
+      <property name="type" value="maximize"/>
+    </metadata>
+  </metric>
+
+  <!--Functions-->
+  <function name="cost">
+    <input name="vCPUs"/>
+    <input name="RAM"/>
+    <input name="nodes"/>
+    <metadata>
+      <property name="equation" value="nodes * (2*vCPUs + 1*RAM)"/>
+    </metadata>
+  </function>
+  <function name="objective">
+    <input name="cost"/>
+    <input name="latency"/>
+    <input name="throughput"/>
+    <input name="utilization"/>
+    <metadata>
+      <property name="equation" value="0.6*latency + 0.1*throughput + 0.1*(1 - utilization) + 0.2*(1 - cost)"/>
+      <property name="type" value="minimize"/>
+    </metadata>
+  </function>
+
+  <!--Variables-->
+  <variable name="demand">
+    <metadata>
+      <property name="C1" value="demand > 0"/>
+    </metadata>
+  </variable>
+  <variable name="vCPUs">
+    <metadata>
+      <property name="vCPUs_C1" value="vCPUs >= 1"/>
+      <property name="vCPUs_C2" value="vCPUs <= 6"/>
+    </metadata>
+  </variable>
+  <variable name="RAM">
+    <metadata>
+      <property name="RAM_C1" value="RAM >= 1"/>
+      <property name="RAM_C2" value="RAM <= 8"/>
+    </metadata>
+  </variable>
+  <variable name="nodes">
+    <metadata>
+      <property name="nodes_C1" value="nodes >= 1"/>
+      <property name="nodes_C2" value="nodes <= 6"/>
+    </metadata>
+  </variable>
+</graph>

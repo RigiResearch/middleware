@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graph xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
+   <variable name="cores">
+      <metadata>
+         <property name="cores_C1" value="cores >= 1"/>
+         <property name="cores_C2" value="cores &lt;= 6"/>
+      </metadata>
+   </variable>
+   <function name="cost">
+      <input name="cores"/>
+      <input name="demand"/>
+      <metadata>
+         <property name="equation" value="1*cores"/>
+      </metadata>
+   </function>
+   <variable name="demand">
+      <metadata>
+         <property name="demand_C1" value="demand > 0"/>
+      </metadata>
+   </variable>
+   <metric name="latency">
+      <input name="cores"/>
+      <input name="demand"/>
+      <metadata>
+         <property name="type" value="minimize"/>
+      </metadata>
+   </metric>
+</graph>
+

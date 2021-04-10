@@ -38,6 +38,7 @@ ext {
 dependencies {
     implementation project(":metamodels")
     implementation project(":metamodels:hcl")
+    implementation project(":metamodels:graph")
     implementation project(":notations:hcl.interpreter")
 
     implementation "io.kubernetes:client-java:$kubernetesClientVersion"
