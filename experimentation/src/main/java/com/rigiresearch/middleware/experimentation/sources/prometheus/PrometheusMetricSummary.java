@@ -1,5 +1,6 @@
-package com.rigiresearch.middleware.experimentation.util.monitoring;
+package com.rigiresearch.middleware.experimentation.sources.prometheus;
 
+import com.rigiresearch.middleware.experimentation.sources.MetricSummary;
 import lombok.Builder;
 import lombok.Value;
 
@@ -11,7 +12,7 @@ import lombok.Value;
  */
 @Builder
 @Value
-public class PrometheusMetricSummary {
+public class PrometheusMetricSummary implements MetricSummary {
 
     /**
      * The minimum value within the collected values.

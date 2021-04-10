@@ -1,6 +1,7 @@
-package com.rigiresearch.middleware.experimentation.util.monitoring;
+package com.rigiresearch.middleware.experimentation.sources.prometheus;
 
 import com.jayway.jsonpath.JsonPath;
+import com.rigiresearch.middleware.experimentation.sources.MetricStore;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -15,7 +16,7 @@ import java.time.Duration;
  * @version $Id$
  * @since 0.1.0
  */
-public final class PrometheusDataCollector {
+public final class PrometheusMetricStore implements MetricStore {
 
     /**
      * An HTTP client.
@@ -43,7 +44,7 @@ public final class PrometheusDataCollector {
      * @param period The time period to use in the queries
      * @param quantile The quantile to use in the queries
      */
-    public PrometheusDataCollector(final String host, final String period,
+    public PrometheusMetricStore(final String host, final String period,
         final double quantile) {
         this.client = HttpClient.newHttpClient();
         this.host = host;
@@ -56,6 +57,7 @@ public final class PrometheusDataCollector {
      * @param metric The metric summary
      * @return A non-null object
      */
+    @Override
     public PrometheusMetricSummary metricSummary(final String metric) {
         // TODO Finish setting up the metric summary when the actual metrics are available
         return PrometheusMetricSummary.builder()
