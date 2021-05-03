@@ -1,0 +1,37 @@
+NUMBER       NAME       VCPU   RAM   DISK
+-----------------------------------------
+   1     custom-1-2-4    1     2GB   4GB
+   2     custom-2-2-4    2     2GB   4GB
+   3     custom-3-2-4    3     2GB   4GB
+   4     custom-4-2-4    4     2GB   4GB
+   5     custom-5-2-4    5     2GB   4GB
+   6     custom-6-2-4    6     2GB   4GB
+   7     custom-7-2-4    7     2GB   4GB
+   8     custom-8-2-4    8     2GB   4GB
+
+   9     custom-1-4-4    1     4GB   4GB
+   10    custom-2-4-4    2     4GB   4GB
+   11    custom-3-4-4    3     4GB   4GB
+   12    custom-4-4-4    4     4GB   4GB
+   13    custom-5-4-4    5     4GB   4GB
+   14    custom-6-4-4    6     4GB   4GB
+   15    custom-7-4-4    7     4GB   4GB
+   16    custom-8-4-4    8     4GB   4GB
+
+   17    custom-1-6-4    1     6GB   4GB
+   18    custom-2-6-4    2     6GB   4GB
+   19    custom-3-6-4    3     6GB   4GB
+   20    custom-4-6-4    4     6GB   4GB
+   21    custom-5-6-4    5     6GB   4GB
+   22    custom-6-6-4    6     6GB   4GB
+   23    custom-7-6-4    7     6GB   4GB
+   24    custom-8-6-4    8     6GB   4GB
+
+   25    custom-1-8-4    1     8GB   4GB
+   26    custom-2-8-4    2     8GB   4GB
+   27    custom-3-8-4    3     8GB   4GB
+   28    custom-4-8-4    4     8GB   4GB
+   29    custom-5-8-4    5     8GB   4GB
+   30    custom-6-8-4    6     8GB   4GB
+   31    custom-7-8-4    7     8GB   4GB
+   32    custom-8-8-4    8     8GB   4GB 
