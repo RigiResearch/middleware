@@ -101,8 +101,8 @@ final class GraphBindingsTest {
             "cost",
             new HashSet<>(
                 Arrays.asList(
-                    new NodeDependency(cores),
-                    new NodeDependency(demand)
+                    new NodeDependency(cores, "cost-cores"),
+                    new NodeDependency(demand, "cost-demand")
                 )
             ),
             Collections.singleton(new Property("equation", "1*cores"))
@@ -111,8 +111,8 @@ final class GraphBindingsTest {
             "latency",
             new HashSet<>(
                 Arrays.asList(
-                    new NodeDependency(cores),
-                    new NodeDependency(demand)
+                    new NodeDependency(cores, "latency-cores"),
+                    new NodeDependency(demand, "latency-demand")
                 )
             ),
             Collections.singleton(new Property("type", "minimize"))

@@ -3,9 +3,9 @@ package com.rigiresearch.middleware.experimentation.graph;
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.Node;
 import com.rigiresearch.middleware.graph.Parameter;
+import java.util.Objects;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlIDREF;
-import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -33,26 +33,19 @@ public final class NodeDependency extends Parameter {
     private Node node;
 
     /**
-     * This parameter's name (ignored).
-     */
-    @XmlTransient
-    private String name;
-
-    /**
      * Empty constructor.
      */
     public NodeDependency() {
-        super("");
+        super();
     }
 
     /**
      * Secondary constructor.
      * @param node The referenced node
      */
-    public NodeDependency(final Node node) {
-        super(node.getName());
+    public NodeDependency(final Node node, final String name) {
+        super(name);
         this.node = node;
-        this.name = node.getName();
     }
 
     /**
@@ -64,8 +57,22 @@ public final class NodeDependency extends Parameter {
     }
 
     @Override
-    public String getName() {
-        return this.name;
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        final NodeDependency that = (NodeDependency) o;
+        return Objects.equals(this.node, that.node);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), this.node);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("dependency(%s, %s)", this.getName(), this.node);
     }
 
 }

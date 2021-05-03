@@ -110,7 +110,7 @@ public class Node implements Serializable, Comparable<Node> {
         final Set<Parameter> parameters, final Set<Property> metadata) {
         this.name = name;
         this.template = template;
-        this.parameters = new TreeSet<>(parameters);
+        this.parameters = parameters;
         this.metadata = new TreeSet<>(metadata);
     }
 
@@ -295,7 +295,7 @@ public class Node implements Serializable, Comparable<Node> {
             set.addAll(inputs.values());
             set.addAll(outputs.values());
         } else {
-            set = this.parameters;
+            set = new HashSet<>(this.parameters);
         }
         return set;
     }

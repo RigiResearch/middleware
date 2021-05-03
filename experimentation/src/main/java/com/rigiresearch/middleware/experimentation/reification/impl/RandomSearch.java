@@ -48,7 +48,6 @@ public final class RandomSearch implements KnowledgeReification {
             .map(NodeDependency.class::cast)
             .map(NodeDependency::getNode)
             .collect(Collectors.toList());
-        RandomSearch.LOGGER.debug("Dependencies found: {}", dependencies.size());
         final Map<Node, int[]> values = this.randomSequences(dependencies);
         values.forEach((key, sequence) -> {
             RandomSearch.LOGGER.debug(

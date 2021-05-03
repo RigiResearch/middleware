@@ -2,10 +2,10 @@
 <graph xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
   <!--Metrics-->
   <metric name="latency">
-    <dependency node="demand"/>
-    <dependency node="vCPUs"/>
-    <dependency node="RAM"/>
-    <dependency node="nodes"/>
+    <dependency node="demand" name="latency-demand"/>
+    <dependency node="vCPUs" name="latency-vCPUs"/>
+    <dependency node="RAM" name="latency-RAM"/>
+    <dependency node="nodes" name="latency-nodes"/>
     <metadata>
       <!--The equation is approximated during knowledge reification-->
       <!--<property name="equation" value=""/>-->
@@ -13,10 +13,10 @@
     </metadata>
   </metric>
   <metric name="throughput">
-    <dependency node="demand"/>
-    <dependency node="vCPUs"/>
-    <dependency node="RAM"/>
-    <dependency node="nodes"/>
+    <dependency node="demand" name="throughput-demand"/>
+    <dependency node="vCPUs" name="throughput-vCPUs"/>
+    <dependency node="RAM" name="throughput-RAM"/>
+    <dependency node="nodes" name="throughput-nodes"/>
     <metadata>
       <!--The equation is approximated during knowledge reification-->
       <!--<property name="equation" value=""/>-->
@@ -24,10 +24,10 @@
     </metadata>
   </metric>
   <metric name="utilization">
-    <dependency node="demand"/>
-    <dependency node="vCPUs"/>
-    <dependency node="RAM"/>
-    <dependency node="nodes"/>
+    <dependency node="demand" name="utilization-demand"/>
+    <dependency node="vCPUs" name="utilization-vCPUs"/>
+    <dependency node="RAM" name="utilization-RAM"/>
+    <dependency node="nodes" name="utilization-nodes"/>
     <metadata>
       <!--The equation is approximated during knowledge reification-->
       <!--<property name="equation" value=""/>-->
@@ -37,18 +37,18 @@
 
   <!--Functions-->
   <function name="cost">
-    <dependency node="vCPUs"/>
-    <dependency node="RAM"/>
-    <dependency node="nodes"/>
+    <dependency node="vCPUs" name="cost-vCPUs"/>
+    <dependency node="RAM" name="cost-RAM"/>
+    <dependency node="nodes" name="cost-nodes"/>
     <metadata>
       <property name="equation" value="nodes * (2*vCPUs + 1*RAM)"/>
     </metadata>
   </function>
   <function name="objective">
-    <dependency node="cost"/>
-    <dependency node="latency"/>
-    <dependency node="throughput"/>
-    <dependency node="utilization"/>
+    <dependency node="cost" name="objective-cost"/>
+    <dependency node="latency" name="objective-latency"/>
+    <dependency node="throughput" name="objective-throughput"/>
+    <dependency node="utilization" name="objective-utilization"/>
     <metadata>
       <property name="equation" value="0.6*latency + 0.1*throughput + 0.1*(1 - utilization) + 0.2*(1 - cost)"/>
       <property name="type" value="minimize"/>
