@@ -3,12 +3,12 @@ package com.rigiresearch.middleware.experimentation.reification;
 import com.rigiresearch.middleware.experimentation.graph.Metric;
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.Node;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
- * A knowledge reification method that explores combinations of inputs to
- * approximate a function that describes a particular metric.
+ * A knowledge reification method that approximates a function that describes a
+ * particular metric.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
@@ -16,13 +16,17 @@ import java.util.function.Function;
 public interface KnowledgeReification {
 
     /**
-     * Explores the solution space and approximates a function for the given metric.
-     * @param metric The metric to reify
+     * Approximates a function for the given metric.
+     * @param metric The metric to explore
      * @param graph The metric dependency graph
-     * @param fitness A function that evaluates the fitness of a combination of
-     *  variable values
+     * @param values A list of replications with variables and metrics
      */
     DifferentiableFunction reify(Metric metric, Graph<? extends Node> graph,
-        Function<Map<String, Object>, Double> fitness);
+        List<Map<String, Double>> values);
+
+    /**
+     * TODO complete java doc.
+     */
+    List<Map<String, Double>> reify(SolutionSpaceExploration exploration);
 
 }

@@ -2,11 +2,12 @@ package com.rigiresearch.middleware.experimentation.reification.impl;
 
 import com.rigiresearch.middleware.experimentation.graph.Metric;
 import com.rigiresearch.middleware.experimentation.graph.NodeDependency;
-import com.rigiresearch.middleware.experimentation.reification.DifferentiableFunction;
-import com.rigiresearch.middleware.experimentation.reification.KnowledgeReification;
+import com.rigiresearch.middleware.experimentation.reification.SolutionSpaceExploration;
+import com.rigiresearch.middleware.experimentation.reification.fitness.FitnessResult;
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.Node;
 import com.rigiresearch.middleware.graph.Property;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -19,14 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of {@link KnowledgeReification} that uses random search to
- * explore combinations of values.
+ * An implementation of {@link SolutionSpaceExploration} that uses random search
+ * to explore combinations of values.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
  */
 @RequiredArgsConstructor
-public final class RandomSearch implements KnowledgeReification {
+public final class RandomSearch implements SolutionSpaceExploration {
 
     /**
      * The logger.
@@ -39,36 +40,64 @@ public final class RandomSearch implements KnowledgeReification {
     private final int elements;
 
     @Override
-    public DifferentiableFunction reify(final Metric metric,
+    public List<Map<String, Double>> explore(final Metric metric,
         final Graph<? extends Node> graph,
-        final Function<Map<String, Object>, Double> fitness) {
-        final List<Node> dependencies = metric.getParameters(false)
+        final Function<Map<String, Double>, FitnessResult> fitness) {
+        final Map<Node, int[]> sequences =
+            this.randomSequences(this.dependencies(metric));
+        if (RandomSearch.LOGGER.isDebugEnabled()) {
+            sequences.forEach((key, sequence) ->
+                RandomSearch.LOGGER.debug(
+                    "Sequence({}): {}", key.getName(), Arrays.toString(sequence)
+                )
+            );
+        }
+        return this.results(metric, fitness, sequences);
+    }
+
+    /**
+     * Evaluates the fitness function on the generated sequences.
+     * @param metric The metric
+     * @param fitness The fitness function
+     * @param sequences The generated random sequences
+     * @return A non-null, possibly empty list of results
+     */
+    private List<Map<String, Double>> results(
+        final Metric metric,
+        final Function<Map<String, Double>, FitnessResult> fitness,
+        final Map<Node, int[]> sequences) {
+        final List<Map<String, Double>> results = new ArrayList<>(sequences.size());
+        for (int tmp = 0; tmp < this.elements; tmp++) {
+            final int position = tmp;
+            final Map<String, Double> data = sequences.entrySet()
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        e -> e.getKey().getName(),
+                        e -> (double) e.getValue()[position]
+                    )
+                );
+            final FitnessResult result = fitness.apply(data);
+            data.put(metric.getName(), result.getSummary().getMean());
+            results.add(data);
+            RandomSearch.LOGGER.debug(
+                "Instance {}: Result: {}, Data: {}", tmp, result, data);
+        }
+        return results;
+    }
+
+    /**
+     * Finds dependencies of the given metric.
+     * @param metric The metric
+     * @return A non-null, possibly empty list
+     */
+    private List<Node> dependencies(final Metric metric) {
+        return metric.getParameters(false)
             .stream()
             .filter(NodeDependency.class::isInstance)
             .map(NodeDependency.class::cast)
             .map(NodeDependency::getNode)
             .collect(Collectors.toList());
-        final Map<Node, int[]> values = this.randomSequences(dependencies);
-        values.forEach((key, sequence) -> {
-            RandomSearch.LOGGER.debug(
-                "Sequence({}): {}", key.getName(), Arrays.toString(sequence)
-            );
-        });
-        for (int tmp = 0; tmp < this.elements; tmp++) {
-            final int position = tmp;
-            final Map<String, Integer> data = values.entrySet()
-                .stream()
-                .collect(
-                    Collectors.toMap(
-                        e -> e.getKey().getName(),
-                        e -> e.getValue()[position]
-                    )
-                );
-            RandomSearch.LOGGER.debug("Instance {}: {}", tmp, data);
-            // TODO Run "fitness" and collect the measured values
-        }
-        // TODO approximate the function using interpolation
-        return null;
     }
 
     /**

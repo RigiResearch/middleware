@@ -1,15 +1,19 @@
 package com.rigiresearch.middleware.experimentation.reification.impl;
 
 import com.rigiresearch.middleware.experimentation.graph.Metric;
-import com.rigiresearch.middleware.experimentation.reification.DifferentiableFunction;
+import com.rigiresearch.middleware.experimentation.reification.fitness.FitnessResult;
+import com.rigiresearch.middleware.experimentation.sources.prometheus.PrometheusMetricSummary;
 import com.rigiresearch.middleware.graph.Graph;
 import com.rigiresearch.middleware.graph.GraphParser;
 import com.rigiresearch.middleware.graph.Node;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXBException;
 import org.junit.jupiter.api.Test;
@@ -44,8 +48,21 @@ final class RandomSearchTest {
             .map(Metric.class::cast)
             .findFirst();
         assert latency.isPresent();
-        final DifferentiableFunction function =
-            search.reify(latency.get(), graph, data -> 0.0);
+        final Function<Map<String, Double>, FitnessResult> fitness = data ->
+            new FitnessResult(
+                0.0,
+                PrometheusMetricSummary.builder()
+                    .count(1)
+                    .max(0.5)
+                    .mean(0.5)
+                    .min(0.5)
+                    .name("something")
+                    .std(0.0)
+                    .var(0.0)
+                    .build()
+            );
+        final List<Map<String, Double>> results =
+            search.explore(latency.get(), graph, fitness);
     }
 
     /**

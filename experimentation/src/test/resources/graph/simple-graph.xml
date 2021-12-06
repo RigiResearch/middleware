@@ -2,8 +2,8 @@
 <graph xmlns="http://www.rigiresearch.com/middleware/graph/1.0.0">
    <variable name="cores">
       <metadata>
-         <property name="cores_C1" value="cores >= 1"/>
-         <property name="cores_C2" value="cores &lt;= 6"/>
+         <property name="cores_min" value="1"/>
+         <property name="cores_max" value="6"/>
       </metadata>
    </variable>
    <function name="cost">
@@ -15,7 +15,8 @@
    </function>
    <variable name="demand">
       <metadata>
-         <property name="demand_C1" value="demand > 0"/>
+         <property name="demand_min" value="0"/>
+         <property name="demand_max" value="1000"/>
       </metadata>
    </variable>
    <metric name="latency">
