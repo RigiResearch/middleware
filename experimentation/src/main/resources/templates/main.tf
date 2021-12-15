@@ -8,13 +8,30 @@ variable "vm_memory" {}
 
 variable "vm_cpus" {}
 
-module "rke" {
-  source  = "remche/rke/openstack"
-  image_name          = "Ubuntu-18.04-Bionic-x64-2020-12"
-  public_net_name     = "Public-Network"
-  master_flavor_name  = "p2-3gb"
-  worker_flavor_name  = "p${var.vm_cpus}-${var.vm_memory}"
-  worker_count        = var.cluster_nodes
-  os_auth_url         = var.os_auth_url
-  os_password         = var.os_password
+variable "flavor" {}
+
+module "control_plane" {
+  source           = "remche/rke2/openstack"
+  use_ssh_agent    = false
+  cluster_name     = "cluster-${var.cluster_nodes}--${var.vm_cpus}-${var.vm_memory}"
+  write_kubeconfig = true
+  image_name       = "Ubuntu-20.04.3-Focal-x64-2021-12"
+  flavor_name      = "p2-3gb"
+  public_net_name  = "Public-Network"
+  rke2_config_file = "rke2_config.yaml"
+  manifests_path   = "./manifests"
+}
+
+module "worker_node" {
+  source      = "remche/rke2/openstack//modules/agent"
+  image_name  = "Ubuntu-20.04.3-Focal-x64-2021-12"
+  nodes_count = var.cluster_nodes
+  name_prefix = "worker"
+  flavor_name = "${var.flavor}"
+  node_config = module.control_plane.node_config
+}
+
+output "controlplane_floating_ip" {
+  value     = module.control_plane.floating_ip
+  sensitive = true
 }

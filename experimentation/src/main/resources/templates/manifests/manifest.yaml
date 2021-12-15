@@ -1,0 +1,48 @@
+# Use Daemonset on all nodes with edge role
+# Cant use node-role.kubernetes.io/edge because of https://github.com/kubernetes/kubernetes/issues/75457
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-ingress-nginx
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    controller:
+      kind: DaemonSet
+      nodeSelector:
+        node-role/edge: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-kubernetes-first
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-kubernetes-first
+  template:
+    metadata:
+      labels:
+        app: hello-kubernetes-first
+    spec:
+      containers:
+        - name: hello-kubernetes
+          image: paulbouwer/hello-kubernetes:1.8
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MESSAGE
+              value: Hello from the first deployment!
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-kubernetes-first
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: hello-kubernetes-first

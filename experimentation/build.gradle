@@ -37,19 +37,14 @@ ext {
 
 dependencies {
     implementation project(":metamodels")
-    implementation project(":metamodels:hcl")
     implementation project(":metamodels:graph")
-    implementation project(":notations:hcl.interpreter")
 
     implementation "io.kubernetes:client-java:$kubernetesClientVersion"
     implementation "org.zeroturnaround:zt-exec:$execLibVersion"
     implementation "com.jayway.jsonpath:json-path:$jsonPathVersion"
     implementation "org.jgrapht:jgrapht-core:$jgraphVersion"
     implementation "io.jenetics:jenetics:$jeneticsVersion"
-    implementation("org.antlr:ST4:$stVersion") {
-        // Use Xtext's antlr dependency instead
-        exclude group: "org.antlr", module: "antlr-runtime"
-    }
+    implementation "org.antlr:ST4:$stVersion"
     // generation
     implementation 'it.unimi.dsi:fastutil:8.3.1'
 }

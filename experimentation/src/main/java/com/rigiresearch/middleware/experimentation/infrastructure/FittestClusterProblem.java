@@ -1,6 +1,5 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
-import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import io.jenetics.IntegerGene;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Codecs;
@@ -40,20 +39,19 @@ public final class FittestClusterProblem
     private static final long TIMEOUT = 10L;
 
     /**
-     * The number of worker nodes realizing the cluster (1 node is always
-     * reserved for the master node, totalling up to 6 nodes).
+     * The number of worker nodes realizing the cluster.
      */
     private static final IntRange NODE = IntRange.of(1, 5);
 
     /**
-     * The amount of memory in Gb, including 2, 4, 6 and 8.
+     * The amount of memory.
      */
-    private static final IntRange MEMORY = IntRange.of(1, 4);
+    private static final IntRange MEMORY = IntRange.of(1, 15);
 
     /**
-     * The number of CPU cores, including 2, 4, 6 and 8 cores.
+     * The number of CPU cores.
      */
-    private static final IntRange CPU = IntRange.of(1, 4);
+    private static final IntRange CPU = IntRange.of(1, 5);
 
     /**
      * Initial map capacity.
@@ -127,9 +125,8 @@ public final class FittestClusterProblem
                     synchronized (this.scores) {
                         this.scores.put(id, tmp.getValue());
                     }
-                } catch (final IOException | HclParsingException |
-                    InterruptedException | ExecutionException |
-                    TimeoutException exception) {
+                } catch (final IOException | InterruptedException |
+                    ExecutionException | TimeoutException exception) {
                     FittestClusterProblem.LOGGER
                         .error(exception.getLocalizedMessage(), exception);
                     throw new IllegalStateException(exception);

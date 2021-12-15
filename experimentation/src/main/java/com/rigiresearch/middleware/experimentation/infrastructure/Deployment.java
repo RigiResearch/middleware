@@ -1,15 +1,18 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
+import com.rigiresearch.middleware.experimentation.util.KubernetesClient;
 import com.rigiresearch.middleware.experimentation.util.TerraformClient;
-import com.rigiresearch.middleware.notations.hcl.parsing.HclParsingException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
 import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,14 +37,14 @@ public final class Deployment {
     private static final String DIRECTORY = "deployments";
 
     /**
-     * The base deployment specification.
-     */
-    private final String specification;
-
-    /**
      * The chromosome data.
      */
     private final int[] data;
+
+    /**
+     * Compute Canada's actual deployment value mapper.
+     */
+    private final ComputeCanadaChromosome mapper;
 
     /**
      * Whether an error happened while performing the deployment.
@@ -49,14 +52,39 @@ public final class Deployment {
     private boolean erroneous;
 
     /**
+     * Whether this deployment cannot be deployed to the target cloud.
+     */
+    private boolean unsupported;
+
+    /**
      * Default constructor.
      * @param data The chromosome data
-     * @throws HclParsingException If there is a problem interpreting the template
      * @throws IOException If the template file is not found
      */
-    public Deployment(final int[] data) throws HclParsingException, IOException {
+    public Deployment(final int[] data) throws IOException {
         this.data = data;
-        this.specification = new String(
+        this.mapper = new ComputeCanadaChromosome(
+            this.data[2],
+            this.data[1],
+            this.data[0]
+        );
+    }
+
+    /**
+     * Whether this deployment is supported by the target cloud.
+     * @return {@code True} if the deployment can be executed, {@code False} otherwise
+     */
+    public boolean isSupported() {
+        return this.mapper.isSupported();
+    }
+
+    /**
+     * Render the chromosome data as the main template file.
+     * @return The contents of the main file
+     * @throws IOException If there is an error reading the specification file
+     */
+    public String main() throws IOException {
+        return new String(
             Objects.requireNonNull(
                 Thread.currentThread()
                     .getContextClassLoader()
@@ -66,11 +94,39 @@ public final class Deployment {
     }
 
     /**
-     * Render the chromosome data as the main template file.
-     * @return The contents of the main file
+     * Reads supporting files.
+     * @return The contents of supporting files and their paths
+     * @throws IOException If there is an error reading the files
      */
-    public String main() {
-        return this.specification;
+    public Map<String, String> supportingFiles() throws IOException {
+        final String manifest = "manifests/manifest.yaml";
+        final String config = "rke2_config.yaml";
+        final Map<String, String> files = new HashMap<>(2);
+        files.put(
+            manifest,
+            new String(
+                Objects.requireNonNull(
+                    Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResourceAsStream(
+                            String.format("templates/%s", manifest)
+                        )
+                ).readAllBytes()
+            )
+        );
+        files.put(
+            config,
+            new String(
+                Objects.requireNonNull(
+                    Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResourceAsStream(
+                            String.format("templates/%s", config)
+                        )
+                ).readAllBytes()
+            )
+        );
+        return files;
     }
 
     /**
@@ -90,20 +146,24 @@ public final class Deployment {
             '#',
             '#'
         );
-        template.add("nodes", this.data[0]);
-        template.add("memory", String.format("\"%dg\"", this.data[1]));
-        template.add("cpus", this.data[2]);
+        template.add("nodes", this.mapper.actualNodes());
+        template.add("memory", this.mapper.formattedMemory());
+        template.add("cpus", this.mapper.actualCpus());
+        template.add("flavor", this.mapper.flavor());
         return template.render();
     }
 
     /**
      * Saves the deployment files.
      * @return This object
-     * @throws IOException If there is a problem writing the file
+     * @throws IOException If there is a problem writing the files
      */
     public Deployment save() throws IOException {
-        this.save0("main.tf", this.main());
-        this.save0("terraform.tfvars", this.inputs());
+        if (this.isSupported()) {
+            this.save0("main.tf", this.main());
+            this.save0("terraform.tfvars", this.inputs());
+            this.supportingFiles().forEach(this::save0);
+        }
         return this;
     }
 
@@ -111,16 +171,18 @@ public final class Deployment {
      * Saves the deployment files.
      * @param name The file name
      * @param content The file content
-     * @throws IOException If there is a problem writing the file
      */
-    private void save0(final String name, final String content) throws IOException {
+    @SneakyThrows
+    private void save0(final String name, final String content) {
         final File directory = new File(
             new File(Deployment.DIRECTORY),
             this.identifier()
         );
         directory.mkdirs();
+        final File file = new File(directory, name);
+        file.getParentFile().mkdirs();
         Files.write(
-            new File(directory, name).toPath(),
+            file.toPath(),
             content.getBytes(),
             StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING,
@@ -136,13 +198,23 @@ public final class Deployment {
         final String id = this.identifier();
         final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
         return CompletableFuture.supplyAsync(() -> {
-            try (TerraformClient client = new TerraformClient(current)) {
-                if (client.version(10L, TimeUnit.SECONDS)
-                    && client.init(2L, TimeUnit.MINUTES)
-                    && client.plan(2L, TimeUnit.MINUTES)) {
-                    // TODO Apply changes and then compute application metrics
-                    // && client.apply(10L, TimeUnit.MINUTES)) {
-                    client.destroy(5L, TimeUnit.MINUTES);
+            if (!this.isSupported()) {
+                this.unsupported = true;
+                Deployment.LOGGER.info("Flavor {} is unsupported", this.mapper.formattedFlavor());
+                return this;
+            }
+            try (TerraformClient terraform = new TerraformClient(current)) {
+                if (terraform.version(5L, TimeUnit.SECONDS)
+                    && terraform.init(2L, TimeUnit.MINUTES)
+                    && terraform.plan(2L, TimeUnit.MINUTES)
+                    && terraform.apply(15L, TimeUnit.MINUTES)) {
+                    Deployment.LOGGER.info("Cluster deployed successfully");
+                    try (KubernetesClient kubeconfig = new KubernetesClient(current)) {
+                        kubeconfig.version(5L, TimeUnit.SECONDS);
+                        // TODO Create kubernetes proxy to the deployed service
+                    }
+                    // TODO Run performance tests per execution scenario
+                    terraform.destroy(10L, TimeUnit.MINUTES);
                 } else {
                     this.erroneous = true;
                     Deployment.LOGGER.info("{} There was an error running init/plan", id);
@@ -161,9 +233,10 @@ public final class Deployment {
      */
     public Deployment.Score score() {
         final double value;
-        if (this.erroneous) {
+        if (this.erroneous || this.unsupported) {
             value = Double.MAX_VALUE;
         } else {
+            // TODO Compute the performance score of this deployment
             value = 0.0;
         }
         return new Deployment.Score(this.erroneous, value);
