@@ -109,21 +109,25 @@ public final class FittestClusterProblem
     @Override
     public Function<int[], Double> fitness() {
         return data -> {
-            final String id = String.format("%d-%d-%d", data[0], data[1], data[2]);
+            final ComputeCanadaChromosome chromosome =
+                new ComputeCanadaChromosome(data[2], data[1], data[0]);
+            final String id = chromosome.identifier();
             final double score;
             if (this.scores.containsKey(id)) {
                 score = this.scores.get(id);
             } else {
                 try {
-                    final Deployment.Score tmp = new Deployment(data)
+                    final Deployment.Score tmp = new Deployment(chromosome)
                         .save()
                         .deploy()
                         .get(FittestClusterProblem.TIMEOUT, TimeUnit.MINUTES)
                         .score();
                     score = tmp.getValue();
-                    this.memoize(id, score);
-                    synchronized (this.scores) {
-                        this.scores.put(id, tmp.getValue());
+                    if (!tmp.isError()) {
+                        this.memoize(id, score);
+                        synchronized (this.scores) {
+                            this.scores.put(id, tmp.getValue());
+                        }
                     }
                 } catch (final IOException | InterruptedException |
                     ExecutionException | TimeoutException exception) {

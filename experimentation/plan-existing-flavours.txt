@@ -9,28 +9,27 @@ NUMBER       NAME         VCPU   RAM   DISK
 
    6     p4-4gb            4     4GB    4GB
    7     p4-6gb            4     6GB    4GB
-   8     p4-8gb            4     8GB    4GB
-   9     c4-15gb-144       4     15GB   4GB
-   10    c4-30gb-144       4     30GB   4GB
-   11    c4-45gb-144       4     45GB   4GB
+   8     c4-15gb-144       4     15GB   4GB
+   9    c4-30gb-144       4     30GB   4GB
+   10    c4-45gb-144       4     45GB   4GB
 
-   12    p8-8gb            8     8GB    4GB
-   13    p8-12gb           8     12GB   4GB
-   14    p8-16gb           8     16GB   4GB
-   15    c8-30gb-288       8     30GB   4GB
-   16    c8-60gb-288       8     60GB   4GB
-   17    c8-90gb-288       8     90GB   4GB
+   11    p8-8gb            8     8GB    4GB
+   12    p8-12gb           8     12GB   4GB
+   13    p8-16gb           8     16GB   4GB
+   14    c8-30gb-288       8     30GB   4GB
+   15    c8-60gb-288       8     60GB   4GB
+   16    c8-90gb-288       8     90GB   4GB
 
-   18    p16-16gb          16    16GB   4GB
-   19    p16-24gb          16    24GB   4GB
-   20    p16-32gb          16    32GB   4GB
-   21    c16-60gb-576      16    60GB   4GB
-   22    c16-90gb-576      16    90GB   4GB
+   17    p16-16gb          16    16GB   4GB
+   18    p16-24gb          16    24GB   4GB
+   19    p16-32gb          16    32GB   4GB
+   20    c16-60gb-576      16    60GB   4GB
+   21    c16-90gb-576      16    90GB   4GB
 
 Excluded (too much RAM):
 
-   23    c16-120gb-576     16    120GB  4GB
-   24    c16-180gb-576     16    180GB  4GB
+   22    c16-120gb-576     16    120GB  4GB
+   23    c16-180gb-576     16    180GB  4GB
 
 
 Constraints per cluster

@@ -27,23 +27,16 @@ public final class ComputeCanadaChromosome {
         ComputeCanadaChromosome.FLAVORS.put("2-7.5gb", "c2-7.5gb-36");
         ComputeCanadaChromosome.FLAVORS.put("2-15gb", "c2-15gb-72");
         // 4 cores
-        ComputeCanadaChromosome.FLAVORS.put("4-4gb", "p4-4gb");
         ComputeCanadaChromosome.FLAVORS.put("4-6gb", "p4-6gb");
-        ComputeCanadaChromosome.FLAVORS.put("4-8gb", "p4-8gb");
         ComputeCanadaChromosome.FLAVORS.put("4-15gb", "c4-15gb-144");
         ComputeCanadaChromosome.FLAVORS.put("4-30gb", "c4-30gb-144");
         ComputeCanadaChromosome.FLAVORS.put("4-45gb", "c4-45gb-144");
         // 8 cores
-        ComputeCanadaChromosome.FLAVORS.put("8-8gb", "p8-8gb");
         ComputeCanadaChromosome.FLAVORS.put("8-12gb", "p8-12gb");
-        ComputeCanadaChromosome.FLAVORS.put("8-16gb", "p8-16gb");
         ComputeCanadaChromosome.FLAVORS.put("8-30gb", "c8-30gb-288");
         ComputeCanadaChromosome.FLAVORS.put("8-60gb", "c8-60gb-288");
         ComputeCanadaChromosome.FLAVORS.put("8-90gb", "c8-90gb-288");
         // 16 cores
-        ComputeCanadaChromosome.FLAVORS.put("16-16gb", "p16-16gb");
-        ComputeCanadaChromosome.FLAVORS.put("16-24gb", "p16-24gb");
-        ComputeCanadaChromosome.FLAVORS.put("16-32gb", "p16-32gb");
         ComputeCanadaChromosome.FLAVORS.put("16-60gb", "c16-60gb-576");
         ComputeCanadaChromosome.FLAVORS.put("16-90gb", "c16-90gb-576");
     }
@@ -82,6 +75,14 @@ public final class ComputeCanadaChromosome {
      */
     public boolean isSupported() {
         return this.flavor() != null;
+    }
+
+    /**
+     * A chromosome identifier based on the genes.
+     * @return A non-empty non-null string
+     */
+    public String identifier() {
+        return String.format("%d-%s", this.nodes, this.formattedFlavor());
     }
 
     /**

@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.slf4j.Logger;
@@ -37,14 +38,14 @@ public final class Deployment {
     private static final String DIRECTORY = "deployments";
 
     /**
-     * The chromosome data.
+     * The kube config file created after the terraform deployment.
      */
-    private final int[] data;
+    private static final String KUBECONFIG = "./rke2.yaml";
 
     /**
-     * Compute Canada's actual deployment value mapper.
+     * Compute Canada's actual deployment values.
      */
-    private final ComputeCanadaChromosome mapper;
+    private final ComputeCanadaChromosome chromosome;
 
     /**
      * Whether an error happened while performing the deployment.
@@ -58,16 +59,12 @@ public final class Deployment {
 
     /**
      * Default constructor.
-     * @param data The chromosome data
+     * @param chromosome The chromosome data
      * @throws IOException If the template file is not found
      */
-    public Deployment(final int[] data) throws IOException {
-        this.data = data;
-        this.mapper = new ComputeCanadaChromosome(
-            this.data[2],
-            this.data[1],
-            this.data[0]
-        );
+    public Deployment(final ComputeCanadaChromosome chromosome)
+        throws IOException {
+        this.chromosome = chromosome;
     }
 
     /**
@@ -75,7 +72,7 @@ public final class Deployment {
      * @return {@code True} if the deployment can be executed, {@code False} otherwise
      */
     public boolean isSupported() {
-        return this.mapper.isSupported();
+        return this.chromosome.isSupported();
     }
 
     /**
@@ -146,10 +143,10 @@ public final class Deployment {
             '#',
             '#'
         );
-        template.add("nodes", this.mapper.actualNodes());
-        template.add("memory", this.mapper.formattedMemory());
-        template.add("cpus", this.mapper.actualCpus());
-        template.add("flavor", this.mapper.flavor());
+        template.add("nodes", this.chromosome.actualNodes());
+        template.add("memory", this.chromosome.formattedMemory());
+        template.add("cpus", this.chromosome.actualCpus());
+        template.add("flavor", this.chromosome.flavor());
         return template.render();
     }
 
@@ -176,7 +173,7 @@ public final class Deployment {
     private void save0(final String name, final String content) {
         final File directory = new File(
             new File(Deployment.DIRECTORY),
-            this.identifier()
+            this.chromosome.identifier()
         );
         directory.mkdirs();
         final File file = new File(directory, name);
@@ -195,31 +192,43 @@ public final class Deployment {
      * @return This object
      */
     public Future<Deployment> deploy() {
-        final String id = this.identifier();
+        final String id = this.chromosome.identifier();
         final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
         return CompletableFuture.supplyAsync(() -> {
             if (!this.isSupported()) {
                 this.unsupported = true;
-                Deployment.LOGGER.info("Flavor {} is unsupported", this.mapper.formattedFlavor());
+                Deployment.LOGGER.info("Flavor {} is unsupported", this.chromosome.formattedFlavor());
                 return this;
             }
-            try (TerraformClient terraform = new TerraformClient(current)) {
+            try (TerraformClient terraform = new TerraformClient(current);
+                 KubernetesClient kubectl =
+                     new KubernetesClient(current, Deployment.KUBECONFIG)) {
                 if (terraform.version(5L, TimeUnit.SECONDS)
                     && terraform.init(2L, TimeUnit.MINUTES)
-                    && terraform.plan(2L, TimeUnit.MINUTES)
                     && terraform.apply(15L, TimeUnit.MINUTES)) {
-                    Deployment.LOGGER.info("Cluster deployed successfully");
-                    try (KubernetesClient kubeconfig = new KubernetesClient(current)) {
-                        kubeconfig.version(5L, TimeUnit.SECONDS);
-                        // TODO Create kubernetes proxy to the deployed service
-                    }
+                    Deployment.LOGGER.info("Cluster {} deployed successfully", id);
+                    kubectl.version(5L, TimeUnit.SECONDS);
+                    // Sleep while kubernetes launches the pods
+                    Thread.sleep(5000L);
+                    kubectl.waitUntilReady(5L, TimeUnit.MINUTES);
+                    // FIXME Remove hardcoded service values
+                    final KubernetesClient.PortForwardConfig config =
+                        new KubernetesClient.PortForwardConfig(
+                            "hello-kubernetes-first", 80, 8080, 2L, TimeUnit.MINUTES
+                        );
+                    kubectl.portForward(config, 10L, TimeUnit.SECONDS);
                     // TODO Run performance tests per execution scenario
-                    terraform.destroy(10L, TimeUnit.MINUTES);
                 } else {
                     this.erroneous = true;
                     Deployment.LOGGER.info("{} There was an error running init/plan", id);
                 }
-            } catch (final Exception exception) {
+                // Destroy deployed resources
+                terraform.destroy(10L, TimeUnit.MINUTES);
+
+                // FIXME delete this
+                System.exit(0);
+            } catch (final IOException | InterruptedException | TimeoutException exception) {
+                Deployment.LOGGER.error("Unknown error: {}", exception.getMessage());
                 throw new IllegalStateException(exception);
             }
             return this;
@@ -239,15 +248,7 @@ public final class Deployment {
             // TODO Compute the performance score of this deployment
             value = 0.0;
         }
-        return new Deployment.Score(this.erroneous, value);
-    }
-
-    /**
-     * An identifier based on the chromosome being deployed.
-     * @return A non-null, non-empty string
-     */
-    public String identifier() {
-        return String.format("%d-%d-%d", this.data[0], this.data[1], this.data[2]);
+        return new Deployment.Score(this.erroneous, this.unsupported, value);
     }
 
     /**
@@ -261,6 +262,11 @@ public final class Deployment {
          * not be computed.
          */
         boolean error;
+
+        /**
+         * Whether the deployment could not be executed because it is unsupported.
+         */
+        boolean unsupported;
 
         /**
          * The deployment score. If there was an error, it is {@code Double.MAX_VALUE}.
