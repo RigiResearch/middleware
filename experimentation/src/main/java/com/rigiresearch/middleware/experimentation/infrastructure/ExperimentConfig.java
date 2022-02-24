@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
+import com.rigiresearch.middleware.experimentation.util.JMeterClient;
 import java.util.concurrent.Executor;
 import lombok.Value;
 
@@ -46,5 +47,15 @@ public class ExperimentConfig {
      * The executor service to use.
      */
     Executor executor;
+
+    /**
+     * The name of the variant to deploy (included in the manifest name).
+     */
+    String variant;
+
+    /**
+     * The scenario to test.
+     */
+    JMeterClient.Scenario scenario;
 
 }

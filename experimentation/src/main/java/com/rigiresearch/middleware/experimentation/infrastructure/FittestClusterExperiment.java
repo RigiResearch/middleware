@@ -39,8 +39,12 @@ public final class FittestClusterExperiment {
     public FittestClusterExperiment(final ExperimentConfig config)
         throws IOException {
         this.config = config;
-        this.engine = Engine.builder(new FittestClusterProblem())
-            .minimizing()
+        this.engine = Engine.builder(
+            new FittestClusterProblem(
+                config.getVariant(),
+                config.getScenario()
+            )
+        ).minimizing()
             // Default value
             .alterers(
                 new SinglePointCrossover<>(this.config.getCrossover()),

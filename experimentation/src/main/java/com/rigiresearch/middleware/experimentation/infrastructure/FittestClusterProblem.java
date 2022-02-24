@@ -1,5 +1,6 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
+import com.rigiresearch.middleware.experimentation.util.JMeterClient;
 import io.jenetics.IntegerGene;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Codecs;
@@ -74,10 +75,23 @@ public final class FittestClusterProblem
     private final File file;
 
     /**
+     * The name of the variant to deploy (included in the manifest name).
+     */
+    private final String variant;
+
+    /**
+     * The scenario to test.
+     */
+    private final JMeterClient.Scenario scenario;
+
+    /**
      * Default constructor.
      * @throws IOException If there is a problem creating the results directory
      */
-    public FittestClusterProblem() throws IOException {
+    public FittestClusterProblem(final String variant,
+        JMeterClient.Scenario scenario) throws IOException {
+        this.variant = variant;
+        this.scenario = scenario;
         this.file = new File(FittestClusterProblem.DIRECTORY, "times.txt");
         this.scores = this.loadMemoizedResults();
     }
@@ -117,11 +131,12 @@ public final class FittestClusterProblem
                 score = this.scores.get(id);
             } else {
                 try {
-                    final Deployment.Score tmp = new Deployment(chromosome)
-                        .save()
-                        .deploy()
-                        .get(FittestClusterProblem.TIMEOUT, TimeUnit.MINUTES)
-                        .score();
+                    final Deployment.Score tmp =
+                        new Deployment(chromosome, this.variant, this.scenario)
+                            .save()
+                            .deploy()
+                            .get(FittestClusterProblem.TIMEOUT, TimeUnit.MINUTES)
+                            .score();
                     score = tmp.getValue();
                     if (!tmp.isError()) {
                         this.memoize(id, score);

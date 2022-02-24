@@ -3,6 +3,7 @@ package com.rigiresearch.middleware.experimentation;
 import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentConfig;
 import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentResult;
 import com.rigiresearch.middleware.experimentation.infrastructure.FittestClusterExperiment;
+import com.rigiresearch.middleware.experimentation.util.JMeterClient;
 import io.jenetics.IntegerGene;
 import io.jenetics.engine.EvolutionResult;
 import java.io.IOException;
@@ -62,6 +63,17 @@ public final class Application {
     private static final double MUTATION_PROBABILITY = 0.05;
 
     /**
+     * The name of the variant to deploy (included in the manifest name).
+     */
+    private static final String VARIANT = "proxy-cache-3.1";
+
+    /**
+     * The scenario to test.
+     */
+    private static final JMeterClient.Scenario SCENARIO =
+        JMeterClient.Scenario.REGULAR;
+
+    /**
      * Default constructor.
      */
     private Application() {
@@ -82,7 +94,9 @@ public final class Application {
                 Application.NUM_RESULTS,
                 Application.CROSSOVER_PROBABILITY,
                 Application.MUTATION_PROBABILITY,
-                executor
+                executor,
+                Application.VARIANT,
+                Application.SCENARIO
             )
         ).run("SEED".getBytes());
         executor.shutdown();

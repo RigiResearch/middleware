@@ -56,6 +56,16 @@ public final class Deployment {
     private final CloudChromosome chromosome;
 
     /**
+     * The name of the variant to deploy (included in the manifest name).
+     */
+    private final String variant;
+
+    /**
+     * The scenario to test.
+     */
+    private final JMeterClient.Scenario scenario;
+
+    /**
      * Whether an error happened while performing the deployment.
      */
     private boolean erroneous;
@@ -68,11 +78,16 @@ public final class Deployment {
     /**
      * Default constructor.
      * @param chromosome The chromosome data
+     * @param variant The name of the variant to deploy (included in the manifest name)
+     * @param scenario The scenario to test
      * @throws IOException If the template file is not found
      */
-    public Deployment(final CloudChromosome chromosome)
+    public Deployment(final CloudChromosome chromosome, final String variant,
+        final JMeterClient.Scenario scenario)
         throws IOException {
         this.chromosome = chromosome;
+        this.variant = variant;
+        this.scenario = scenario;
     }
 
     /**
@@ -185,6 +200,7 @@ public final class Deployment {
     public Future<Deployment> deploy() {
         final String id = this.chromosome.identifier();
         final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
+        // TODO final String manifest = String.format("manifest.%s.yaml", this.variant);
         return CompletableFuture.supplyAsync(() -> {
             if (!this.isSupported()) {
                 this.unsupported = true;
@@ -201,10 +217,10 @@ public final class Deployment {
                     Deployment.LOGGER.info("Cluster {} deployed successfully", id);
                     jmeter.version(5L, TimeUnit.SECONDS);
                     kubectl.version(5L, TimeUnit.SECONDS);
-                    // TODO kubectl.apply(5L, TimeUnit.MINUTES);
+                    // TODO kubectl.apply(manifest, 5L, TimeUnit.MINUTES);
                     kubectl.waitUntilReady(5L, TimeUnit.MINUTES);
                     // TODO Add entry to hosts
-                    // jmeter.run(JMeterClient.Scenario.REGULAR, 15L, TimeUnit.MINUTES);
+                    // jmeter.run(this.scenario, 15L, TimeUnit.MINUTES);
                     // TODO this.score = RClient.computeScore();
                 } else {
                     this.erroneous = true;
