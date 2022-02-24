@@ -11,7 +11,7 @@ import java.util.Map;
  * @version $Id$
  * @since 0.1.0
  */
-public final class ComputeCanadaChromosome {
+public final class ComputeCanadaChromosome implements CloudChromosome {
 
     /**
      * Map of supported image flavors (t-shirt sizes).
@@ -69,42 +69,27 @@ public final class ComputeCanadaChromosome {
         this.nodes = nodes;
     }
 
-    /**
-     * The corresponding Compute Canada flavor name.
-     * @return {@code True} if the resulting flavor exists, {@code False} otherwise
-     */
+    @Override
     public boolean isSupported() {
         return this.flavor() != null;
     }
 
-    /**
-     * A chromosome identifier based on the genes.
-     * @return A non-empty non-null string
-     */
+    @Override
     public String identifier() {
         return String.format("%d-%s", this.nodes, this.formattedFlavor());
     }
 
-    /**
-     * The corresponding Compute Canada flavor name.
-     * @return a string or null
-     */
+    @Override
     public String flavor() {
         return ComputeCanadaChromosome.FLAVORS.get(this.formattedFlavor());
     }
 
-    /**
-     * The flavor name.
-     * @return a String composed of the CPUs and memory
-     */
+    @Override
     public String formattedFlavor() {
         return String.format("%d-%s", this.actualCpus(), this.formattedMemory());
     }
 
-    /**
-     * Translate from the memory gene to the actual deployment value.
-     * @return The amount of memory to use
-     */
+    @Override
     public String formattedMemory() {
         return String.format(
             "%sgb",
@@ -172,10 +157,7 @@ public final class ComputeCanadaChromosome {
         return value;
     }
 
-    /**
-     * Translate from the CPU gene to the actual deployment value.
-     * @return The number of CPUs to use
-     */
+    @Override
     public int actualCpus() {
         final int value;
         switch (this.cpus) {
@@ -200,10 +182,7 @@ public final class ComputeCanadaChromosome {
         return value;
     }
 
-    /**
-     * Translate from the nodes gene to the actual deployment value.
-     * @return The number of nodes to use
-     */
+    @Override
     public int actualNodes() {
         return this.nodes;
     }

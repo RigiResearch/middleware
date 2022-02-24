@@ -109,8 +109,8 @@ public final class FittestClusterProblem
     @Override
     public Function<int[], Double> fitness() {
         return data -> {
-            final ComputeCanadaChromosome chromosome =
-                new ComputeCanadaChromosome(data[2], data[1], data[0]);
+            final CloudChromosome chromosome =
+                new OracleCloudChromosome(data[2], data[1], data[0]);
             final String id = chromosome.identifier();
             final double score;
             if (this.scores.containsKey(id)) {

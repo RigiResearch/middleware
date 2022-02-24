@@ -43,9 +43,9 @@ public final class Deployment {
     private static final String KUBECONFIG = "./rke2.yaml";
 
     /**
-     * Compute Canada's actual deployment values.
+     * The target cloud's actual deployment values.
      */
-    private final ComputeCanadaChromosome chromosome;
+    private final CloudChromosome chromosome;
 
     /**
      * Whether an error happened while performing the deployment.
@@ -62,7 +62,7 @@ public final class Deployment {
      * @param chromosome The chromosome data
      * @throws IOException If the template file is not found
      */
-    public Deployment(final ComputeCanadaChromosome chromosome)
+    public Deployment(final CloudChromosome chromosome)
         throws IOException {
         this.chromosome = chromosome;
     }
