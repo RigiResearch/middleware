@@ -1,4 +1,3 @@
-cluster_nodes=#nodes#
-vm_memory="#memory#"
-vm_cpus=#cpus#
-flavor="#flavor#"
+node_pool_size=#nodes#
+node_memory_in_gbs="#memory#"
+node_ocpus=#cpus#

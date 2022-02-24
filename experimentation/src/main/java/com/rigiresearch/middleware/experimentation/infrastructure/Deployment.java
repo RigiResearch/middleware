@@ -1,5 +1,7 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
+import com.google.common.collect.Lists;
+import com.rigiresearch.middleware.experimentation.util.JMeterClient;
 import com.rigiresearch.middleware.experimentation.util.KubernetesClient;
 import com.rigiresearch.middleware.experimentation.util.TerraformClient;
 import java.io.File;
@@ -7,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -38,9 +41,14 @@ public final class Deployment {
     private static final String DIRECTORY = "deployments";
 
     /**
+     * The directory where results results are stored.
+     */
+    private static final File SCENARIOS = new File("scenarios");
+
+    /**
      * The kube config file created after the terraform deployment.
      */
-    private static final String KUBECONFIG = "./rke2.yaml";
+    private static final String KUBECONFIG = "./kubeconfig";
 
     /**
      * The target cloud's actual deployment values.
@@ -76,53 +84,37 @@ public final class Deployment {
     }
 
     /**
-     * Render the chromosome data as the main template file.
-     * @return The contents of the main file
-     * @throws IOException If there is an error reading the specification file
-     */
-    public String main() throws IOException {
-        return new String(
-            Objects.requireNonNull(
-                Thread.currentThread()
-                    .getContextClassLoader()
-                    .getResourceAsStream("templates/main.tf")
-            ).readAllBytes()
-        );
-    }
-
-    /**
      * Reads supporting files.
      * @return The contents of supporting files and their paths
      * @throws IOException If there is an error reading the files
      */
     public Map<String, String> supportingFiles() throws IOException {
-        final String manifest = "manifests/manifest.yaml";
-        final String config = "rke2_config.yaml";
-        final Map<String, String> files = new HashMap<>(2);
-        files.put(
-            manifest,
-            new String(
-                Objects.requireNonNull(
-                    Thread.currentThread()
-                        .getContextClassLoader()
-                        .getResourceAsStream(
-                            String.format("templates/%s", manifest)
-                        )
-                ).readAllBytes()
-            )
+        final List<String> names = Lists.newArrayList(
+            "manifests/manifest.proxy-cache-3.1.yaml",
+            "terraform/compartment.tf",
+            "terraform/datasources.tf",
+            "terraform/network.tf",
+            "terraform/oke_cluster.tf",
+            "terraform/oke_kube_config.tf",
+            "terraform/outputs.tf",
+            "terraform/provider.tf",
+            "terraform/variables.tf"
         );
-        files.put(
-            config,
-            new String(
-                Objects.requireNonNull(
-                    Thread.currentThread()
-                        .getContextClassLoader()
-                        .getResourceAsStream(
-                            String.format("templates/%s", config)
-                        )
-                ).readAllBytes()
-            )
-        );
+        final Map<String, String> files = new HashMap<>(names.size());
+        for (final String name : names) {
+            files.put(
+                name,
+                new String(
+                    Objects.requireNonNull(
+                        Thread.currentThread()
+                            .getContextClassLoader()
+                            .getResourceAsStream(
+                                String.format("templates/%s", name)
+                            )
+                    ).readAllBytes()
+                )
+            );
+        }
         return files;
     }
 
@@ -146,7 +138,7 @@ public final class Deployment {
         template.add("nodes", this.chromosome.actualNodes());
         template.add("memory", this.chromosome.formattedMemory());
         template.add("cpus", this.chromosome.actualCpus());
-        template.add("flavor", this.chromosome.flavor());
+        // template.add("flavor", this.chromosome.flavor());
         return template.render();
     }
 
@@ -157,7 +149,6 @@ public final class Deployment {
      */
     public Deployment save() throws IOException {
         if (this.isSupported()) {
-            this.save0("main.tf", this.main());
             this.save0("terraform.tfvars", this.inputs());
             this.supportingFiles().forEach(this::save0);
         }
@@ -201,29 +192,26 @@ public final class Deployment {
                 return this;
             }
             try (TerraformClient terraform = new TerraformClient(current);
+                 JMeterClient jmeter = new JMeterClient(current, Deployment.SCENARIOS);
                  KubernetesClient kubectl =
                      new KubernetesClient(current, Deployment.KUBECONFIG)) {
                 if (terraform.version(5L, TimeUnit.SECONDS)
-                    && terraform.init(2L, TimeUnit.MINUTES)
-                    && terraform.apply(15L, TimeUnit.MINUTES)) {
+                    && terraform.init(5L, TimeUnit.MINUTES)
+                    && terraform.apply(30L, TimeUnit.MINUTES)) {
                     Deployment.LOGGER.info("Cluster {} deployed successfully", id);
+                    jmeter.version(5L, TimeUnit.SECONDS);
                     kubectl.version(5L, TimeUnit.SECONDS);
-                    // Sleep while kubernetes launches the pods
-                    Thread.sleep(5000L);
+                    // TODO kubectl.apply(5L, TimeUnit.MINUTES);
                     kubectl.waitUntilReady(5L, TimeUnit.MINUTES);
-                    // FIXME Remove hardcoded service values
-                    final KubernetesClient.PortForwardConfig config =
-                        new KubernetesClient.PortForwardConfig(
-                            "hello-kubernetes-first", 80, 8080, 2L, TimeUnit.MINUTES
-                        );
-                    kubectl.portForward(config, 10L, TimeUnit.SECONDS);
-                    // TODO Run performance tests per execution scenario
+                    // TODO Add entry to hosts
+                    // jmeter.run(JMeterClient.Scenario.REGULAR, 15L, TimeUnit.MINUTES);
+                    // TODO this.score = RClient.computeScore();
                 } else {
                     this.erroneous = true;
                     Deployment.LOGGER.info("{} There was an error running init/plan", id);
                 }
                 // Destroy deployed resources
-                terraform.destroy(10L, TimeUnit.MINUTES);
+                terraform.destroy(20L, TimeUnit.MINUTES);
 
                 // FIXME delete this
                 System.exit(0);
