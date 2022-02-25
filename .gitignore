@@ -40,3 +40,4 @@ deployments/
 ### Allow libraries ###
 !**/lib/*.jar
 !**/templates/**/*.jar
+!gradle/wrapper/gradle-wrapper.jar
