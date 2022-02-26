@@ -100,7 +100,7 @@ public final class Deployment {
         this.variant = variant;
         this.scenario = scenario;
         this.directory = String.format(
-            "deployments-%s-%s",
+            "deployments/%s-%s",
             scenario.scenarioName(),
             variant.getName().variantName()
         );
