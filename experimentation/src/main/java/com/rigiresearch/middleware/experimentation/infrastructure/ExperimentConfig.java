@@ -1,6 +1,7 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
 import com.rigiresearch.middleware.experimentation.util.JMeterClient;
+import com.rigiresearch.middleware.experimentation.util.SoftwareVariant;
 import java.util.concurrent.Executor;
 import lombok.Value;
 
@@ -51,7 +52,7 @@ public class ExperimentConfig {
     /**
      * The name of the variant to deploy (included in the manifest name).
      */
-    String variant;
+    SoftwareVariant variant;
 
     /**
      * The scenario to test.

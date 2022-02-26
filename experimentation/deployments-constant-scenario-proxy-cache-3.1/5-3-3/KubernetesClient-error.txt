@@ -1,0 +1,4 @@
+error: stat ./kubeconfig: no such file or directory
+error: stat ./kubeconfig: no such file or directory
+error: stat ./kubeconfig: no such file or directory
+sh: kubectl port-forward -n default svc/youtube-dl-cache 8080:80 --kubeconfig ./kubeconfig &: No such file or directory

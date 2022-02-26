@@ -1,6 +1,7 @@
 package com.rigiresearch.middleware.experimentation.infrastructure;
 
 import com.rigiresearch.middleware.experimentation.util.JMeterClient;
+import com.rigiresearch.middleware.experimentation.util.SoftwareVariant;
 import io.jenetics.IntegerGene;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Codecs;
@@ -37,7 +38,7 @@ public final class FittestClusterProblem
     /**
      * The timeout in minutes.
      */
-    private static final long TIMEOUT = 10L;
+    private static final long TIMEOUT = 60L;
 
     /**
      * The number of worker nodes realizing the cluster.
@@ -60,11 +61,6 @@ public final class FittestClusterProblem
     private static final int INITIAL_CAPACITY = 100;
 
     /**
-     * The directory where results are written.
-     */
-    private static final String DIRECTORY = "deployments/data";
-
-    /**
      * Memoized scores.
      */
     private final Map<String, Double> scores;
@@ -75,9 +71,9 @@ public final class FittestClusterProblem
     private final File file;
 
     /**
-     * The name of the variant to deploy (included in the manifest name).
+     * The variant to deploy.
      */
-    private final String variant;
+    private final SoftwareVariant variant;
 
     /**
      * The scenario to test.
@@ -85,14 +81,26 @@ public final class FittestClusterProblem
     private final JMeterClient.Scenario scenario;
 
     /**
+     * The directory where results are written.
+     */
+    private final String directory;
+
+    /**
      * Default constructor.
+     * @param variant The variant to deploy
+     * @param scenario The scenario to test
      * @throws IOException If there is a problem creating the results directory
      */
-    public FittestClusterProblem(final String variant,
+    public FittestClusterProblem(final SoftwareVariant variant,
         JMeterClient.Scenario scenario) throws IOException {
         this.variant = variant;
         this.scenario = scenario;
-        this.file = new File(FittestClusterProblem.DIRECTORY, "times.txt");
+        this.directory = String.format(
+            "deployments-%s-%s",
+            scenario.scenarioName(),
+            variant.getName().variantName()
+        );
+        this.file = new File(this.directory, "times.txt");
         this.scores = this.loadMemoizedResults();
     }
 

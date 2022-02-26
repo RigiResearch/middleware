@@ -1,0 +1,119 @@
+2022-02-26 00:19:38,277 INFO o.a.j.u.JMeterUtils: Setting Locale to en_EN
+2022-02-26 00:19:38,300 INFO o.a.j.JMeter: Loading user properties from: /Users/miguel/bin/apache-jmeter-5.4.3/bin/user.properties
+2022-02-26 00:19:38,301 INFO o.a.j.JMeter: Loading system properties from: /Users/miguel/bin/apache-jmeter-5.4.3/bin/system.properties
+2022-02-26 00:19:38,305 INFO o.a.j.JMeter: Copyright (c) 1998-2021 The Apache Software Foundation
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: Version 5.4.3
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: java.version=11.0.9.1
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: java.vm.name=OpenJDK 64-Bit Server VM
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: os.name=Mac OS X
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: os.arch=x86_64
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: os.version=10.16
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: file.encoding=UTF-8
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: java.awt.headless=true
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: Max memory     =8589934592
+2022-02-26 00:19:38,306 INFO o.a.j.JMeter: Available Processors =8
+2022-02-26 00:19:38,313 INFO o.a.j.JMeter: Default Locale=English (EN)
+2022-02-26 00:19:38,314 INFO o.a.j.JMeter: JMeter  Locale=English (EN)
+2022-02-26 00:19:38,314 INFO o.a.j.JMeter: JMeterHome=/Users/miguel/bin/apache-jmeter-5.4.3
+2022-02-26 00:19:38,314 INFO o.a.j.JMeter: user.dir  =/Users/miguel/Development/repositories/middleware/experimentation/deployments-constant-scenario-proxy-cache-3.1/5-3-3
+2022-02-26 00:19:38,314 INFO o.a.j.JMeter: PWD       =/Users/miguel/Development/repositories/middleware/experimentation/deployments-constant-scenario-proxy-cache-3.1/5-3-3
+2022-02-26 00:19:38,316 INFO o.a.j.JMeter: IP: 127.0.0.1 Name: Miguels-MacBook-Pro.local FullName: localhost
+2022-02-26 00:19:38,325 INFO o.a.j.JMeter: Setting property 'jmeter.reportgenerator.outputdir' to:'/Users/miguel/Development/repositories/middleware/experimentation/deployments-constant-scenario-proxy-cache-3.1/5-3-3/constant-scenario-proxy-cache-3.1'
+2022-02-26 00:19:38,328 INFO o.a.j.s.FileServer: Default base='/Users/miguel/Development/repositories/middleware/experimentation/deployments-constant-scenario-proxy-cache-3.1/5-3-3'
+2022-02-26 00:19:38,329 INFO o.a.j.s.FileServer: Set new base='/Users/miguel/Development/repositories/middleware/experimentation/scenarios'
+2022-02-26 00:19:38,517 INFO o.a.j.s.SaveService: Testplan (JMX) version: 2.2. Testlog (JTL) version: 2.2
+2022-02-26 00:19:38,536 INFO o.a.j.s.SaveService: Using SaveService properties version 5.0
+2022-02-26 00:19:38,539 INFO o.a.j.s.SaveService: Using SaveService properties file encoding UTF-8
+2022-02-26 00:19:38,541 INFO o.a.j.s.SaveService: Loading file: /Users/miguel/Development/repositories/middleware/experimentation/scenarios/constant-scenario.jmx
+2022-02-26 00:19:38,591 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/html is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2022-02-26 00:19:38,591 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xhtml+xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2022-02-26 00:19:38,591 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2022-02-26 00:19:38,591 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2022-02-26 00:19:38,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/vnd.wap.wml is org.apache.jmeter.protocol.http.parser.RegexpHTMLParser
+2022-02-26 00:19:38,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/css is org.apache.jmeter.protocol.http.parser.CssParser
+2022-02-26 00:19:38,626 INFO o.a.j.JMeter: Creating summariser <summary>
+2022-02-26 00:19:38,633 INFO o.a.j.r.d.ReportGenerator: ReportGenerator will use for Parsing the separator: ','
+2022-02-26 00:19:38,633 INFO o.a.j.r.d.ReportGenerator: Will generate report at end of test from  results file: constant-scenario-proxy-cache-3.1.csv
+2022-02-26 00:19:38,633 INFO o.a.j.r.d.ReportGenerator: Reading report generator properties from: /Users/miguel/bin/apache-jmeter-5.4.3/bin/reportgenerator.properties
+2022-02-26 00:19:38,635 INFO o.a.j.r.d.ReportGenerator: Merging with JMeter properties
+2022-02-26 00:19:38,640 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.temp_dir' not found, using default value 'temp' instead.
+2022-02-26 00:19:38,642 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.apdex_per_transaction' not found, using default value 'null' instead.
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: apdex_per_transaction is empty, not APDEX per transaction customization
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.sample_filter' not found, using default value 'null' instead.
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.report_title' not found, using default value 'null' instead.
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.start_date' not found, using default value 'null' instead.
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.end_date' not found, using default value 'null' instead.
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.date_format' not found, using default value 'null' instead.
+2022-02-26 00:19:38,643 INFO o.a.j.r.c.ReportGeneratorConfiguration: Will use date range start date: null, end date: null
+2022-02-26 00:19:38,648 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.totalTPS.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,648 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.activeThreadsOverTime.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,648 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.timeVsThreads.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,648 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.responseTimeDistribution.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,648 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.transactionsPerSecond.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,649 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.responseTimePercentiles.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,649 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.responseTimePercentilesOverTime.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,649 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.responseTimesOverTime.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,649 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.connectTimeOverTime.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,649 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.graph.latenciesOverTime.exclude_controllers' not found, using default value 'false' instead.
+2022-02-26 00:19:38,650 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.exporter.json.filters_only_sample_series' not found, using default value 'true' instead.
+2022-02-26 00:19:38,650 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.exporter.json.series_filter' not found, using default value '' instead.
+2022-02-26 00:19:38,650 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.exporter.json.show_controllers_only' not found, using default value 'false' instead.
+2022-02-26 00:19:38,650 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.exporter.html.filters_only_sample_series' not found, using default value 'true' instead.
+2022-02-26 00:19:38,650 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.exporter.html.series_filter' not found, using default value '' instead.
+2022-02-26 00:19:38,650 INFO o.a.j.r.c.ReportGeneratorConfiguration: Property 'jmeter.reportgenerator.exporter.html.show_controllers_only' not found, using default value 'false' instead.
+2022-02-26 00:19:38,654 INFO o.a.j.e.StandardJMeterEngine: Running the test!
+2022-02-26 00:19:38,655 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2022-02-26 00:19:38,655 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2022-02-26 00:19:38,665 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must contain the string: '.functions.'
+2022-02-26 00:19:38,665 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must not contain the string: '.gui.'
+2022-02-26 00:19:38,960 INFO c.b.c.RandomCSVReader: Start reading the file: /Users/miguel/Development/repositories/middleware/experimentation/scenarios/videos.csv
+2022-02-26 00:19:38,974 INFO c.b.c.RandomCSVReader: Reading finished. Found 160 records in your csv file
+2022-02-26 00:19:38,976 INFO o.a.j.JMeter: Running test (1645852778976)
+2022-02-26 00:19:38,995 INFO o.a.j.e.StandardJMeterEngine: Starting ThreadGroup: 1 : Constant traffic
+2022-02-26 00:19:38,995 INFO o.a.j.e.StandardJMeterEngine: Starting 30 threads for group Constant traffic.
+2022-02-26 00:19:38,995 INFO o.a.j.e.StandardJMeterEngine: Thread will continue on error
+2022-02-26 00:19:38,996 INFO o.a.j.t.ThreadGroup: Starting thread group... number=1 threads=30 ramp-up=0 delayedStart=false
+2022-02-26 00:19:39,007 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-4
+2022-02-26 00:19:39,007 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-3
+2022-02-26 00:19:39,007 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-1
+2022-02-26 00:19:39,007 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-2
+2022-02-26 00:19:39,008 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-5
+2022-02-26 00:19:39,009 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-6
+2022-02-26 00:19:39,010 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-7
+2022-02-26 00:19:39,010 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-8
+2022-02-26 00:19:39,011 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-9
+2022-02-26 00:19:39,011 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-10
+2022-02-26 00:19:39,012 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-11
+2022-02-26 00:19:39,012 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-12
+2022-02-26 00:19:39,013 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-13
+2022-02-26 00:19:39,015 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-14
+2022-02-26 00:19:39,015 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-15
+2022-02-26 00:19:39,016 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-16
+2022-02-26 00:19:39,016 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-17
+2022-02-26 00:19:39,016 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-18
+2022-02-26 00:19:39,017 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-19
+2022-02-26 00:19:39,017 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-20
+2022-02-26 00:19:39,018 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-21
+2022-02-26 00:19:39,018 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-22
+2022-02-26 00:19:39,019 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-23
+2022-02-26 00:19:39,019 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-24
+2022-02-26 00:19:39,019 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-25
+2022-02-26 00:19:39,020 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-26
+2022-02-26 00:19:39,020 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-27
+2022-02-26 00:19:39,021 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-28
+2022-02-26 00:19:39,021 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-29
+2022-02-26 00:19:39,021 INFO o.a.j.t.ThreadGroup: Started thread group number 1
+2022-02-26 00:19:39,021 INFO o.a.j.e.StandardJMeterEngine: All thread groups have been started
+2022-02-26 00:19:39,021 INFO o.a.j.t.JMeterThread: Thread started: Constant traffic 1-30
+2022-02-26 00:19:39,042 INFO o.a.j.t.p.ConstantPoissonProcessGenerator: Generated 450 timings (Precise Throughput Timer 450 required, rate 0.5, duration 900) in 0 ms. First 15 events will be fired at: 3.7954356547200807 (+3.7954356547200807), 4.456144514684135 (+0.6607088599640547), 4.549175622530843 (+0.09303110784670743), 9.378541990630762 (+4.829366368099919), 9.651506616416194 (+0.27296462578543235), 9.719412297920925 (+0.06790568150473142), 11.591682025226191 (+1.872269727305266), 13.523864024390297 (+1.932181999164106), 14.14579354828972 (+0.6219295238994231), 14.642321840119754 (+0.49652829183003355), 16.551343869495593 (+1.9090220293758389), 17.924968950435705 (+1.373625080940112), 19.03682375026601 (+1.1118547998303043), 21.423035456584326 (+2.386211706318317), 24.42792632956191 (+3.004890872977583)
+2022-02-26 00:19:42,794 INFO o.a.j.p.h.s.HTTPHCAbstractImpl: Local host = Miguels-MacBook-Pro.local
+2022-02-26 00:19:42,802 INFO o.a.j.p.h.s.HTTPHC4Impl: HTTP request retry count = 0
+2022-02-26 00:19:42,804 INFO o.a.j.s.SampleResult: Note: Sample TimeStamps are START times
+2022-02-26 00:19:42,804 INFO o.a.j.s.SampleResult: sampleresult.default.encoding is set to ISO-8859-1
+2022-02-26 00:19:42,804 INFO o.a.j.s.SampleResult: sampleresult.useNanoTime=true
+2022-02-26 00:19:42,805 INFO o.a.j.s.SampleResult: sampleresult.nanoThreadSleep=5000
+2022-02-26 00:20:01,391 INFO o.a.j.r.Summariser: summary +     14 in 00:00:22 =    0.6/s Avg:  1005 Min:  1002 Max:  1031 Err:    14 (100.00%) Active: 30 Started: 30 Finished: 0
+2022-02-26 00:20:30,954 INFO o.a.j.u.JsseSSLManager: Using default SSL protocol: TLS
+2022-02-26 00:20:30,954 INFO o.a.j.u.JsseSSLManager: SSL session context: per-thread
+2022-02-26 00:20:31,556 INFO o.a.j.r.Summariser: summary +     16 in 00:00:30 =    0.5/s Avg:  1002 Min:  1001 Max:  1004 Err:    16 (100.00%) Active: 30 Started: 30 Finished: 0
+2022-02-26 00:20:31,557 INFO o.a.j.r.Summariser: summary =     30 in 00:00:53 =    0.6/s Avg:  1003 Min:  1001 Max:  1031 Err:    30 (100.00%)

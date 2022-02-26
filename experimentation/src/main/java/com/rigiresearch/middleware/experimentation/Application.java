@@ -4,6 +4,8 @@ import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentConf
 import com.rigiresearch.middleware.experimentation.infrastructure.ExperimentResult;
 import com.rigiresearch.middleware.experimentation.infrastructure.FittestClusterExperiment;
 import com.rigiresearch.middleware.experimentation.util.JMeterClient;
+import com.rigiresearch.middleware.experimentation.util.SoftwareVariant;
+import com.rigiresearch.middleware.experimentation.util.SoftwareVariant.VariantName;
 import io.jenetics.IntegerGene;
 import io.jenetics.engine.EvolutionResult;
 import java.io.IOException;
@@ -65,7 +67,8 @@ public final class Application {
     /**
      * The name of the variant to deploy (included in the manifest name).
      */
-    private static final String VARIANT = "proxy-cache-3.1";
+    private static final SoftwareVariant VARIANT =
+        new SoftwareVariant(VariantName.PROXY_CACHE_3_1, "youtube-dl-cache", 80);
 
     /**
      * The scenario to test.
@@ -119,10 +122,10 @@ public final class Application {
      * @throws IOException If there is a problem creating the results directory
      */
     public static void main(final String... args) throws IOException {
-        final String url = System.getenv("TF_VAR_os_auth_url");
-        if (url == null || url.isEmpty()) {
+        final String user = System.getenv("TF_VAR_user_ocid");
+        if (user == null || user.isEmpty()) {
             Application.LOGGER.error(
-                "You must source OpenStack RC file as well as RKE's environment variables"
+                "You must source Oracle Cloud's environment variables"
             );
             System.exit(1);
         }

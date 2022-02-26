@@ -36,6 +36,11 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
     private static final Pattern ANSI_REGEX = Pattern.compile("\\u001b[^m]*?m");
 
     /**
+     * Regex to match quotation marks.
+     */
+    private static final Pattern QUOTATION_REGEX = Pattern.compile("\"");
+
+    /**
      * The executable name.
      */
     private final String executable;
@@ -71,8 +76,12 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
         this.executable = executable;
         this.directory = directory;
         this.callbacks = new ArrayList<>();
-        this.output = this.stream("terraform-output.txt");
-        this.error = this.stream("terraform-error.txt");
+        this.output = this.stream(
+            String.format("%s-output.txt", this.getClass().getSimpleName())
+        );
+        this.error = this.stream(
+            String.format("%s-error.txt", this.getClass().getSimpleName())
+        );
     }
 
     /**
@@ -130,10 +139,38 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
     }
 
     /**
+     * Runs a command asynchronously.
+     * @param command The command to run
+     * @param args Additional arguments
+     * @param time The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws InterruptedException If the command is interrupted
+     * @throws TimeoutException If the command takes longer than expected to finish
+     * @throws IOException If there is an I/O error
+     */
+    protected int runAsync(final String command, final List<String> args,
+        final long time, final TimeUnit unit)
+        throws InterruptedException, TimeoutException, IOException {
+        final List<String> parts = new ArrayList<>(args.size() + 3);
+        parts.add(this.executable);
+        parts.add(command);
+        parts.addAll(args);
+        parts.add("&");
+        final String flattened = String.format(
+            "\"%s\"",
+            AbstractCommandLineClient.QUOTATION_REGEX
+                .matcher(String.join(" ", parts))
+                .replaceAll("\\\\\"")
+        );
+        return this.run(List.of("sh", "-c", flattened), time, unit);
+    }
+
+    /**
      * Runs a command.
      * @param command The command to run
      * @param args Additional arguments
-     * @param time The timout
+     * @param time The timeout
      * @param unit The unit of time for the timeout
      * @return The command's exit value
      * @throws InterruptedException If the command is interrupted
@@ -147,11 +184,26 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
         commands.add(this.executable);
         commands.add(command);
         commands.addAll(args);
-        final String formatted = String.format("\n$ %s\n", String.join(" ", commands));
+        return this.run(commands, time, unit);
+    }
+
+    /**
+     * Runs a command.
+     * @param args The command and its arguments arguments
+     * @param time The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws InterruptedException If the command is interrupted
+     * @throws TimeoutException If the command takes longer than expected to finish
+     * @throws IOException If there is an I/O error
+     */
+    protected int run(final List<String> args, final long time, final TimeUnit unit)
+        throws InterruptedException, TimeoutException, IOException {
+        final String formatted = String.format("\n$ %s\n", String.join(" ", args));
         this.output.write(formatted.getBytes());
         this.output.flush();
         return new ProcessExecutor()
-            .command(commands)
+            .command(args)
             .directory(this.directory)
             .redirectOutput(this.output)
             .redirectError(this.error)

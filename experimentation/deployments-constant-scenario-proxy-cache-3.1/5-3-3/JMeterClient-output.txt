@@ -1,0 +1,16 @@
+
+$ jmeter --version
+    _    ____   _    ____ _   _ _____       _ __  __ _____ _____ _____ ____
+   / \  |  _ \ / \  / ___| | | | ____|     | |  \/  | ____|_   _| ____|  _ \
+  / _ \ | |_) / _ \| |   | |_| |  _|    _  | | |\/| |  _|   | | |  _| | |_) |
+ / ___ \|  __/ ___ \ |___|  _  | |___  | |_| | |  | | |___  | | | |___|  _ <
+/_/   \_\_| /_/   \_\____|_| |_|_____|  \___/|_|  |_|_____| |_| |_____|_| \_\ 5.4.3
+Copyright (c) 1999-2021 The Apache Software Foundation
+$ jmeter -n -t /Users/miguel/Development/repositories/middleware/experimentation/scenarios/constant-scenario.jmx -l constant-scenario-proxy-cache-3.1.csv -e -o constant-scenario-proxy-cache-3.1
+Creating summariser <summary>
+Created the tree successfully using /Users/miguel/Development/repositories/middleware/experimentation/scenarios/constant-scenario.jmx
+Starting standalone test @ Sat Feb 26 00:19:38 EST 2022 (1645852778653)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4446
+summary +     14 in 00:00:22 =    0.6/s Avg:  1005 Min:  1002 Max:  1031 Err:    14 (100.00%) Active: 30 Started: 30 Finished: 0
+summary +     16 in 00:00:30 =    0.5/s Avg:  1002 Min:  1001 Max:  1004 Err:    16 (100.00%) Active: 30 Started: 30 Finished: 0
+summary =     30 in 00:00:53 =    0.6/s Avg:  1003 Min:  1001 Max:  1031 Err:    30 (100.00%)

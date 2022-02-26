@@ -98,7 +98,29 @@ public class KubernetesClient extends AbstractCommandLineClient {
         args.add(String.format("%d:%d", config.getLocalport(), config.getPort()));
         args.add("--kubeconfig");
         args.add(this.kubeconfig);
-        return this.run("port-forward", args, timeout, unit) == 0;
+        return this.runAsync("port-forward", args, timeout, unit) == 0;
+    }
+
+    /**
+     * Runs the "port-forward" command.
+     * @param manifest The manifest file to deploy
+     * @param timeout The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws InterruptedException If the command is interrupted
+     * @throws TimeoutException If the command takes longer than expected to finish
+     * @throws IOException If there is an I/O error
+     */
+    public boolean apply(final String manifest, final long timeout,
+        final TimeUnit unit) throws InterruptedException, IOException, TimeoutException {
+        final List<String> args = new ArrayList<>();
+        args.add("-n");
+        args.add("default");
+        args.add("-f");
+        args.add(manifest);
+        args.add("--kubeconfig");
+        args.add(this.kubeconfig);
+        return this.run("apply", args, timeout, unit) == 0;
     }
 
     /**

@@ -3,11 +3,17 @@ package com.rigiresearch.middleware.experimentation.infrastructure;
 import com.google.common.collect.Lists;
 import com.rigiresearch.middleware.experimentation.util.JMeterClient;
 import com.rigiresearch.middleware.experimentation.util.KubernetesClient;
+import com.rigiresearch.middleware.experimentation.util.Mean;
+import com.rigiresearch.middleware.experimentation.util.SoftwareVariant;
 import com.rigiresearch.middleware.experimentation.util.TerraformClient;
+import de.siegmar.fastcsv.reader.CsvReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +44,6 @@ public final class Deployment {
     /**
      * The directory where results results are stored.
      */
-    private static final String DIRECTORY = "deployments";
-
-    /**
-     * The directory where results results are stored.
-     */
     private static final File SCENARIOS = new File("scenarios");
 
     /**
@@ -51,19 +52,29 @@ public final class Deployment {
     private static final String KUBECONFIG = "./kubeconfig";
 
     /**
+     * An empty array of doubles.
+     */
+    public static final Double[] DOUBLES = new Double[0];
+
+    /**
      * The target cloud's actual deployment values.
      */
     private final CloudChromosome chromosome;
 
     /**
-     * The name of the variant to deploy (included in the manifest name).
+     * The variant to deploy.
      */
-    private final String variant;
+    private final SoftwareVariant variant;
 
     /**
      * The scenario to test.
      */
     private final JMeterClient.Scenario scenario;
+
+    /**
+     * The directory where results results are stored.
+     */
+    private final String directory;
 
     /**
      * Whether an error happened while performing the deployment.
@@ -78,16 +89,21 @@ public final class Deployment {
     /**
      * Default constructor.
      * @param chromosome The chromosome data
-     * @param variant The name of the variant to deploy (included in the manifest name)
+     * @param variant The variant to deploy
      * @param scenario The scenario to test
      * @throws IOException If the template file is not found
      */
-    public Deployment(final CloudChromosome chromosome, final String variant,
+    public Deployment(final CloudChromosome chromosome, final SoftwareVariant variant,
         final JMeterClient.Scenario scenario)
         throws IOException {
         this.chromosome = chromosome;
         this.variant = variant;
         this.scenario = scenario;
+        this.directory = String.format(
+            "deployments-%s-%s",
+            scenario.scenarioName(),
+            variant.getName().variantName()
+        );
     }
 
     /**
@@ -177,15 +193,16 @@ public final class Deployment {
      */
     @SneakyThrows
     private void save0(final String name, final String content) {
-        final File directory = new File(
-            new File(Deployment.DIRECTORY),
+        final File fdirectory = new File(
+            new File(this.directory),
             this.chromosome.identifier()
         );
-        directory.mkdirs();
-        final File file = new File(directory, name);
-        file.getParentFile().mkdirs();
+        fdirectory.mkdirs();
+        final File file = new File(fdirectory, name);
+        // file.getParentFile().mkdirs();
         Files.write(
-            file.toPath(),
+            // Flatten out the files by copying everything in the root directory
+            new File(fdirectory, file.getName()).toPath(),
             content.getBytes(),
             StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING,
@@ -199,40 +216,50 @@ public final class Deployment {
      */
     public Future<Deployment> deploy() {
         final String id = this.chromosome.identifier();
-        final File current = new File(String.format("%s/%s", Deployment.DIRECTORY, id));
-        // TODO final String manifest = String.format("manifest.%s.yaml", this.variant);
+        final File current = new File(String.format("%s/%s", this.directory, id));
+        final String manifest =
+            String.format("manifest.%s.yaml", this.variant.getName().variantName());
+        final KubernetesClient.PortForwardConfig config =
+            new KubernetesClient.PortForwardConfig(
+                this.variant.getService(),
+                this.variant.getPort(),
+                8080, 2L, TimeUnit.MINUTES
+            );
         return CompletableFuture.supplyAsync(() -> {
             if (!this.isSupported()) {
                 this.unsupported = true;
                 Deployment.LOGGER.info("Flavor {} is unsupported", this.chromosome.formattedFlavor());
                 return this;
             }
-            try (TerraformClient terraform = new TerraformClient(current);
-                 JMeterClient jmeter = new JMeterClient(current, Deployment.SCENARIOS);
-                 KubernetesClient kubectl =
-                     new KubernetesClient(current, Deployment.KUBECONFIG)) {
-                if (terraform.version(5L, TimeUnit.SECONDS)
-                    && terraform.init(5L, TimeUnit.MINUTES)
-                    && terraform.apply(30L, TimeUnit.MINUTES)) {
-                    Deployment.LOGGER.info("Cluster {} deployed successfully", id);
-                    jmeter.version(5L, TimeUnit.SECONDS);
-                    kubectl.version(5L, TimeUnit.SECONDS);
-                    // TODO kubectl.apply(manifest, 5L, TimeUnit.MINUTES);
-                    kubectl.waitUntilReady(5L, TimeUnit.MINUTES);
-                    // TODO Add entry to hosts
-                    // jmeter.run(this.scenario, 15L, TimeUnit.MINUTES);
-                    // TODO this.score = RClient.computeScore();
-                } else {
-                    this.erroneous = true;
-                    Deployment.LOGGER.info("{} There was an error running init/plan", id);
+            try (TerraformClient terraform = new TerraformClient(current)) {
+                try (JMeterClient jmeter = new JMeterClient(current, Deployment.SCENARIOS);
+                     KubernetesClient kubectl =
+                         new KubernetesClient(current, Deployment.KUBECONFIG)) {
+                    if (terraform.version(5L, TimeUnit.SECONDS)
+                        && terraform.init(5L, TimeUnit.MINUTES)) {
+                        // && terraform.apply(40L, TimeUnit.MINUTES)) {
+                        Deployment.LOGGER.info("Cluster {} deployed successfully", id);
+                        kubectl.version(5L, TimeUnit.SECONDS);
+                        kubectl.apply(manifest, 5L, TimeUnit.MINUTES);
+                        kubectl.waitUntilReady(5L, TimeUnit.MINUTES);
+                        kubectl.portForward(config, 10L, TimeUnit.SECONDS);
+                        jmeter.version(5L, TimeUnit.SECONDS);
+                        jmeter.run(this.scenario, this.variant, 30L, TimeUnit.MINUTES);
+                    } else {
+                        this.erroneous = true;
+                        Deployment.LOGGER.info("{} There was an error running init/plan", id);
+                    }
+                } catch (final IOException | InterruptedException | TimeoutException exception) {
+                    Deployment.LOGGER.error("Unknown error: {}", exception.getMessage());
+                    throw new IllegalStateException(exception);
+                } finally {
+                    // Destroy deployed resources
+                    terraform.destroy(20L, TimeUnit.MINUTES);
+                    // FIXME Remove this
+                    System.exit(0);
                 }
-                // Destroy deployed resources
-                terraform.destroy(20L, TimeUnit.MINUTES);
-
-                // FIXME delete this
-                System.exit(0);
             } catch (final IOException | InterruptedException | TimeoutException exception) {
-                Deployment.LOGGER.error("Unknown error: {}", exception.getMessage());
+                Deployment.LOGGER.error("Terraform error: {}", exception.getMessage());
                 throw new IllegalStateException(exception);
             }
             return this;
@@ -249,8 +276,36 @@ public final class Deployment {
         if (this.erroneous || this.unsupported) {
             value = Double.MAX_VALUE;
         } else {
-            // TODO Compute the performance score of this deployment
-            value = 0.0;
+            final File deployment = new File(this.directory, this.chromosome.identifier());
+            final Path path = new File(
+                deployment,
+                String.format(
+                    "%s-%s.csv",
+                    this.scenario.scenarioName(),
+                    this.variant.getName().variantName()
+                )
+            ).toPath();
+            final List<Boolean> statuses = new ArrayList<>();
+            final List<Double> latencies = new ArrayList<>();
+            try (CsvReader reader = CsvReader.builder().build(path)) {
+                reader.forEach(row -> {
+                    final boolean success = Boolean.parseBoolean(row.getField(7));
+                    final double latency = Double.parseDouble(row.getField(14));
+                    statuses.add(success);
+                    latencies.add(latency);
+                });
+            } catch (final IOException exception) {
+                Deployment.LOGGER.error("Error loading CSV: {}", exception.getMessage());
+                throw new IllegalStateException(exception);
+            }
+            final Double[] samples = latencies.toArray(Deployment.DOUBLES);
+            final double mean = new Mean(samples, 0.05).mean();
+            final long successes = statuses.stream()
+                .filter(status -> status)
+                .count();
+            final double error = statuses.size() / (double) successes;
+            value = mean * 0.8 + error * 0.20;
+            Deployment.LOGGER.info("Score ({}) = {}", this.chromosome.identifier(), value);
         }
         return new Deployment.Score(this.erroneous, this.unsupported, value);
     }

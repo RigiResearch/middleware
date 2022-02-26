@@ -1,0 +1,5 @@
+
+$ kubectl version --kubeconfig ./kubeconfig
+$ kubectl apply -n default -f manifest.proxy-cache-3.1.yaml --kubeconfig ./kubeconfig
+$ kubectl wait -n default --for=condition=ready pod --all --timeout=300s --kubeconfig ./kubeconfig
+$ sh -c "kubectl port-forward -n default svc/youtube-dl-cache 8080:80 --kubeconfig ./kubeconfig &"

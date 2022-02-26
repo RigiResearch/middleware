@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A simple jMeter client.
+ * FIXME jMeter scenarios are not pointing to the right CSV file.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.11.0
@@ -23,17 +24,17 @@ public class JMeterClient extends AbstractCommandLineClient {
     /**
      * The jMeter test plan for the regular scenario.
      */
-    private static final String REGULAR_FILE = "constant-scenario.jmx";
+    private static final String REGULAR = "constant-scenario";
 
     /**
      * The jMeter test plan for the linear scenario.
      */
-    private static final String LINEAR_FILE = "linear-scenario.jmx";
+    private static final String LINEAR = "linear-scenario";
 
     /**
      * The jMeter test plan for the spike scenario.
      */
-    private static final String SPIKE_FILE = "spike-scenario.jmx";
+    private static final String SPIKE = "spike-scenario";
 
     /**
      * Directory containing the execution scenarios.
@@ -68,6 +69,8 @@ public class JMeterClient extends AbstractCommandLineClient {
 
     /**
      * Runs the Regular execution scenario command.
+     * @param scenario The scenario to run
+     * @param variant The deployed variant
      * @param timeout The timeout
      * @param unit The unit of time for the timeout
      * @return The command's exit value
@@ -75,30 +78,41 @@ public class JMeterClient extends AbstractCommandLineClient {
      * @throws TimeoutException If the command takes longer than expected to finish
      * @throws IOException If there is an I/O error
      */
-    public boolean run(final Scenario scenario, final long timeout,
-        final TimeUnit unit) throws InterruptedException, IOException, TimeoutException {
+    public boolean run(final Scenario scenario, final SoftwareVariant variant,
+        final long timeout, final TimeUnit unit) throws InterruptedException,
+        IOException, TimeoutException {
         final File file = new File(this.scenarios, scenario.file());
-        final List<String> args = new ArrayList<>(1);
+        final String name = String.format(
+            "%s-%s",
+            scenario.scenarioName(),
+            variant.getName().variantName()
+        );
+        final List<String> args = new ArrayList<>();
         args.add("-t");
         args.add(file.getAbsolutePath());
-        return this.run("", args, timeout, unit) == 0;
+        args.add("-l");
+        args.add(String.format("%s.csv", name));
+        args.add("-e");
+        args.add("-o");
+        args.add(name);
+        return this.run("-n", args, timeout, unit) == 0;
     }
 
     /**
      * Possible execution scenarios.
      */
     public enum Scenario {
-        REGULAR(JMeterClient.REGULAR_FILE),
-        LINEAR(JMeterClient.LINEAR_FILE),
-        SPIKE(JMeterClient.SPIKE_FILE);
+        REGULAR(JMeterClient.REGULAR),
+        LINEAR(JMeterClient.LINEAR),
+        SPIKE(JMeterClient.SPIKE);
 
         /**
          * The scenario file name.
          */
-        private final String file;
+        private final String name;
 
         Scenario(String file) {
-            this.file = file;
+            this.name = file;
         }
 
         /**
@@ -106,7 +120,15 @@ public class JMeterClient extends AbstractCommandLineClient {
          * @return A non-empty, non-null string
          */
         public String file() {
-            return this.file;
+            return String.format("%s.jmx", this.name);
+        }
+
+        /**
+         * The name of the scenario, without the file extension.
+         * @return A non-null, non-empty string
+         */
+        public String scenarioName() {
+            return this.name;
         }
     }
 

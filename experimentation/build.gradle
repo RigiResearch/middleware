@@ -26,7 +26,10 @@ repositories {
 }
 
 ext {
+    commonsLangVersion = "3.11"
+    commonsMathVersion = "3.6.1"
     execLibVersion = "1.12"
+    fastCsvVersion = "2.1.0"
     jeneticsVersion = "6.0.1"
     jgraphVersion = "1.4.0"
     jsonPathVersion = "2.5.0"
@@ -45,6 +48,9 @@ dependencies {
     implementation "org.jgrapht:jgrapht-core:$jgraphVersion"
     implementation "io.jenetics:jenetics:$jeneticsVersion"
     implementation "org.antlr:ST4:$stVersion"
+    implementation "de.siegmar:fastcsv:$fastCsvVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation "org.apache.commons:commons-math3:$commonsMathVersion"
     // generation
     implementation 'it.unimi.dsi:fastutil:8.3.1'
 }
