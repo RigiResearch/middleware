@@ -36,6 +36,7 @@ Thumbs.db
 **/xcore-gen/*
 **/src-gen/*
 deployments/
+Rplots.pdf
 
 ### Allow libraries ###
 !**/lib/*.jar
