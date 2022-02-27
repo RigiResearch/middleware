@@ -30,11 +30,6 @@ public final class Application {
         LoggerFactory.getLogger(Application.class);
 
     /**
-     * The size of the thread pool size.
-     */
-    private static final int THREADS = 2;
-
-    /**
      * The number of generations.
      */
     private static final long GENERATIONS = 10L;
@@ -85,10 +80,11 @@ public final class Application {
 
     /**
      * Run this application.
+     * @param threads The size of the thread pool size
      * @throws IOException If there is a problem creating the results directory
      */
-    public void run() throws IOException {
-        final ExecutorService executor = Executors.newFixedThreadPool(Application.THREADS);
+    public void run(final int threads) throws IOException {
+        final ExecutorService executor = Executors.newFixedThreadPool(threads);
         final ExperimentResult result = new FittestClusterExperiment(
             new ExperimentConfig(
                 Application.GENERATIONS,
@@ -122,6 +118,7 @@ public final class Application {
      * @throws IOException If there is a problem creating the results directory
      */
     public static void main(final String... args) throws IOException {
+        // Verify that environment variables have been set
         final String user = System.getenv("TF_VAR_user_ocid");
         if (user == null || user.isEmpty()) {
             Application.LOGGER.error(
@@ -129,7 +126,14 @@ public final class Application {
             );
             System.exit(1);
         }
-        new Application().run();
+        // Read application arguments
+        final int threads;
+        if (args.length == 1) {
+            threads = Integer.parseInt(args[0]);
+        } else {
+             threads = 1;
+        }
+        new Application().run(threads);
     }
 
 }
