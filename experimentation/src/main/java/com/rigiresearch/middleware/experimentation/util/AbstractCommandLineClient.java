@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.exec.stream.slf4j.Slf4jOutputStream;
 
 /**
@@ -145,25 +146,15 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
      * @param time The timeout
      * @param unit The unit of time for the timeout
      * @return The command's exit value
-     * @throws InterruptedException If the command is interrupted
-     * @throws TimeoutException If the command takes longer than expected to finish
      * @throws IOException If there is an I/O error
      */
-    protected int runAsync(final String command, final List<String> args,
-        final long time, final TimeUnit unit)
-        throws InterruptedException, TimeoutException, IOException {
+    protected StartedProcess start(final String command, final List<String> args,
+        final long time, final TimeUnit unit) throws IOException {
         final List<String> parts = new ArrayList<>(args.size() + 3);
         parts.add(this.executable);
         parts.add(command);
         parts.addAll(args);
-        parts.add("&");
-        final String flattened = String.format(
-            "\"%s\"",
-            AbstractCommandLineClient.QUOTATION_REGEX
-                .matcher(String.join(" ", parts))
-                .replaceAll("\\\\\"")
-        );
-        return this.run(List.of("sh", "-c", flattened), time, unit);
+        return this.prepareProcess(parts, time, unit).start();
     }
 
     /**
@@ -188,6 +179,24 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
     }
 
     /**
+     * Runs a command and returns the output.
+     * @param args The command and its arguments arguments
+     * @param time The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws InterruptedException If the command is interrupted
+     * @throws TimeoutException If the command takes longer than expected to finish
+     * @throws IOException If there is an I/O error
+     */
+    protected String runAndGetOutput(final List<String> args, final long time,
+        final TimeUnit unit) throws InterruptedException, TimeoutException, IOException {
+        return this.prepareProcess(args, time, unit)
+            .readOutput(true)
+            .execute()
+            .outputUTF8();
+    }
+
+    /**
      * Runs a command.
      * @param args The command and its arguments arguments
      * @param time The timeout
@@ -199,6 +208,21 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
      */
     protected int run(final List<String> args, final long time, final TimeUnit unit)
         throws InterruptedException, TimeoutException, IOException {
+        return this.prepareProcess(args, time, unit)
+            .execute()
+            .getExitValue();
+    }
+
+    /**
+     * Prepares a command.
+     * @param args The command and its arguments arguments
+     * @param time The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws IOException If there is an I/O error
+     */
+    protected ProcessExecutor prepareProcess(final List<String> args, final long time,
+        final TimeUnit unit) throws IOException {
         final String formatted = String.format("\n$ %s\n", String.join(" ", args));
         this.output.write(formatted.getBytes());
         this.output.flush();
@@ -207,9 +231,7 @@ public abstract class AbstractCommandLineClient implements AutoCloseable {
             .directory(this.directory)
             .redirectOutput(this.output)
             .redirectError(this.error)
-            .timeout(time, unit)
-            .execute()
-            .getExitValue();
+            .timeout(time, unit);
     }
 
     @Override

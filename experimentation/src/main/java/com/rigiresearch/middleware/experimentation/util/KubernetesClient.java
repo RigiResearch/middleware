@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.Value;
+import org.zeroturnaround.exec.StartedProcess;
 
 /**
  * A simple Kubernetes command line client.
@@ -88,7 +89,7 @@ public class KubernetesClient extends AbstractCommandLineClient {
      * @throws TimeoutException If the command takes longer than expected to finish
      * @throws IOException If there is an I/O error
      */
-    public boolean portForward(final PortForwardConfig config,
+    public StartedProcess portForward(final PortForwardConfig config,
         final long timeout, final TimeUnit unit)
         throws InterruptedException, IOException, TimeoutException {
         final List<String> args = new ArrayList<>();
@@ -98,7 +99,7 @@ public class KubernetesClient extends AbstractCommandLineClient {
         args.add(String.format("%d:%d", config.getLocalport(), config.getPort()));
         args.add("--kubeconfig");
         args.add(this.kubeconfig);
-        return this.runAsync("port-forward", args, timeout, unit) == 0;
+        return this.start("port-forward", args, timeout, unit);
     }
 
     /**

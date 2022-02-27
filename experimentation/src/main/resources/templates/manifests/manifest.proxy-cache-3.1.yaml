@@ -53,18 +53,6 @@ data:
         }
     }
 ---
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: youtube-dl-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: oci
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -158,15 +146,10 @@ spec:
           volumeMounts:
             - name: cache-config-volume
               mountPath: /etc/nginx/conf.d
-            - name: cache-volume
-              mountPath: "/cache-data"
       volumes:
         - name: cache-config-volume
           configMap:
             name: cache-layer-configmap
-        - name: cache-volume
-          persistentVolumeClaim:
-            claimName: youtube-dl-pvc
 ---
 #apiVersion: networking.k8s.io/v1
 #kind: Ingress

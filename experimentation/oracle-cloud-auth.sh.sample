@@ -2,9 +2,11 @@ export TF_VAR_user_ocid=""
 export TF_VAR_tenancy_ocid=""
 export TF_VAR_compartment_ocid=""
 export TF_VAR_fingerprint=""
-export TF_VAR_private_key_path="/tmp/private_key.pem"
 export TF_VAR_region=""
+export TF_VAR_availablity_domain_name=""
+# Oracle cloud API's private key (generate through their website)
+export TF_VAR_private_key_path="/tmp/private_key.pem"
+# Keys to login into the machines (I think)
 export TF_VAR_ssh_public_key=""
 export TF_VAR_private_key_oci="/tmp/id_rsa"
 export TF_VAR_public_key_oci="/tmp/id_rsa.pub"
-export TF_VAR_availablity_domain_name=""

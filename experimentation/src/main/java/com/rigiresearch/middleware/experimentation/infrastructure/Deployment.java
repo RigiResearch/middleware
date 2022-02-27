@@ -3,17 +3,15 @@ package com.rigiresearch.middleware.experimentation.infrastructure;
 import com.google.common.collect.Lists;
 import com.rigiresearch.middleware.experimentation.util.JMeterClient;
 import com.rigiresearch.middleware.experimentation.util.KubernetesClient;
-import com.rigiresearch.middleware.experimentation.util.Mean;
+import com.rigiresearch.middleware.experimentation.util.RScriptClient;
 import com.rigiresearch.middleware.experimentation.util.SoftwareVariant;
 import com.rigiresearch.middleware.experimentation.util.TerraformClient;
-import de.siegmar.fastcsv.reader.CsvReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.slf4j.Logger;
@@ -42,19 +42,24 @@ public final class Deployment {
     private static final Logger LOGGER = LoggerFactory.getLogger(Deployment.class);
 
     /**
-     * The directory where results results are stored.
-     */
-    private static final File SCENARIOS = new File("scenarios");
-
-    /**
      * The kube config file created after the terraform deployment.
      */
     private static final String KUBECONFIG = "./kubeconfig";
 
     /**
-     * An empty array of doubles.
+     * Pattern to recognize the output from the R score program.
      */
-    public static final Double[] DOUBLES = new Double[0];
+    private static final Pattern R_OUTPUT_REGEX = Pattern.compile("(\\[1\\]\\s+)(.*)\n?.*");
+
+    /**
+     * A random number generator.
+     */
+    private static final SecureRandom GENERATOR = new SecureRandom();
+
+    /**
+     * Service ports already being used.
+     */
+    private static final List<Integer> PORTS_IN_USE = new ArrayList<>();
 
     /**
      * The target cloud's actual deployment values.
@@ -75,6 +80,11 @@ public final class Deployment {
      * The directory where results results are stored.
      */
     private final String directory;
+
+    /**
+     * A random and locally available port to proxy the Kubernetes service being tested.
+     */
+    private final int port;
 
     /**
      * Whether an error happened while performing the deployment.
@@ -104,6 +114,7 @@ public final class Deployment {
             scenario.scenarioName(),
             variant.getName().variantName()
         );
+        this.port = Deployment.randomPort();
     }
 
     /**
@@ -129,7 +140,9 @@ public final class Deployment {
             "terraform/oke_kube_config.tf",
             "terraform/outputs.tf",
             "terraform/provider.tf",
-            "terraform/variables.tf"
+            "terraform/variables.tf",
+            "scenarios/videos.csv",
+            "score.R"
         );
         final Map<String, String> files = new HashMap<>(names.size());
         for (final String name : names) {
@@ -147,6 +160,32 @@ public final class Deployment {
             );
         }
         return files;
+    }
+
+    /**
+     * Render the chromosome data as jmeter scenario.
+     * @return The contents of the inputs file
+     * @throws IOException If there is a problem reading the inputs file
+     */
+    public String scenario() throws IOException {
+        final ST template = new ST(
+            new String(
+                Objects.requireNonNull(
+                    Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResourceAsStream(
+                            String.format(
+                                "templates/scenarios/%s.jmx.st",
+                                this.scenario.scenarioName()
+                            )
+                        )
+                ).readAllBytes()
+            ),
+            '#',
+            '#'
+        );
+        template.add("port", this.port);
+        return template.render();
     }
 
     /**
@@ -181,6 +220,10 @@ public final class Deployment {
     public Deployment save() throws IOException {
         if (this.isSupported()) {
             this.save0("terraform.tfvars", this.inputs());
+            this.save0(
+                String.format("%s.jmx", this.scenario.scenarioName()),
+                this.scenario()
+            );
             this.supportingFiles().forEach(this::save0);
         }
         return this;
@@ -223,7 +266,9 @@ public final class Deployment {
             new KubernetesClient.PortForwardConfig(
                 this.variant.getService(),
                 this.variant.getPort(),
-                8080, 2L, TimeUnit.MINUTES
+                this.port,
+                2L,
+                TimeUnit.MINUTES
             );
         return CompletableFuture.supplyAsync(() -> {
             if (!this.isSupported()) {
@@ -232,19 +277,19 @@ public final class Deployment {
                 return this;
             }
             try (TerraformClient terraform = new TerraformClient(current)) {
-                try (JMeterClient jmeter = new JMeterClient(current, Deployment.SCENARIOS);
+                try (JMeterClient jmeter = new JMeterClient(current);
                      KubernetesClient kubectl =
                          new KubernetesClient(current, Deployment.KUBECONFIG)) {
                     if (terraform.version(5L, TimeUnit.SECONDS)
-                        && terraform.init(5L, TimeUnit.MINUTES)) {
-                        // && terraform.apply(40L, TimeUnit.MINUTES)) {
+                        && terraform.init(5L, TimeUnit.MINUTES)
+                        && terraform.apply(1L, TimeUnit.HOURS)) {
                         Deployment.LOGGER.info("Cluster {} deployed successfully", id);
                         kubectl.version(5L, TimeUnit.SECONDS);
-                        kubectl.apply(manifest, 5L, TimeUnit.MINUTES);
-                        kubectl.waitUntilReady(5L, TimeUnit.MINUTES);
-                        kubectl.portForward(config, 10L, TimeUnit.SECONDS);
+                        kubectl.apply(manifest, 10L, TimeUnit.MINUTES);
+                        kubectl.waitUntilReady(20L, TimeUnit.MINUTES);
+                        kubectl.portForward(config, 1L, TimeUnit.MINUTES);
                         jmeter.version(5L, TimeUnit.SECONDS);
-                        jmeter.run(this.scenario, this.variant, 30L, TimeUnit.MINUTES);
+                        jmeter.run(this.scenario, this.variant, 1L, TimeUnit.HOURS);
                     } else {
                         this.erroneous = true;
                         Deployment.LOGGER.info("{} There was an error running init/plan", id);
@@ -254,9 +299,7 @@ public final class Deployment {
                     throw new IllegalStateException(exception);
                 } finally {
                     // Destroy deployed resources
-                    terraform.destroy(20L, TimeUnit.MINUTES);
-                    // FIXME Remove this
-                    System.exit(0);
+                    terraform.destroy(30L, TimeUnit.MINUTES);
                 }
             } catch (final IOException | InterruptedException | TimeoutException exception) {
                 Deployment.LOGGER.error("Terraform error: {}", exception.getMessage());
@@ -277,37 +320,44 @@ public final class Deployment {
             value = Double.MAX_VALUE;
         } else {
             final File deployment = new File(this.directory, this.chromosome.identifier());
-            final Path path = new File(
-                deployment,
-                String.format(
-                    "%s-%s.csv",
-                    this.scenario.scenarioName(),
-                    this.variant.getName().variantName()
-                )
-            ).toPath();
-            final List<Boolean> statuses = new ArrayList<>();
-            final List<Double> latencies = new ArrayList<>();
-            try (CsvReader reader = CsvReader.builder().build(path)) {
-                reader.forEach(row -> {
-                    final boolean success = Boolean.parseBoolean(row.getField(7));
-                    final double latency = Double.parseDouble(row.getField(14));
-                    statuses.add(success);
-                    latencies.add(latency);
-                });
-            } catch (final IOException exception) {
-                Deployment.LOGGER.error("Error loading CSV: {}", exception.getMessage());
+            final String file = String.format(
+                "%s-%s.csv",
+                this.scenario.scenarioName(),
+                this.variant.getName().variantName()
+            );
+            try {
+                final RScriptClient R = new RScriptClient(deployment);
+                final String output = R.output(2L, TimeUnit.MINUTES, "score.R", file);
+                final Matcher matcher = Deployment.R_OUTPUT_REGEX.matcher(output);
+                if (matcher.matches()) {
+                    value = Double.parseDouble(matcher.group(2));
+                } else {
+                    value = Double.MAX_VALUE;
+                }
+            } catch (final IOException | InterruptedException | TimeoutException exception) {
+                Deployment.LOGGER.error("Error running R script", exception);
                 throw new IllegalStateException(exception);
             }
-            final Double[] samples = latencies.toArray(Deployment.DOUBLES);
-            final double mean = new Mean(samples, 0.05).mean();
-            final long successes = statuses.stream()
-                .filter(status -> status)
-                .count();
-            final double error = statuses.size() / (double) successes;
-            value = mean * 0.8 + error * 0.20;
             Deployment.LOGGER.info("Score ({}) = {}", this.chromosome.identifier(), value);
         }
         return new Deployment.Score(this.erroneous, this.unsupported, value);
+    }
+
+    /**
+     * Generates a random port.
+     * @return A random integer between 10k and 60k, that is not currently in use.
+     */
+    private static int randomPort() {
+        int port;
+        final int min = 10_000;
+        final int max = 60_000;
+        synchronized (Deployment.PORTS_IN_USE) {
+            do {
+                port = min + Deployment.GENERATOR.nextInt(max - min + 1);
+            } while (Deployment.PORTS_IN_USE.contains(port));
+            Deployment.PORTS_IN_USE.add(port);
+        }
+        return port;
     }
 
     /**

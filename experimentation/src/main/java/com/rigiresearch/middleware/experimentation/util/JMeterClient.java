@@ -9,7 +9,6 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A simple jMeter client.
- * FIXME jMeter scenarios are not pointing to the right CSV file.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.11.0
@@ -37,20 +36,13 @@ public class JMeterClient extends AbstractCommandLineClient {
     private static final String SPIKE = "spike-scenario";
 
     /**
-     * Directory containing the execution scenarios.
-     */
-    private final File scenarios;
-
-    /**
      * Default constructor.
      * @param directory The working directory
-     * @param scenarios Directory containing the execution scenarios
      * @throws IOException If there is an I/O error
      */
-    public JMeterClient(final File directory, final File scenarios)
+    public JMeterClient(final File directory)
         throws IOException {
         super(JMeterClient.EXECUTABLE, directory);
-        this.scenarios = scenarios;
     }
 
     /**
@@ -81,7 +73,6 @@ public class JMeterClient extends AbstractCommandLineClient {
     public boolean run(final Scenario scenario, final SoftwareVariant variant,
         final long timeout, final TimeUnit unit) throws InterruptedException,
         IOException, TimeoutException {
-        final File file = new File(this.scenarios, scenario.file());
         final String name = String.format(
             "%s-%s",
             scenario.scenarioName(),
@@ -89,7 +80,7 @@ public class JMeterClient extends AbstractCommandLineClient {
         );
         final List<String> args = new ArrayList<>();
         args.add("-t");
-        args.add(file.getAbsolutePath());
+        args.add(scenario.file());
         args.add("-l");
         args.add(String.format("%s.csv", name));
         args.add("-e");

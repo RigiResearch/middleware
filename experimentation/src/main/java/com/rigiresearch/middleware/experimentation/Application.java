@@ -32,7 +32,7 @@ public final class Application {
     /**
      * The size of the thread pool size.
      */
-    private static final int THREADS = 1;
+    private static final int THREADS = 2;
 
     /**
      * The number of generations.
@@ -47,12 +47,12 @@ public final class Application {
     /**
      * The number of subsequent steady fitness values to stop.
      */
-    private static final int STEADY_GENERATIONS = 5;
+    private static final int STEADY_GENERATIONS = 3;
 
     /**
      * The number of (best) results to collect.
      */
-    private static final int NUM_RESULTS = 50;
+    private static final int NUM_RESULTS = 10;
 
     /**
      * The chromosome crossover probability.

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.2.1">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Linear scenario" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Quadratic scenario" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
-      <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
@@ -15,9 +15,9 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">160</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1200</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.duration">600</stringProp>
@@ -61,10 +61,25 @@
         <hashTree/>
         <kg.apc.jmeter.timers.VariableThroughputTimer guiclass="kg.apc.jmeter.timers.VariableThroughputTimerGui" testclass="kg.apc.jmeter.timers.VariableThroughputTimer" testname="Throughput Shaping Timer" enabled="true">
           <collectionProp name="load_profile">
-            <collectionProp name="1950402973">
-              <stringProp name="49">1</stringProp>
+            <collectionProp name="1867522168">
+              <stringProp name="1">1</stringProp>
               <stringProp name="50">2</stringProp>
-              <stringProp name="50547">300</stringProp>
+              <stringProp name="48780">150</stringProp>
+            </collectionProp>
+            <collectionProp name="1925910079">
+              <stringProp name="50">2</stringProp>
+              <stringProp name="52">4</stringProp>
+              <stringProp name="48780">150</stringProp>
+            </collectionProp>
+            <collectionProp name="-636101045">
+              <stringProp name="52">4</stringProp>
+              <stringProp name="1573">16</stringProp>
+              <stringProp name="48780">150</stringProp>
+            </collectionProp>
+            <collectionProp name="1068538356">
+              <stringProp name="1573">16</stringProp>
+              <stringProp name="49747">256</stringProp>
+              <stringProp name="48780">150</stringProp>
             </collectionProp>
           </collectionProp>
         </kg.apc.jmeter.timers.VariableThroughputTimer>
@@ -75,7 +90,7 @@
           <collectionProp name="Arguments.arguments"/>
         </elementProp>
         <stringProp name="HTTPSampler.domain">localhost</stringProp>
-        <stringProp name="HTTPSampler.port">8080</stringProp>
+        <stringProp name="HTTPSampler.port">#port#</stringProp>
         <stringProp name="HTTPSampler.protocol">http</stringProp>
         <stringProp name="HTTPSampler.contentEncoding"></stringProp>
         <stringProp name="HTTPSampler.path"></stringProp>
@@ -192,11 +207,6 @@
         </objProp>
         <stringProp name="filename"></stringProp>
       </ResultCollector>
-      <hashTree/>
-      <PoissonRandomTimer guiclass="PoissonRandomTimerGui" testclass="PoissonRandomTimer" testname="Poisson Random Timer" enabled="true">
-        <stringProp name="ConstantTimer.delay">300</stringProp>
-        <stringProp name="RandomTimer.range">100</stringProp>
-      </PoissonRandomTimer>
       <hashTree/>
     </hashTree>
   </hashTree>
