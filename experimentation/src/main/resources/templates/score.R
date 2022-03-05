@@ -41,7 +41,7 @@ score <- function(requests){
   erroneous <- requests[grep("error",requests$success),]
   error_proportion = nrow(erroneous)/nrow(requests)
   mean = mean(successful$Latency)
-  fitness = mean*0.8 + error_proportion*0.2
+  fitness = mean*0.6 + error_proportion*0.4
   return(fitness)
 }
 
