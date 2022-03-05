@@ -43,17 +43,17 @@ public final class FittestClusterProblem
     /**
      * The number of worker nodes realizing the cluster.
      */
-    private static final IntRange NODE = IntRange.of(1, 5);
+    private static final IntRange NODE = IntRange.of(1, 10);
 
     /**
      * The amount of memory.
      */
-    private static final IntRange MEMORY = IntRange.of(1, 15);
+    private static final IntRange MEMORY = IntRange.of(1, 32);
 
     /**
      * The number of CPU cores.
      */
-    private static final IntRange CPU = IntRange.of(1, 5);
+    private static final IntRange CPU = IntRange.of(1, 32);
 
     /**
      * Initial map capacity.

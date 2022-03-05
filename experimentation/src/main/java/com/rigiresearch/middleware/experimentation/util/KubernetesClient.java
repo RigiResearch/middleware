@@ -58,6 +58,7 @@ public class KubernetesClient extends AbstractCommandLineClient {
 
     /**
      * Runs the "wait" command with condition "ready" for all pods.
+     * @param namespace The namespace where the resources are running
      * @param timeout The timeout
      * @param unit The unit of time for the timeout
      * @return The command's exit value
@@ -65,11 +66,11 @@ public class KubernetesClient extends AbstractCommandLineClient {
      * @throws TimeoutException If the command takes longer than expected to finish
      * @throws IOException If there is an I/O error
      */
-    public boolean waitUntilReady(final long timeout, final TimeUnit unit)
-        throws InterruptedException, IOException, TimeoutException {
+    public boolean waitUntilReady(final String namespace, final long timeout,
+        final TimeUnit unit) throws InterruptedException, IOException, TimeoutException {
         final List<String> args = new ArrayList<>();
         args.add("-n");
-        args.add("default");
+        args.add(namespace);
         args.add("--for=condition=ready");
         args.add("pod");
         args.add("--all");
@@ -105,6 +106,7 @@ public class KubernetesClient extends AbstractCommandLineClient {
     /**
      * Runs the "port-forward" command.
      * @param manifest The manifest file to deploy
+     * @param namespace The namespace where resources are deployed
      * @param timeout The timeout
      * @param unit The unit of time for the timeout
      * @return The command's exit value
@@ -112,11 +114,12 @@ public class KubernetesClient extends AbstractCommandLineClient {
      * @throws TimeoutException If the command takes longer than expected to finish
      * @throws IOException If there is an I/O error
      */
-    public boolean apply(final String manifest, final long timeout,
-        final TimeUnit unit) throws InterruptedException, IOException, TimeoutException {
+    public boolean apply(final String manifest, final String namespace,
+        final long timeout, final TimeUnit unit) throws InterruptedException,
+            IOException, TimeoutException {
         final List<String> args = new ArrayList<>();
         args.add("-n");
-        args.add("default");
+        args.add(namespace);
         args.add("-f");
         args.add(manifest);
         args.add("--kubeconfig");

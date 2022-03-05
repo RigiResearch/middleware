@@ -38,8 +38,7 @@ public class OracleCloudChromosome implements CloudChromosome {
 
     @Override
     public boolean isSupported() {
-        // Oracle cloud has no restrictions
-        return true;
+        return (double) this.memory / (double) this.cpus > 1.0;
     }
 
     @Override
@@ -49,12 +48,12 @@ public class OracleCloudChromosome implements CloudChromosome {
 
     @Override
     public String flavor() {
-        throw new UnsupportedOperationException("#flavor()");
+        return this.identifier();
     }
 
     @Override
     public String formattedFlavor() {
-        throw new UnsupportedOperationException("#formattedFlavor()");
+        return this.identifier();
     }
 
     @Override

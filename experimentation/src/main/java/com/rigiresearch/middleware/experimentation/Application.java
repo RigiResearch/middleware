@@ -32,7 +32,7 @@ public final class Application {
     /**
      * The number of generations.
      */
-    private static final long GENERATIONS = 10L;
+    private static final long GENERATIONS = 20L;
 
     /**
      * The size of the initial population.
@@ -42,7 +42,7 @@ public final class Application {
     /**
      * The number of subsequent steady fitness values to stop.
      */
-    private static final int STEADY_GENERATIONS = 3;
+    private static final int STEADY_GENERATIONS = 5;
 
     /**
      * The number of (best) results to collect.

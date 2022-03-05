@@ -8,7 +8,11 @@ import com.rigiresearch.middleware.experimentation.util.SoftwareVariant;
 import com.rigiresearch.middleware.experimentation.util.TerraformClient;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -29,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
 
 /**
- * A deployment template.
+ * A deployment coordinator.
  * @author Miguel Jimenez (miguel@uvic.ca)
  * @version $Id$
  * @since 0.1.0
@@ -40,6 +44,12 @@ public final class Deployment {
      * The logger.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(Deployment.class);
+
+    /**
+     * URL of the metrics server to deploy.
+     */
+    private static final String METRICS_SERVER_URL =
+        "https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/components.yaml";
 
     /**
      * The kube config file created after the terraform deployment.
@@ -135,6 +145,7 @@ public final class Deployment {
             "manifests/manifest.proxy-cache-3.1.yaml",
             "terraform/compartment.tf",
             "terraform/datasources.tf",
+            "terraform/fss.tf",
             "terraform/network.tf",
             "terraform/oke_cluster.tf",
             "terraform/oke_kube_config.tf",
@@ -284,10 +295,20 @@ public final class Deployment {
                         && terraform.init(5L, TimeUnit.MINUTES)
                         && terraform.apply(1L, TimeUnit.HOURS)) {
                         Deployment.LOGGER.info("Cluster {} deployed successfully", id);
+                        this.replaceOutputInManifest(
+                            "#mount_target_ocid#",
+                            terraform.output("FoggyKitchenMountTarget_ocid", 5L, TimeUnit.SECONDS)
+                        );
+                        // Deploy metrics server
                         kubectl.version(5L, TimeUnit.SECONDS);
-                        kubectl.apply(manifest, 10L, TimeUnit.MINUTES);
-                        kubectl.waitUntilReady(20L, TimeUnit.MINUTES);
+                        kubectl.apply(Deployment.METRICS_SERVER_URL, "kube-system", 20L, TimeUnit.MINUTES);
+                        kubectl.waitUntilReady("kube-system", 20L, TimeUnit.MINUTES);
+                        // Deploy the software variant
+                        kubectl.apply(manifest, "default", 10L, TimeUnit.MINUTES);
+                        kubectl.waitUntilReady("default", 20L, TimeUnit.MINUTES);
+                        // Expose the service
                         kubectl.portForward(config, 1L, TimeUnit.MINUTES);
+                        // Run tests
                         jmeter.version(5L, TimeUnit.SECONDS);
                         jmeter.run(this.scenario, this.variant, 1L, TimeUnit.HOURS);
                     } else {
@@ -307,6 +328,26 @@ public final class Deployment {
             }
             return this;
         });
+    }
+
+    /**
+     * Replace a template variable in the manifest file.
+     * @param variable The template variable
+     * @param output The new content
+     * @throws IOException If there is a problem reading or writing the file
+     */
+    private final void replaceOutputInManifest(final String variable,
+        final String output) throws IOException {
+        final String name =
+            String.format("manifest.%s.yaml", this.variant.getName().variantName());
+        final File deployment = new File(this.directory, this.chromosome.identifier());
+        final File manifest = new File(deployment, name);
+        final String original = new String(
+            Files.readAllBytes(manifest.toPath()),
+            StandardCharsets.UTF_8
+        );
+        final String content = original.replaceAll(variable, output.trim());
+        Files.write(manifest.toPath(), content.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

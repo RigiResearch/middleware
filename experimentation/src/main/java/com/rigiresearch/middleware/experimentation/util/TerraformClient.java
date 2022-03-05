@@ -72,6 +72,22 @@ public final class TerraformClient extends AbstractCommandLineClient {
     }
 
     /**
+     * Runs the "plan" command.
+     * @param name The output's name
+     * @param timeout The timeout
+     * @param unit The unit of time for the timeout
+     * @return The command's exit value
+     * @throws InterruptedException If the command is interrupted
+     * @throws TimeoutException If the command takes longer than expected to finish
+     * @throws IOException If there is an I/O error
+     */
+    public String output(final String name, final long timeout, final TimeUnit unit)
+        throws InterruptedException, IOException, TimeoutException {
+        final List<String> args = List.of(TerraformClient.EXECUTABLE, "output", name);
+        return this.runAndGetOutput(args, timeout, unit);
+    }
+
+    /**
      * Runs the "apply" command.
      * @param timeout The timeout
      * @param unit The unit of time for the timeout
