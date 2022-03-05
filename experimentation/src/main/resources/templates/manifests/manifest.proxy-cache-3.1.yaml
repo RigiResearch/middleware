@@ -53,12 +53,57 @@ data:
         }
     }
 ---
+# Storage stuff for oracle cloud is explained here:
+# https://blogs.oracle.com/cloud-infrastructure/post/using-file-storage-service-with-container-engine-for-kubernetes
+# Doing that is necessary to use ReadWriteMany
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: oci-fss
+provisioner: oracle.com/oci-fss
+parameters:
+  # Insert mount target from the FSS here
+  mntTargetId: #mount_target_ocid#
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: oke-fsspv
+spec:
+  storageClassName: oci-fss
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  mountOptions:
+    - nosuid
+  nfs:
+    # Replace this with the IP of your FSS file system in OCI
+    server: 10.0.3.10
+    # Replace this with the Path of your FSS file system in OCI
+    path: "/sharedfs"
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oke-fsspvc
+spec:
+  storageClassName: oci-fss
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      # Although storage is provided here it is not used for FSS file systems
+      storage: 2Gi
+  volumeName: oke-fsspv
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: youtube-dl-backend
 spec:
-  replicas: 15
+  replicas: 5
   selector:
     matchLabels:
       app: youtube-dl
@@ -83,13 +128,45 @@ spec:
               command: ["/bin/grpc_health_probe", "-addr=:50051"]
             initialDelaySeconds: 10
           imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 300m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 32Mi
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: youtube-dl-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: youtube-dl-backend
+  minReplicas: 5
+  maxReplicas: 100
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageValue: 64Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: youtube-dl-frontend
 spec:
-  replicas: 10
+  replicas: 5
   selector:
     matchLabels:
       app: youtube-dl
@@ -121,13 +198,20 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
           imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 32Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: youtube-dl-cache
 spec:
-  replicas: 10
+  replicas: 5
   selector:
     matchLabels:
       app: youtube-dl
@@ -143,32 +227,26 @@ spec:
           name: proxy-cache
           ports:
             - containerPort: 80
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 32Mi
           volumeMounts:
             - name: cache-config-volume
               mountPath: /etc/nginx/conf.d
+            - name: cache-volume
+              mountPath: "/cache-data"
       volumes:
         - name: cache-config-volume
           configMap:
             name: cache-layer-configmap
----
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  annotations:
-#    kubernetes.io/ingress.class: "nginx"
-#    nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
-#  name: lb-layer-ingress
-#spec:
-#  rules:
-#    - http:
-#        paths:
-#          - path: /
-#            pathType: Prefix
-#            backend:
-#              service:
-#                name: youtube-dl-cache
-#                port:
-#                  number: 80
+        - name: cache-volume
+          persistentVolumeClaim:
+            claimName: oke-fsspvc
+            readOnly: false
 ---
 apiVersion: v1
 kind: Service
