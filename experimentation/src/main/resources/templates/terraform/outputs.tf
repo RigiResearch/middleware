@@ -22,3 +22,7 @@ output "FoggyKitchen_Cluster_Kubernetes_Versions" {
 output "FoggyKitchen_Cluster_NodePool_Kubernetes_Version" {
   value = [data.oci_containerengine_node_pool_option.FoggyKitchenOKEClusterNodePoolOption.kubernetes_versions]
 }
+
+output "FoggyKitchenMountTarget_ocid" {
+  value = oci_file_storage_mount_target.FoggyKitchenMountTarget.id
+}

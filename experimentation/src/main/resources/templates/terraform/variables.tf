@@ -1,3 +1,4 @@
+variable "availablity_domain_name" {}
 variable "tenancy_ocid" {}
 variable "user_ocid" {}
 variable "fingerprint" {}
@@ -40,7 +41,7 @@ variable "node_pool_quantity_per_subnet" {
 }
 
 variable "kubernetes_version" {
-   default = "v1.21.5"
+  default = "v1.21.5"
 }
 
 variable "node_pool_size" {
@@ -48,9 +49,17 @@ variable "node_pool_size" {
 }
 
 variable "Shape" {
- default = "VM.Standard.E3.Flex"
+  default = "VM.Standard.E3.Flex"
 }
 
 variable "ClusterName" {
   default = "PFL-OKE-cluster"
+}
+
+variable "storage_file_system_ip" {
+  default = "10.0.3.10"
+}
+
+variable "storage_mount_target_path" {
+  default = "/sharedfs"
 }
